@@ -179,18 +179,14 @@ module EA_Extensions623
         vec = pt1 - pt2
 
         if vec.parallel? @x_red
-          ghost_color = 255,0,0
+          ghost_color = "Red"
         elsif vec.parallel? @y_green
-          ghost_color = 0,128,0
+          ghost_color = "Lime"
         elsif vec.parallel? @z_blue
-          ghost_color = 0,0,255
+          ghost_color = "Blue"
         else
-          ghost_color = 255,140,0 #Dark Gold
+          ghost_color = "DarkOrange"
         end
-        up = Geom::Vector3d.new(0,0,1)
-        anglexz = vec.angle_between up
-        anglexy = vec.angle_between NORTH
-        plane = [pt1, vec]
 
         a = []
         @ip1points.each {|p| a << p.transform(@trans)}
@@ -216,13 +212,13 @@ module EA_Extensions623
         end
         # @ip1points.push pt1,pt2
         # returns a view
-        view.line_width = 2
+        view.line_width = 0.5
         view.drawing_color = ghost_color
         view.draw(GL_LINES, pts)
       end
 
       def draw_control_line(pts, view)
-        view.line_width = 5
+        view.line_width = 4
         view.line_stipple = "-.-"
         view.drawing_color = "black"
         view.draw(GL_LINES, pts)
@@ -237,7 +233,7 @@ module EA_Extensions623
             @drawn = true
           end
 
-          if( @ip2.valid? )
+          if @ip2.valid? && @ip1.position != @ip2.position
             @ip2.draw(view) if( @ip2.display? )
 
             # The set_color_from_line method determines what color
@@ -922,10 +918,10 @@ module EA_Extensions623
 
             n == 1 ? (a1, a2, a3, a4 = north, south, east, west) : (a1, a2 ,a3 ,a4 = west, east, north, south)
 
-            d1 = group.add_instance a1, loc1 #North & West
-            d2 = group.add_instance a2, loc2 # South & East
-            d3 = group.add_instance a3, loc3 # East & North
-            d4 = group.add_instance a4, loc4 # West & South
+            d1 = group.add_instance a4, loc1 #North & West
+            d2 = group.add_instance a3, loc2 # South & East
+            d3 = group.add_instance a2, loc3 # East & North
+            d4 = group.add_instance a1, loc4 # West & South
 
             @inner_group.entities.transform_entities combo1, d1
             @inner_group.entities.transform_entities combo2, d2
