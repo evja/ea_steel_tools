@@ -255,6 +255,9 @@ module EA_Extensions623
           if @@placement == "TOP"
             point = Geom::Point3d.new(0, 0, -@h)
             @mv_dwn = Geom::Transformation.new(point)
+          elsif @@placement == "MID"
+            point = Geom::Point3d.new(0, 0, @h * -0.5)
+            @mv_dwn = Geom::Transformation.new(point)
           end
         end
 
@@ -703,7 +706,7 @@ module EA_Extensions623
           UI.messagebox("There was a problem loading the 13/16\" holes")
         end
       end
-
+ 
       def add_labels_beam(vec, length)
         begin
           all_labels = []
@@ -1257,6 +1260,10 @@ module EA_Extensions623
             point = Geom::Point3d.new 0,0,-@h
             move_down = Geom::Transformation.new point
             @entities.transform_entities move_down, @outer_group
+          elsif @@placement == "MID"
+            point = Geom::Point3d.new 0,0, @h * -0.5
+            move_down = Geom::Transformation.new point
+            @entities.transform_entities move_down, @outer_group 
           end
 
           #align the beam with the input points
