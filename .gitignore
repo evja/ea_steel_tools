@@ -1,0 +1,17 @@
+Beam Components
+Fonts
+*.png
+test_code.Appraisals
+steel_tools_menus.rb
+SKUI
+beam_library.rb
+Colors
+Icons
+dialog_rolled.rb
+hss_steel_data.rb
+hss_library.rb
+fixes.rb
+dialog.rb
+desktop.ini
+control.rb
+.DS_Store
