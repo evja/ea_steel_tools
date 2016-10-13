@@ -32,7 +32,7 @@ module EA_Extensions623
           :title           => 'Wide Flange Steel',
           :preferences_key => 'WFS',
           :width           => 400,
-          :height          => 360,
+          :height          => 460,
           :resizable       => false
         }
 
@@ -103,19 +103,30 @@ module EA_Extensions623
         group2.position( 58, 103 )
         group2.right = 20
         group2.width = 300
-        group2.height = 100
+        group2.height = 200
         window.add_control( group2 )
 
+        path = File.join( SKUI::PATH, '..', 'icons' )
+        file = File.join( path, 'profile2.png' )
+
+        label_font = SKUI::Font.new( 'Comic Sans MS', 8, true )
+
+        img_profile = SKUI::Image.new( file )
+        img_profile.position( 28, 32 )
+        img_profile.width = 200
+        img_profile.height = 130
+        group2.add_control( img_profile )
+
         top_select = SKUI::RadioButton.new ('Draw From Top')
-        top_select.position(120, 20)
+        top_select.position(122, 21)
         top_select.checked = true if @@placement == 'TOP'
         top_select.on (:change ) { |control|
           @@placement = 'TOP' if control.checked?
         }
         group2.add_control( top_select )
 
-        mid_select = SKUI::RadioButton.new ('Draw From Hello Candice')
-        mid_select.position(120, 45)
+        mid_select = SKUI::RadioButton.new ('Draw From Middle')
+        mid_select.position(122, 90)
         mid_select.checked = true if @@placement == 'MID'
         mid_select.on (:change ) { |control|
           @@placement = 'MID' if control.checked?
@@ -123,7 +134,7 @@ module EA_Extensions623
         group2.add_control( mid_select )
 
         bottom_select = SKUI::RadioButton.new ('Draw From Bottom')
-        bottom_select.position(120, 70)
+        bottom_select.position(122, 159)
         bottom_select.checked = true if @@placement == 'BOTTOM'
         bottom_select.on ( :change ) { |control|
           @@placement = 'BOTTOM' if control.checked?
@@ -134,7 +145,7 @@ module EA_Extensions623
         #################################################################################
 
         group3 = SKUI::Groupbox.new( 'Options' )
-        group3.position( 5, 200 )
+        group3.position( 5, 305 )
         group3.right = 5
         group3.height = 100
         window.add_control( group3 )

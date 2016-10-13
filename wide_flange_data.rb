@@ -185,7 +185,7 @@ module EA_Extensions623
         elsif vec.parallel? @z_blue
           ghost_color = "Blue"
         else
-          ghost_color = "DarkOrange"
+          ghost_color = "Yellow"
         end
 
         a = []
@@ -212,14 +212,14 @@ module EA_Extensions623
         end
         # @ip1points.push pt1,pt2
         # returns a view
-        view.line_width = 0.5
+        view.line_width = 0.1
         view.drawing_color = ghost_color
         view.draw(GL_LINES, pts)
       end
 
       def draw_control_line(pts, view)
-        view.line_width = 4
-        view.line_stipple = "-.-"
+        view.line_width = 2
+        view.line_stipple = "."
         view.drawing_color = "black"
         view.draw(GL_LINES, pts)
       end
@@ -706,7 +706,7 @@ module EA_Extensions623
           UI.messagebox("There was a problem loading the 13/16\" holes")
         end
       end
- 
+
       def add_labels_beam(vec, length)
         begin
           all_labels = []
@@ -1263,7 +1263,7 @@ module EA_Extensions623
           elsif @@placement == "MID"
             point = Geom::Point3d.new 0,0, @h * -0.5
             move_down = Geom::Transformation.new point
-            @entities.transform_entities move_down, @outer_group 
+            @entities.transform_entities move_down, @outer_group
           end
 
           #align the beam with the input points
