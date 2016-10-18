@@ -340,6 +340,7 @@ module EA_Extensions623
         ####################
         btn_close = SKUI::Button.new( 'Close' ) { |control|
           control.window.close
+          Sketchup.send_action "selectSelectionTool:"
         }
         btn_close.position( -5, -5 )
         window.add_control( btn_close )

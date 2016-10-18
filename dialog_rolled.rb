@@ -11,37 +11,22 @@ module EA_Extensions623
       @@state = 0
 
       def validate_selection(selection)
-        sel = @model.selection
-        # if sel.count >= 2
-        #   view.suspend
-        # end
-        ##################
-        # Create a rule where if the selection is greater thatn 1 make them select an arc)
-        ################################
-        if not @path.any?
-          UI.messagebox("You must select 1 arc or curve as a path for the rolled steel")
-          Sketchup.send_action "selectSelectionTool:"
-          return false
-        end
-
         if not selection.class == Sketchup::Edge && selection.curve.class == Sketchup::ArcCurve
           UI.messagebox("please select 1 arc as a path for the rolled steel")
           Sketchup.send_action "selectSelectionTool:"
           return false
         end
-        return true
+        return true # Pass the test
       end
 
-      def initialize
+      def activate
         @model = Sketchup.active_model
         @entities = @model.active_entities
+        @model.start_operation("Rolled Steel", true)
         @path = @model.selection
         sel = @path[0]
-        unless validate_selection sel
-          return
-        end
+        @selection_count = 0
 
-        @status_text = "Please select an arc to use as the rolled steel path"
 
         if @@state == 0
           @@beam_data         = {}             #Hash   {:d=>4.16, :bf=>4.06, :tf=>0.345, :tw=>0.28, :r=>0.2519685039370079, :width_class=>4}"
@@ -70,6 +55,63 @@ module EA_Extensions623
           :height          => 480,
           :resizable       => false
         }
+        if @path.any?
+          unless validate_selection sel
+            return
+          end
+          run_dialog
+          @pre_selected_arc = true
+        else
+          #prompt User to select an arc and validate it.
+          @status_text = "Please select an arc to use as the rolled steel path"
+          Sketchup.status_text = @status_text
+          make_cursor
+        end
+
+      end
+
+      def make_cursor
+        cursor = Sketchup.find_support_file("icons/wfs_icon_rolled_select.png", "Plugins/ea_steel_tools")
+        @select_path_cursor = UI.create_cursor(cursor, 0, 0)
+      end
+
+      def onSetCursor
+        UI.set_cursor(@select_path_cursor.to_i)
+        Sketchup.active_model.active_view.invalidate
+      end
+
+      def onLButtonUp(flags, x, y, view)
+        if @ready_to_select == true
+          run_dialog
+          @selection_count = 2
+        end
+      end
+
+      # This is used to dynamically highlight/select the line or curve when you move the mouse over it.
+      def onMouseMove(flags, x, y, view)
+        unless @pre_selected_arc
+          if @selection_count < 2
+            ph = view.pick_helper
+            num = ph.do_pick(x,y)
+            @best = ph.best_picked
+            if (@best)
+              if @best.class == Sketchup::Edge && @best.curve.class == Sketchup::ArcCurve
+                all_best = @best.all_connected
+                if @selection_count == 0
+                  Sketchup.active_model.selection.clear
+                  Sketchup.active_model.selection.add( @best.curve.edges )
+                  @ready_to_select = true
+                end
+              else
+                Sketchup.active_model.selection.clear
+                @ready_to_select = false
+              end
+            else
+              Sketchup.active_model.selection.clear
+            end
+            view.invalidate
+          end
+        end
       end
 
       def run_dialog
@@ -470,6 +512,7 @@ module EA_Extensions623
             # segment_length:    @@segment_length
           }
           Sketchup.active_model.select_tool EASteelTools::RolledSteel.new(data)
+          Sketchup.active_model.commit_operation
           control.window.close
         }
 
@@ -483,6 +526,7 @@ module EA_Extensions623
         btn_close = SKUI::Button.new( 'Close' ) { |control|
           control.window.close
           @dialog = control.window
+          Sketchup.send_action "selectSelectionTool:"
         }
         btn_close.position( -5, -5 )
         @window.add_control( btn_close )
