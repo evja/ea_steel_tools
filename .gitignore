@@ -6,8 +6,6 @@ SKUI
 *.png
 test_code.Appraisals
 beam_library.rb
-dialog.rb
-dialog_rolled.rb
 steel_tools_menus.rb
 hss_steel_data.rb
 hss_library.rb

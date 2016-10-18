@@ -184,8 +184,9 @@ module EA_Extensions623
           ghost_color = "Lime"
         elsif vec.parallel? @z_blue
           ghost_color = "Blue"
-        else
           ghost_color = "Yellow"
+        else
+          ghost_color = "Gray"
         end
 
         a = []
