@@ -1,7 +1,7 @@
 module EA_Extensions623
   module EASteelTools
 
-    class RolledSteel
+    class RolledSteel < RolledDialog
       include BeamLibrary
       ###############
       ## CONSTANTS ##
