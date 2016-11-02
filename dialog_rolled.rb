@@ -27,7 +27,6 @@ module EA_Extensions623
         sel = @path[0]
         @selection_count = 0
 
-
         if @@state == 0
           @@beam_data         = {}             #Hash   {:d=>4.16, :bf=>4.06, :tf=>0.345, :tw=>0.28, :r=>0.2519685039370079, :width_class=>4}"
           @@beam_name         = ''             #String 'W(height_class)X(weight_per_foot)'
@@ -90,9 +89,10 @@ module EA_Extensions623
       # This is used to dynamically highlight/select the line or curve when you move the mouse over it.
       def onMouseMove(flags, x, y, view)
         unless @pre_selected_arc
-          if @selection_count < 2
+          if @selection_count == 0
             ph = view.pick_helper
             num = ph.do_pick(x,y)
+            # @best = ph.leaf_at(0) This will make the cursor look at the deepest entitiy if inside groups
             @best = ph.best_picked
             if (@best)
               if @best.class == Sketchup::Edge && @best.curve.class == Sketchup::ArcCurve
@@ -129,8 +129,8 @@ module EA_Extensions623
         # These events doesn't trigger correctly when Firebug Lite
         # is active because it introduces frames that interfere with
         # the focus notifications.
-        @window.on( :focus )  { puts 'Window Focus' }
-        @window.on( :blur )   { puts 'Window Blur' }
+        # @window.on( :focus )  { puts 'Window Focus' }
+        # @window.on( :blur )   { puts 'Window Blur' }
         @window.on( :resize ) { |window, width, height|
           puts "Window Resize(#{width}, #{height})"
         }
