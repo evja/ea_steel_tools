@@ -159,14 +159,19 @@ module EA_Extensions623
 
       end
 
-      def activate()
-        model = @model
-        model.start_operation("Roll Steel", true)
+      def check_for_multiples(selection, arc_pot)
+        arc = selection[0].curve
+        arc.each_edge {|e| selection.remove e}
+        arc_pot << arc
+        if selection.any?
+          check_for_multiples(selection, arc_pot)
+        else
+          return arc_pot
+        end
+      end
 
-        set_groups(model)
-        load_parts
-
-        arc = draw_new_arc(@selected_curve)
+      def create_beam(arc)
+        arc = draw_new_arc(arc)
         profile = draw_beam(@@beam_data)
 
         facearc = align_profile(profile, arc) #this returns an array. The FACE that has been aligned and the ARC
@@ -189,8 +194,21 @@ module EA_Extensions623
 
         # Adds in the labels for the steel
         add_labels(point)
-
         erase_arc(arc)
+      end
+
+      def activate()
+        model = @model
+        model.start_operation("Roll Steel", true)
+        pot = []
+        arcs = check_for_multiples(@selected_curve, pot)
+        load_parts
+
+        arcs.each do |arc|
+          set_groups(model)
+          create_beam(arc)
+          clear_groups
+        end
 
         model.commit_operation
 
@@ -219,15 +237,13 @@ module EA_Extensions623
 
       def draw_new_arc(selected_arc)
         # Selected Arc Data
-        arc = selected_arc[0].curve
+        arc = selected_arc
         seg1 = arc.first_edge
         seg2 = arc.last_edge
         vertex1 = seg1.start
         vertex2 = seg2.end
 
         radius = arc.radius
-        p radius
-        p radius.class
         centerpoint = arc.center
         vec = arc.normal
         x_axis = arc.xaxis
@@ -236,8 +252,6 @@ module EA_Extensions623
         angle2 = arc.end_angle
         @inner_group.entities.add_cpoint centerpoint
         percent = angle2/360.degrees
-
-        p @@roll_type
 
         # New Arc Data
         if @@roll_type == 'EASY'
@@ -265,7 +279,6 @@ module EA_Extensions623
         end
 
         @segment_count = get_segment_count(percent, radius, @segment_length)
-        p @segment_count
         value = (@segment_length/2.0)/new_radius
         seg_angle = Math.asin(value)
         @hole_rotation_angle = seg_angle*4
@@ -284,7 +297,7 @@ module EA_Extensions623
 
       def tune_new_arc(new_arc, old_arc)
         curve = new_arc[0].curve
-        old_curve = old_arc[0].curve
+        old_curve = old_arc
         center = curve.center
 
         a_old = old_curve.end_angle
@@ -492,14 +505,14 @@ module EA_Extensions623
         #sets the information for creating the radius @points
         normal = [0,1,0]
         zero_vec = [0,0,1]
-        @radius = []
+        radius = []
         turn = 180
         #draws the arcs and rotates them into position
         arc_radius_points.each do |center|
           a = beam_ents.add_arc center, zero_vec, normal, @r, 0, 90.degrees, segs
           rotate = Geom::Transformation.rotation center, [0,1,0], turn.degrees
           beam_ents.transform_entities rotate, a
-          @radius << a
+          radius << a
           turn += 90
         end
 
@@ -533,7 +546,7 @@ module EA_Extensions623
         }
 
         #adds the radius arcs into the array of outline @segments
-        @radius.each do |r|
+        radius.each do |r|
           @segments << r
         end
 
