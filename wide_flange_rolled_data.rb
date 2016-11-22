@@ -25,7 +25,7 @@ module EA_Extensions623
         @@beam_data         = data[:data]               #Hash   {:d=>4.16, :bf=>4.06, :tf=>0.345, :tw=>0.28, :r=>0.2519685039370079, :width_class=>4}"
         @@placement         = data[:placement]          #String 'TOP' or 'BOTTOM'
         @@has_holes         = data[:has_holes]          #Boolean
-      # @@hole_spacing      = data[:stagger]            #Integer 16 or 24
+        # @@hole_spacing      = data[:stagger]            #Integer 16 or 24
         @@flange_holes      = data[:flange_holes]       #Boolean
         @@web_holes         = data[:web_holes]          #Boolean
         @@cuts_holes        = data[:cuts_holes]         #Boolean
@@ -113,18 +113,20 @@ module EA_Extensions623
 
         values = data[:data]
         @hc    = data[:height_class].split('W').last.to_i #this gets just the number in the height class
-        @h     = values[:d].to_f
-        @w     = values[:bf].to_f
-        @tf    = values[:tf].to_f
-        @tw    = values[:tw].to_f
-        @wc    = values[:width_class].to_f
-        @r     = values[:r].to_f
+        @h     = values[:d].to_f #overall beam height
+        @w     = values[:bf].to_f  #overall beam width
+        @tf    = values[:tf].to_f  #flange thickness
+        @tw    = values[:tw].to_f  #web thickness
+        @wc    = values[:width_class].to_f  #width class
+        @r     = values[:r].to_f #root radius
         @number_of_sheer_holes = ((((@h - (2*@tf)) - 3).to_i / 3) +1)
 
         # Sets the stagger distance between the web holes
         if @hc < 14
           @webhole_stagger = @hc/2
+          @nnsxtnths_hole_dist_from_top = 3
         else
+          @nnsxtnths_hole_dist_from_top = (((@h/2) - @r) - @tf) - 2.5
           @webhole_stagger = 6
         end
 
@@ -156,13 +158,13 @@ module EA_Extensions623
           pt15= [(0.5*@w)-(0.5*@tw)-@r, 0, @tf],
           pt16= [0,0,@tf]
         ]
-
       end
 
       def check_for_multiples(selection, arc_pot)
         arc = selection[0].curve
         arc.each_edge {|e| selection.remove e}
         arc_pot << arc
+
         if selection.any?
           check_for_multiples(selection, arc_pot)
         else
@@ -170,36 +172,42 @@ module EA_Extensions623
         end
       end
 
-      def create_beam(arc)
-        arc = draw_new_arc(arc)
+      def create_beam(origin_arc)
+        arc = draw_new_arc(origin_arc)
         profile = draw_beam(@@beam_data)
-
-        facearc = align_profile(profile, arc) #this returns an array. The FACE that has been aligned and the ARC
+        align_profile(profile, arc) #this returns an array. The FACE that has been aligned and the ARC
 
         # @@has_holes = false # uncomment this to toggle holes
+        # @temp_holder_group.explode
         if @@has_holes
-          web_holes    = add_web_holes(arc)    if @@web_holes
-          flange_holes = add_flange_holes(arc) if @@flange_holes
-          @c.erase! if !@@web_holes; @c2.erase! if !@@web_holes
-
+          web_holes    = add_web_holes(arc, profile)    if @@web_holes
+          # flange_holes = add_flange_holes(arc, profile) if @@flange_holes
+          # @c.erase! if !@@web_holes; @c2.erase! if !@@web_holes
           if @@cuts_holes
-            @solid_group.explode
+            # @solid_group.explode
             web_holes.each(&@explode) if @@web_holes
             flange_holes.each(&@explode) if @@flange_holes
           end
         end
 
-        point = Geom::Point3d.new(@top_edge.start.position)
-        extrude_face(facearc[0], facearc[1])
+        #these are methods not yet complete
 
         # Adds in the labels for the steel
-        add_labels(point)
-        erase_arc(arc)
+        # add_labels(arc, origin_arc)
+        # add_up_arrow()
+
+        #adds in the plates
+        # add_stiffeners()
+        # add_shearplates()
+
+
+        # extrude_face(profile, arc)
+        # erase_arc(arc)
       end
 
       def activate()
         model = @model
-        model.start_operation("Roll Steel", true)
+        # model.start_operation("Roll Steel", true)
         pot = []
         arcs = check_for_multiples(@selected_curve, pot)
         load_parts
@@ -210,21 +218,35 @@ module EA_Extensions623
           clear_groups
         end
 
-        model.commit_operation
+        # model.commit_operation
 
         Sketchup.send_action "selectSelectionTool:"
       end
 
       def load_parts
+        all_stiffplates = []
+          var = @wc.to_s.split(".")
+          if var.last.to_i == 0
+            wc = var.first
+          else
+            wc = var.join('.')
+          end
+        stiffener_plate = "PL #{@@height_class}(#{wc}) Stiffener"
+
         file_path1 = Sketchup.find_support_file "ea_steel_tools/Beam Components/9_16 Hole Set.skp", "Plugins"
         file_path2 = Sketchup.find_support_file "ea_steel_tools/Beam Components/13_16 Hole Set.skp", "Plugins"
         file_path3 = Sketchup.find_support_file "ea_steel_tools/Beam Components/2½ x½_ Studs.skp", "Plugins"
         file_path4 = Sketchup.find_support_file "ea_steel_tools/Beam Components/UP.skp", "Plugins/"
+        file_path5 = Sketchup.find_support_file "#{ROOT_FILE_PATH}/Beam Components/#{stiffener_plate}.skp", "Plugins/"
+
 
         @nine_sixteenths_hole     = @definition_list.load file_path1
         @thirteen_sixteenths_hole = @definition_list.load file_path2
         @half_inch_stud           = @definition_list.load file_path3
         @up_arrow                 = @definition_list.load file_path4
+        @stiffener                = @definition_list.load file_path5
+        # @shear_pl_ww10            = @definition_list.load file_path6
+        # @shear_pl_ww12            = @definition_list.load file_path7
       end
 
       def get_segment_count(percentage, radius, segment_length)
@@ -250,8 +272,11 @@ module EA_Extensions623
 
         angle1 = arc.start_angle
         angle2 = arc.end_angle
-        @inner_group.entities.add_cpoint centerpoint
+        @arc_center = @temp_holder_group.entities.add_cpoint centerpoint
         percent = angle2/360.degrees
+
+        drctn = check_arc_direction(selected_arc)
+        p drctn
 
         # New Arc Data
         if @@roll_type == 'EASY'
@@ -260,6 +285,7 @@ module EA_Extensions623
             extra = -1*(@w/2)
           when 'C'
             extra = 0
+            @@radius_offset = 0
           when 'I'
             extra = (@w/2)
           end
@@ -267,9 +293,17 @@ module EA_Extensions623
         else
           case @@placement[0]
           when 'T'
-            offset = -1*(@h/2)
+            if drctn == 0
+              offset = @h/2
+            else
+              offset = -1*(@h/2)
+            end
           when 'B'
-            offset = @h/2
+            if drctn == 0
+              offset = -1*(@h/2)
+            else
+              offset = @h/2
+            end
           end
           new_radius = radius+@@radius_offset+offset
 
@@ -288,7 +322,7 @@ module EA_Extensions623
         @flange_hole_stagger ? @flange_hole_count = @web_holes_count : @flange_hole_count = @web_holes_count*2
 
         new_angle = (2.0*seg_angle*@segment_count)
-        new_path = @solid_group.entities.add_arc centerpoint, x_axis, arc.normal, new_radius, angle1, new_angle, @segment_count
+        new_path = @temp_holder_group.entities.add_arc centerpoint, x_axis, arc.normal, new_radius, angle1, new_angle, @segment_count
         new_arc = new_path[0].curve
 
         tune_new_arc(new_path, selected_arc)
@@ -323,35 +357,50 @@ module EA_Extensions623
         end
       end
 
+      def check_arc_direction(arc)
+        direction = 0
+        y_edge = arc.last_edge
+        c = arc.center
+        v1 = arc.xaxis
+        v2 = y_edge.end.position - arc.center
+
+        @v3 = Geom::Vector3d.linear_combination(0.500, v1, 0.500, v2)
+        # @entities.add_cline(c, @v3)
+
+        if @v3[2] >= 0
+          direction = 1 # 1 equals that the z value of the vector is positive and assumes the attempt is to make the beam above or below. 1 is above and 0 is below
+        end
+        return direction
+      end
+
       def align_profile(face, arc)
-        face.normal
-        path = arc
-        center = path.center
-        start_edge = path.first_edge
+        @face_vec = face.normal
+        center      = arc.center
+        start_edge  = arc.first_edge
         start_point = start_edge.start.position
-        x_vec = path.xaxis
-        arc_normal = path.normal
-        x_direction_from_start = start_point - Geom::Point3d.new(start_point[0]+1, start_point[1], start_point[2])
+        end_point   = start_edge.end.position
+        start_vec = end_point - start_point
 
-        place2nd = Geom::Transformation.translation start_point
-        @entities.transform_entities place2nd, face
-        start_vec = start_edge.end.position - start_point
+        x = (start_point[0] + end_point[0]) / 2
+        y = (start_point[1] + end_point[1]) / 2
+        z = (start_point[2] + end_point[2]) / 2
 
-        x = Geom::Vector3d.new(1,0,0)
-        y = Geom::Vector3d.new(0,1,0)
-        z = Geom::Vector3d.new(0,0,1)
+        pt = Geom::Point3d.new x,y,z
+        @x_vec  = start_vec
+        @y_vec  = pt - center
+        @z_vec  = arc.normal
 
-        xy_only_vector = Geom::Vector3d.new(start_vec[0], start_vec[1], 0)
+        if @z_vec[2] < 0
+          @z_vec.reverse!
+        end
 
+        @face_up_vec = @side_line.end.position - @side_line.start.position
         if @@roll_type == 'EASY'
-          align_easy(face, xy_only_vector, z, start_point)
-          align_hard(face, start_vec, @bottom_edge.line[1], start_point)
-          align_combo(face, arc_normal, start_vec, start_point)
+          place = Geom::Transformation.axes start_point, @x_vec, @y_vec, @z_vec
+          @temp_holder_group.move! place
         else
-          align_easy(face, xy_only_vector, z, start_point)
-          align_hard(face, start_vec, @bottom_edge.line[1], start_point)
-          align_harder(face, arc_normal, start_vec, start_point, center)
-          position_hroll(face, center)
+          place = Geom::Transformation.axes start_point, @x_vec, @z_vec, @y_vec
+          @temp_holder_group.move! place
         end
 
         if face.normal.samedirection? start_vec
@@ -360,41 +409,30 @@ module EA_Extensions623
           @entities.transform_entities r, face
         end
 
-        position_arc(path)
+        # position_arc(arc)
 
         @hole_point = Geom::Point3d.new @face_handles[:top_inside].position
-        v = start_edge.end.position - start_edge.start.position
-        v.length = @segment_length/2
+        v = @x_vec.clone
 
-        v2 = @side_line.line[1]
-        v2.length = @hc/4
+        v.length = start_edge.length / 2
 
-        @top_edge_vector = @top_edge.start.position - @top_edge.end.position
+        v2 = @z_vec.clone
+        v2.length = @h/4
 
-        temp_group = @entities.add_group
+
+
+        temp_group = @solid_group.entities.add_group
         corners = [@top_edge.start.position, @top_edge.end.position, @bottom_edge.start.position, @bottom_edge.end.position]
 
         corners.each {|point| temp_group.entities.add_cpoint point }
 
-        if @@has_holes
-          @c = @solid_group.entities.add_cpoint temp_group.bounds.center
-
-          t = Geom::Transformation.new(v)
-          t2 = Geom::Transformation.new(v2)
-          go = t*t2
-          @entities.transform_entities go, @c
-          @c2 = @solid_group.entities.add_cpoint @c.position
-          v2.reverse!
-          v2.length = @hc/2
-          t = Geom::Transformation.new(v2)
-          @entities.transform_entities t, @c2
-        end
-
         @start_direction_vector = face.normal
+        @top_edge_vector = @top_edge.start.position - @top_edge.end.position
+        @face_up_vec = @side_line.end.position - @side_line.start.position
         temp_group.entities.clear!
         temp_group.erase!
 
-        return face, path
+        return face, arc
       end
 
       def extrude_face(face, path)
@@ -409,12 +447,15 @@ module EA_Extensions623
         vec = (@face_handles[:bottom_inside].position) - @face_handles[:top_inside].position
         vec.length = @h/2
         slide_down = Geom::Transformation.new(vec)
-        #moves the beam down inside the arc when you want the cure on top
+        #moves the beam down inside the arc when you want the curve on top
         @entities.transform_entities slide_down, face
       end
 
       def position_arc(path)
         vec = path.normal
+        if vec[2] < 0
+          vec.reverse!
+        end
         vec.length = @h*2
         slide_out = Geom::Transformation.new(vec)
         @entities.transform_entities slide_out, path
@@ -527,9 +568,9 @@ module EA_Extensions623
 
         #erases the unncesary lines created in the outline
         @segments.each_with_index do |line, i|
-          @top_edge = line if i == 8
+          @top_edge    = line if i == 8
           @bottom_edge = line if i == 0
-          @side_line = line if i == 4
+          @side_line   = line if i == 4
 
           if i == 3 || i == 5 || i == 11 || i == 13
             @segments.slice(i)
@@ -580,16 +621,20 @@ module EA_Extensions623
         @inner_group.name = "#{@@beam_name}"
         @steel_layer = model.layers.add " Steel"
         @inner_group.layer = @steel_layer
+
+        @temp_holder_group = @inner_group.entities.add_group
         # Sets the inner most group for the beam and should be named "Difference"
-        @solid_group = @inner_group.entities.add_group
+        @solid_group = @temp_holder_group.entities.add_group
         #############################
         ##    GROUP STRUCTURE (3 groups)
         # @outer_group {
         #   plates, studs
         #   @inner_group {
-        #     holes, labels
-        #     @solid_group {
-        #       geometry
+        #     @temp_holder_group {
+        #       holes, labels
+        #       @solid_group {
+        #         geometry
+        #       }
         #     }
         #   }
         # }
@@ -601,60 +646,44 @@ module EA_Extensions623
         @solid_group = nil
       end
 
-      def add_labels(point)
+      def add_web_holes(path, profile)
 
-        centerpoint = point
-        # start_point = arc.start_edge.start.position
-
-        beam_label_group = @inner_group.entities.add_group
-        label_ents = beam_label_group.entities
-        #Adds in the label of the name of the beam at the center on both sides
-        component_names = []
-        @definition_list.map {|comp| component_names << comp.name}
-        if component_names.include? @@beam_name
-          comp_def = @definition_list["#{@@beam_name}"]
-        else
-          comp_def = @definition_list.add "#{@@beam_name}"
-          comp_def.description = "The #{@@beam_name} label"
-          ents = comp_def.entities
-          _3d_text = ents.add_3d_text("#{@@beam_name}", TextAlignCenter, "1CamBam_Stick_7", false, false, 3.0, 3.0, 0.0, false, 0.0)
-          save_path = Sketchup.find_support_file "Components", ""
-          comp_def.save_as(save_path + "/#{@@beam_name}.skp")
+        if @@has_holes
+          # @c = @inner_group.entities.add_cpoint profile.parent.bounds.center
+          @c = @solid_group.bounds.center
         end
 
-        beam_label = label_ents.add_instance comp_def, centerpoint
-
-      end
-
-      def add_web_holes(path)
         holes = []
         scale_web = @tw/2
         scale_hole = Geom::Transformation.scaling ORIGIN, 1, 1, scale_web
-
-        webhole1 = @inner_group.entities.add_instance @nine_sixteenths_hole, ORIGIN
+        webhole1 = @temp_holder_group.entities.add_instance @nine_sixteenths_hole, ORIGIN
         webhole1.transform! scale_hole
 
         z = Geom::Vector3d.new(0,0,1)
 
         angle = @top_edge_vector.angle_between z
-        rot1 = Geom::Transformation.rotation ORIGIN, [0,1,0], angle
-        webhole1.transform! rot1
+        # align1 = Geom::Transformation.axes @c.position, @x_vec, @z_vec, @y_vec
+        align1 = Geom::Transformation.axes @c, X_AXIS, Z_AXIS, Y_AXIS
+        webhole1.transform! align1
 
-        align_hole(webhole1, @top_edge_vector, 0)
+        # align_hole(webhole1, @y_vec, 0)
 
         c = webhole1.bounds.center
-        adjust = @c.position - c
+        adjust1 = @c - c
 
-        @c.erase!; @c2.erase!
-        # adjust = @top_edge.start.position - c # <-----this is used for testing
-        move = Geom::Transformation.new adjust
-        webhole1.transform! move
+        adjust2 = Z_AXIS.clone
+        adjust2.length = @nnsxtnths_hole_dist_from_top
+
+        move1 = Geom::Transformation.new adjust1
+        move2 = Geom::Transformation.translation adjust2
+        webhole1.transform! move1
+        webhole1.transform! move2
 
         #Here on the web by now
 
         webhole2 = webhole1.copy
 
-        slide_down = Geom::Vector3d.new @side_line.line[1]
+        slide_down = Geom::Vector3d.new Z_AXIS
         slide_down.length = @webhole_stagger
         slide_down.reverse!
         move_down = Geom::Transformation.new(slide_down)
@@ -667,7 +696,9 @@ module EA_Extensions623
           bottom_row_holes_count -= 1
         end
 
-        move_along_curve(webhole2, path, @hole_rotation_angle) #bottom row holes
+        # Need to make the inside reference the right curve information
+
+        move_along_curve(webhole2, path, @hole_rotation_angle) #bottom row holes rotated along the arc to the right 8" segment
         copy_along_curve(webhole1, path, @hole_rotation_angle*2, 0, top_row_web_holes, holes ) #top row holes
         copy_along_curve(webhole2, path, @hole_rotation_angle*2, 0, bottom_row_holes_count, holes ) #bottom row holes
 
@@ -675,7 +706,7 @@ module EA_Extensions623
         return holes
       end
 
-      def add_flange_holes(path)
+      def add_flange_holes(path, profile)
         holes = []
         scale_flange = @tf/2
         scale_hole = Geom::Transformation.scaling ORIGIN, 1, 1, scale_flange
@@ -800,6 +831,42 @@ module EA_Extensions623
             return ent.curve
           end
         end
+      end
+
+      def add_labels(arc, old_arc)
+        h = @h
+        tw = @tw
+
+        cp = arc.center
+        # start_point = arc.start_edge.start.position
+
+        beam_label_group = @inner_group.entities.add_group
+        label_ents = beam_label_group.entities
+        #Adds in the label of the name of the beam at the center on both sides
+        component_names = []
+        @definition_list.map {|comp| component_names << comp.name}
+        if component_names.include? @@beam_name
+          comp_def = @definition_list["#{@@beam_name}"]
+        else
+          comp_def = @definition_list.add "#{@@beam_name}"
+          comp_def.description = "The #{@@beam_name} label"
+          ents = comp_def.entities
+          _3d_text = ents.add_3d_text("#{@@beam_name}", TextAlignCenter, "1CamBam_Stick_7", false, false, 3.0, 3.0, 0.0, false, 0.0)
+          save_path = Sketchup.find_support_file "Components", ""
+          comp_def.save_as(save_path + "/#{@@beam_name}.skp")
+        end
+
+        # x_vec = arc.xaxis
+        # y_vec = arc.yaxis
+        # z_vec = arc.normal
+        x_vec = @start_direction_vector
+        y_vec = @face_up_vec
+        z_vec = @top_edge_vector
+
+        if z_vec[2] < 0
+          z_vec.reverse!
+        end
+
       end
 
     end
