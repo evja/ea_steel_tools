@@ -211,6 +211,7 @@ module EA_Extensions623
         align_profile(profile, arc) #this returns an array. The FACE that has been aligned and the ARC
         # extrude_face(profile, arc)
         # erase_arc(arc)
+        @new_arc_group.explode
       end
 
       def activate()
@@ -266,6 +267,7 @@ module EA_Extensions623
 
       def draw_new_arc(selected_arc)
         # Selected Arc Data
+        @new_arc_group = @entities.add_group
         arc = selected_arc
         seg1 = arc.first_edge
         seg2 = arc.last_edge
@@ -273,6 +275,7 @@ module EA_Extensions623
         vertex2 = seg2.end
 
         radius = arc.radius
+        p radius
         centerpoint = arc.center
         vec = arc.normal
         x_axis = arc.xaxis
@@ -328,8 +331,9 @@ module EA_Extensions623
         @flange_hole_stagger ? @flange_hole_count = @web_holes_count : @flange_hole_count = @web_holes_count*2
 
         new_angle = (2.0*seg_angle*@segment_count)
-        new_path = @entities.add_arc centerpoint, x_axis, arc.normal, new_radius, angle1, new_angle, @segment_count
+        new_path = @new_arc_group.entities.add_arc centerpoint, x_axis, arc.normal, new_radius, angle1, new_angle, @segment_count
         new_arc = new_path[0].curve
+        p new_arc.radius
 
         tune_new_arc(new_path, selected_arc)
         return new_arc
@@ -425,7 +429,7 @@ module EA_Extensions623
         v2 = @z_vec.clone
         v2.length = @h/4
 
-        temp_group = @solid_group.entities.add_group
+        temp_group = @entities.add_group
         corners = [@top_edge.start.position, @top_edge.end.position, @bottom_edge.start.position, @bottom_edge.end.position]
 
         corners.each {|point| temp_group.entities.add_cpoint point }
@@ -548,10 +552,6 @@ module EA_Extensions623
         m = Geom::Transformation.new [-0.5*@w, 0, 0]
         @entities.transform_entities m, segs
 
-        #rotate the beam 90° to align with the red axes before grouping
-        r = Geom::Transformation.rotation [0,0,0], [0,0,1], 90.degrees
-        @entities.transform_entities r, segs
-
         #adds the face to the beam outline
         face = @entities.add_face segs
         @geometry.push face
@@ -562,15 +562,15 @@ module EA_Extensions623
       def set_groups(og, ig, geo)
         active_model = Sketchup.active_model.active_entities.parent
         # Sets the outer group for the beam and should be named "Beam"
-        @outer_group = active_model.entities.add_group(og)
+        @outer_group = active_model.entities.add_group#(og)
         @outer_group.name = 'Beam'
         # Sets the inside group for the beam and should be named "W--X--"
-        @inner_group = @outer_group.entities.add_group(ig)
+        @inner_group = @outer_group.entities.add_group#(ig)
         @inner_group.name = "#{@@beam_name}"
-        @steel_layer = model.layers.add " Steel"
+        @steel_layer = active_model.layers.add " Steel"
         @inner_group.layer = @steel_layer
         # Sets the inner most group for the beam and should be named "Difference"
-        @solid_group = @temp_holder_group.entities.add_group(geo)
+        @solid_group = @inner_group.entities.add_group(geo)
         #############################
         ##    GROUP STRUCTURE (3 groups)
         # @outer_group {
@@ -603,9 +603,6 @@ module EA_Extensions623
         webhole1 = @entities.add_instance @nine_sixteenths_hole, ORIGIN
         webhole1.transform! scale_hole
 
-        z = Geom::Vector3d.new(0,0,1)
-
-        angle = @top_edge_vector.angle_between z
         # align1 = Geom::Transformation.axes @c.position, @x_vec, @z_vec, @y_vec
         align1 = Geom::Transformation.axes @c, X_AXIS, Z_AXIS, Y_AXIS
         webhole1.transform! align1
