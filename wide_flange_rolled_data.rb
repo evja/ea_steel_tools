@@ -11,6 +11,11 @@ module EA_Extensions623
         @explode = lambda {|e| e.explode}
         @erase   = lambda {|e| e.erase! }
 
+        @geometry = []
+        @holes    = []
+        @labels   = []
+        @plates   = []
+
         @radius             = 3 #root radius of the steel
         @segment_length     = 8 #length of the center of rolled steel segments
         @model              = Sketchup.active_model
@@ -175,16 +180,14 @@ module EA_Extensions623
       def create_beam(origin_arc)
         arc = draw_new_arc(origin_arc)
         profile = draw_beam(@@beam_data)
-        align_profile(profile, arc) #this returns an array. The FACE that has been aligned and the ARC
 
         # @@has_holes = false # uncomment this to toggle holes
-        # @temp_holder_group.explode
         if @@has_holes
           web_holes    = add_web_holes(arc, profile)    if @@web_holes
           # flange_holes = add_flange_holes(arc, profile) if @@flange_holes
           # @c.erase! if !@@web_holes; @c2.erase! if !@@web_holes
           if @@cuts_holes
-            # @solid_group.explode
+            @solid_group.explode
             web_holes.each(&@explode) if @@web_holes
             flange_holes.each(&@explode) if @@flange_holes
           end
@@ -193,14 +196,19 @@ module EA_Extensions623
         #these are methods not yet complete
 
         # Adds in the labels for the steel
-        # add_labels(arc, origin_arc)
+        # labels = add_labels(arc, origin_arc)
         # add_up_arrow()
 
         #adds in the plates
         # add_stiffeners()
         # add_shearplates()
+        @geometry = []
+        @holes    = []
+        @labels   = []
+        @plates   = []
 
-
+        set_groups(@plates, [@holes, @labels], @geometry)
+        align_profile(profile, arc) #this returns an array. The FACE that has been aligned and the ARC
         # extrude_face(profile, arc)
         # erase_arc(arc)
       end
@@ -213,9 +221,8 @@ module EA_Extensions623
         load_parts
 
         arcs.each do |arc|
-          set_groups(model)
           create_beam(arc)
-          clear_groups
+          reset_groups
         end
 
         # model.commit_operation
@@ -272,11 +279,10 @@ module EA_Extensions623
 
         angle1 = arc.start_angle
         angle2 = arc.end_angle
-        @arc_center = @temp_holder_group.entities.add_cpoint centerpoint
+        @arc_center = @entities.add_cpoint centerpoint
         percent = angle2/360.degrees
 
         drctn = check_arc_direction(selected_arc)
-        p drctn
 
         # New Arc Data
         if @@roll_type == 'EASY'
@@ -322,7 +328,7 @@ module EA_Extensions623
         @flange_hole_stagger ? @flange_hole_count = @web_holes_count : @flange_hole_count = @web_holes_count*2
 
         new_angle = (2.0*seg_angle*@segment_count)
-        new_path = @temp_holder_group.entities.add_arc centerpoint, x_axis, arc.normal, new_radius, angle1, new_angle, @segment_count
+        new_path = @entities.add_arc centerpoint, x_axis, arc.normal, new_radius, angle1, new_angle, @segment_count
         new_arc = new_path[0].curve
 
         tune_new_arc(new_path, selected_arc)
@@ -397,10 +403,10 @@ module EA_Extensions623
         @face_up_vec = @side_line.end.position - @side_line.start.position
         if @@roll_type == 'EASY'
           place = Geom::Transformation.axes start_point, @x_vec, @y_vec, @z_vec
-          @temp_holder_group.move! place
+          @outer_group.move! place
         else
           place = Geom::Transformation.axes start_point, @x_vec, @z_vec, @y_vec
-          @temp_holder_group.move! place
+          @outer_group.move! place
         end
 
         if face.normal.samedirection? start_vec
@@ -409,7 +415,7 @@ module EA_Extensions623
           @entities.transform_entities r, face
         end
 
-        # position_arc(arc)
+        # position_arc(arc) #moves the arc away to be able to followme
 
         @hole_point = Geom::Point3d.new @face_handles[:top_inside].position
         v = @x_vec.clone
@@ -418,8 +424,6 @@ module EA_Extensions623
 
         v2 = @z_vec.clone
         v2.length = @h/4
-
-
 
         temp_group = @solid_group.entities.add_group
         corners = [@top_edge.start.position, @top_edge.end.position, @bottom_edge.start.position, @bottom_edge.end.position]
@@ -461,63 +465,7 @@ module EA_Extensions623
         @entities.transform_entities slide_out, path
       end
 
-      def align_combo(face, vector, rotational_axis, point_of_rotation)
-        vec = @side_line.line[1]
-        check = vec.parallel? vector
-        if not check
-          angle = vec.angle_between vector
-          rot = Geom::Transformation.rotation point_of_rotation, rotational_axis, angle
-          @entities.transform_entities rot, face
-          align_combo(face, vector, rotational_axis, point_of_rotation)
-        else
-          return
-        end
-      end
-
-      def align_easy(face, vector, rotational_axis, point_of_rotation)
-        face_normal = face.normal
-        if not face_normal.parallel? vector
-          angle = face_normal.angle_between vector
-          rot1 = Geom::Transformation.rotation point_of_rotation, rotational_axis, angle
-          @entities.transform_entities rot1, face
-          align_easy(face, vector, rotational_axis, point_of_rotation)
-        else
-          return
-        end
-      end
-
-      def align_hard(face, vector, rotational_axis, point_of_rotation)
-        check1 = face.normal.parallel? vector
-        if not check1
-          angle = face.normal.angle_between vector
-          rot = Geom::Transformation.rotation point_of_rotation, rotational_axis, angle
-          @entities.transform_entities rot, face
-          align_hard(face, vector, rotational_axis, point_of_rotation)
-        else
-          return
-        end
-      end
-
-      def align_harder(face, vector, rotational_axis, point_of_rotation, arc_center)
-        vec = @top_edge.line[1]
-        check = vec.parallel? vector
-        if not check
-          angle = vec.angle_between vector
-          rot = Geom::Transformation.rotation point_of_rotation, rotational_axis, angle
-          @entities.transform_entities rot, face
-          align_harder(face, vector, rotational_axis, point_of_rotation, arc_center)
-        elsif (@top_edge.start.position.distance arc_center) < (point_of_rotation.distance arc_center)
-          # puts 'inside, GET OUT!'
-          rot = Geom::Transformation.rotation point_of_rotation, rotational_axis, 180.degrees
-          @entities.transform_entities rot, face
-        else
-          return
-        end
-      end
-
       def draw_beam(data)
-        # temporarily groups the face so other geometry wont interere with operations
-        beam_ents = @solid_group.entities
         #set variable for the Name, Height Class, Height, Width, flange thickness, web thickness and radius for the beams
         segs = @radius
         #sets the working guage width for the beam
@@ -550,9 +498,9 @@ module EA_Extensions623
         turn = 180
         #draws the arcs and rotates them into position
         arc_radius_points.each do |center|
-          a = beam_ents.add_arc center, zero_vec, normal, @r, 0, 90.degrees, segs
+          a = @entities.add_arc center, zero_vec, normal, @r, 0, 90.degrees, segs
           rotate = Geom::Transformation.rotation center, [0,1,0], turn.degrees
-          beam_ents.transform_entities rotate, a
+          @entities.transform_entities rotate, a
           radius << a
           turn += 90
         end
@@ -561,7 +509,7 @@ module EA_Extensions623
         @segments = []
         count = 1
         beam_outline = @points.each do |pt|
-           a = beam_ents.add_line pt, @points[count.to_i]
+           a = @entities.add_line pt, @points[count.to_i]
             count < 15 ? count += 1 : count = 0
             @segments << a
         end
@@ -591,56 +539,52 @@ module EA_Extensions623
           @segments << r
         end
 
-        @control_segment = beam_ents.add_line @points[0], @points[1]
+        @control_segment = @entities.add_line @points[0], @points[1]
 
         #sets all of the connected @segments of the outline into a variable
         segs = @segments.first.all_connected
 
         #move the beam outline to center on the axes
         m = Geom::Transformation.new [-0.5*@w, 0, 0]
-        beam_ents.transform_entities m, segs
+        @entities.transform_entities m, segs
 
         #rotate the beam 90° to align with the red axes before grouping
         r = Geom::Transformation.rotation [0,0,0], [0,0,1], 90.degrees
-        beam_ents.transform_entities r, segs
+        @entities.transform_entities r, segs
 
         #adds the face to the beam outline
-        face = beam_ents.add_face segs
-
+        face = @entities.add_face segs
+        @geometry.push face
         #returns the face result of the method
         return face
       end
 
-      def set_groups(model)
+      def set_groups(og, ig, geo)
         active_model = Sketchup.active_model.active_entities.parent
         # Sets the outer group for the beam and should be named "Beam"
-        @outer_group = active_model.entities.add_group
+        @outer_group = active_model.entities.add_group(og)
         @outer_group.name = 'Beam'
         # Sets the inside group for the beam and should be named "W--X--"
-        @inner_group = @outer_group.entities.add_group
+        @inner_group = @outer_group.entities.add_group(ig)
         @inner_group.name = "#{@@beam_name}"
         @steel_layer = model.layers.add " Steel"
         @inner_group.layer = @steel_layer
-
-        @temp_holder_group = @inner_group.entities.add_group
         # Sets the inner most group for the beam and should be named "Difference"
-        @solid_group = @temp_holder_group.entities.add_group
+        @solid_group = @temp_holder_group.entities.add_group(geo)
         #############################
         ##    GROUP STRUCTURE (3 groups)
         # @outer_group {
-        #   plates, studs
+        #   --plates, studs--
         #   @inner_group {
-        #     @temp_holder_group {
-        #       holes, labels
-        #       @solid_group {
-        #         geometry
-        #       }
+        #     --holes, labels--
+        #     @solid_group {
+        #       geometry
         #     }
         #   }
         # }
       end
 
-      def clear_groups
+      def reset_groups
         @outer_group = nil
         @inner_group = nil
         @solid_group = nil
@@ -650,13 +594,13 @@ module EA_Extensions623
 
         if @@has_holes
           # @c = @inner_group.entities.add_cpoint profile.parent.bounds.center
-          @c = @solid_group.bounds.center
+          @c = Geom::Point3d.new 0,0, @h/2
         end
 
         holes = []
         scale_web = @tw/2
         scale_hole = Geom::Transformation.scaling ORIGIN, 1, 1, scale_web
-        webhole1 = @temp_holder_group.entities.add_instance @nine_sixteenths_hole, ORIGIN
+        webhole1 = @entities.add_instance @nine_sixteenths_hole, ORIGIN
         webhole1.transform! scale_hole
 
         z = Geom::Vector3d.new(0,0,1)
@@ -711,7 +655,7 @@ module EA_Extensions623
         scale_flange = @tf/2
         scale_hole = Geom::Transformation.scaling ORIGIN, 1, 1, scale_flange
 
-        flangehole1 = @inner_group.entities.add_instance @nine_sixteenths_hole, ORIGIN
+        flangehole1 = @entities.add_instance @nine_sixteenths_hole, ORIGIN
         flangehole1.transform! scale_hole
 
         z = Geom::Vector3d.new(0,0,1)
@@ -866,7 +810,6 @@ module EA_Extensions623
         if z_vec[2] < 0
           z_vec.reverse!
         end
-
       end
 
     end
