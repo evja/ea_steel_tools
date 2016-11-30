@@ -25,7 +25,7 @@ module EA_Extensions623
         @@beam_data         = data[:data]               #Hash   {:d=>4.16, :bf=>4.06, :tf=>0.345, :tw=>0.28, :r=>0.2519685039370079, :width_class=>4}"
         @@placement         = data[:placement]          #String 'TOP' or 'BOTTOM'
         @@has_holes         = data[:has_holes]          #Boolean
-      # @@hole_spacing      = data[:stagger]            #Integer 16 or 24
+        # @@hole_spacing      = data[:stagger]            #Integer 16 or 24
         @@flange_holes      = data[:flange_holes]       #Boolean
         @@web_holes         = data[:web_holes]          #Boolean
         @@cuts_holes        = data[:cuts_holes]         #Boolean
@@ -193,13 +193,13 @@ module EA_Extensions623
         extrude_face(facearc[0], facearc[1])
 
         # Adds in the labels for the steel
-        add_labels(point)
-        erase_arc(arc)
+        # add_labels(point)
+        # erase_arc(arc)
       end
 
       def activate()
         model = @model
-        model.start_operation("Roll Steel", true)
+        # model.start_operation("Roll Steel", true)
         pot = []
         arcs = check_for_multiples(@selected_curve, pot)
         load_parts
@@ -210,7 +210,7 @@ module EA_Extensions623
           clear_groups
         end
 
-        model.commit_operation
+        # model.commit_operation
 
         Sketchup.send_action "selectSelectionTool:"
       end
@@ -333,8 +333,8 @@ module EA_Extensions623
         arc_normal = path.normal
         x_direction_from_start = start_point - Geom::Point3d.new(start_point[0]+1, start_point[1], start_point[2])
 
-        place2nd = Geom::Transformation.translation start_point
-        @entities.transform_entities place2nd, face
+        # place2nd = Geom::Transformation.translation start_point
+        # @entities.transform_entities place2nd, face
         start_vec = start_edge.end.position - start_point
 
         x = Geom::Vector3d.new(1,0,0)
@@ -344,14 +344,17 @@ module EA_Extensions623
         xy_only_vector = Geom::Vector3d.new(start_vec[0], start_vec[1], 0)
 
         if @@roll_type == 'EASY'
-          align_easy(face, xy_only_vector, z, start_point)
-          align_hard(face, start_vec, @bottom_edge.line[1], start_point)
-          align_combo(face, arc_normal, start_vec, start_point)
+          # align_easy(face, xy_only_vector, z, start_point)
+          # align_hard(face, start_vec, @bottom_edge.line[1], start_point)
+          # align_combo(face, arc_normal, start_vec, start_point)
+
+          place = Geom::Transformation.axes start_point, start_vec, x_vec, arc_normal
+          @entities.transform_entities place, face
         else
-          align_easy(face, xy_only_vector, z, start_point)
-          align_hard(face, start_vec, @bottom_edge.line[1], start_point)
-          align_harder(face, arc_normal, start_vec, start_point, center)
-          position_hroll(face, center)
+          # align_easy(face, xy_only_vector, z, start_point)
+          # align_hard(face, start_vec, @bottom_edge.line[1], start_point)
+          # align_harder(face, arc_normal, start_vec, start_point, center)
+          # position_hroll(face, center)
         end
 
         if face.normal.samedirection? start_vec
@@ -668,8 +671,8 @@ module EA_Extensions623
         end
 
         move_along_curve(webhole2, path, @hole_rotation_angle) #bottom row holes
-        copy_along_curve(webhole1, path, @hole_rotation_angle*2, 0, top_row_web_holes, holes ) #top row holes
-        copy_along_curve(webhole2, path, @hole_rotation_angle*2, 0, bottom_row_holes_count, holes ) #bottom row holes
+        # copy_along_curve(webhole1, path, @hole_rotation_angle*2, 0, top_row_web_holes, holes ) #top row holes
+        # copy_along_curve(webhole2, path, @hole_rotation_angle*2, 0, bottom_row_holes_count, holes ) #bottom row holes
 
         holes.push webhole1, webhole2
         return holes
@@ -753,10 +756,10 @@ module EA_Extensions623
         flangehole4.transform! vec4
 
         # array all holes along the arc
-        copy_along_curve(flangehole1, path, hole_rotation, 0, top_inside_holes, holes ) #top inside hole
-        copy_along_curve(flangehole2, path, hole_rotation, 0, top_outside_holes, holes ) #top outside hole
-        copy_along_curve(flangehole3, path, hole_rotation, 0, bottom_inside_holes, holes ) #bottom inside hole
-        copy_along_curve(flangehole4, path, hole_rotation, 0, bottom_outside_holes, holes ) #bottom outside hole
+        # copy_along_curve(flangehole1, path, hole_rotation, 0, top_inside_holes, holes ) #top inside hole
+        # copy_along_curve(flangehole2, path, hole_rotation, 0, top_outside_holes, holes ) #top outside hole
+        # copy_along_curve(flangehole3, path, hole_rotation, 0, bottom_inside_holes, holes ) #bottom inside hole
+        # copy_along_curve(flangehole4, path, hole_rotation, 0, bottom_outside_holes, holes ) #bottom outside hole
 
         holes.push flangehole1, flangehole2, flangehole3, flangehole4
         return holes
