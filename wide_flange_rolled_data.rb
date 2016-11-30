@@ -7,14 +7,36 @@ module EA_Extensions623
       ## CONSTANTS ##
       ###############
 
+      ##################################
+      #@@@@@@@@ BEAM variables @@@@@@@@#
+      ##################################
+      #Sets the root radus for the beams
+      RADIUS = 3
+      #This sets the distance from the end of the beam the direction labels go
+      LABELX = 10
+      #Sets the distance from the ends of the beams that holes cannot be, in inches
+      NO_HOLE_ZONE = 6
+      #Setc the north direction as the green axis
+      NORTH = Geom::Vector3d.new [0,1,0]
+      # This sets the stiffener location from each end of the beam
+      STIFF_LOCATION = 2
+      #Distance from the end of the beam the 13/14" holes are placed
+      BIG_HOLES_LOCATION = 4
+      # Minimum distance from the inside of the flanges to the center of 13/16" holes can be
+      MIN_BIG_HOLE_DISTANCE_FROM_KZONE = 1.25
+
       def initialize(data)
+
         @explode = lambda {|e| e.explode}
         @erase   = lambda {|e| e.erase! }
 
-        @geometry = []
-        @holes    = []
-        @labels   = []
-        @plates   = []
+        @geometry     = []
+        @holes        =[]
+        # @web_holes    = []
+        # @flange_holes = []
+        # @shear_holes  = []
+        @labels       = []
+        @plates       = []
 
         @radius             = 3 #root radius of the steel
         @segment_length     = 8 #length of the center of rolled steel segments
@@ -124,14 +146,15 @@ module EA_Extensions623
         @tw    = values[:tw].to_f  #web thickness
         @wc    = values[:width_class].to_f  #width class
         @r     = values[:r].to_f #root radius
-        @number_of_sheer_holes = ((((@h - (2*@tf)) - 3).to_i / 3) +1)
+        # @number_of_sheer_holes = ((((@h - (2*@tf)) - 3).to_i / 3) +1)
+
 
         # Sets the stagger distance between the web holes
         if @hc < 14
           @webhole_stagger = @hc/2
-          @nnsxtnths_hole_dist_from_top = 3
+          @first_web_hole_dist_from_center = (@webhole_stagger/2)
         else
-          @nnsxtnths_hole_dist_from_top = (((@h/2) - @r) - @tf) - 2.5
+          @first_web_hole_dist_from_center = (@h/2) - (@tf + 3)
           @webhole_stagger = 6
         end
 
@@ -141,8 +164,11 @@ module EA_Extensions623
           # p 'Staggered'
         else
           @flange_hole_stagger = false
-          # p 'i-5/8" from edge'
+          # p '1-5/8" from edge'
         end
+
+        #determines the number abd spacing of the 13/16ths holes
+
 
         #the thirteen points on a beam
         @points = [
@@ -183,14 +209,10 @@ module EA_Extensions623
 
         # @@has_holes = false # uncomment this to toggle holes
         if @@has_holes
-          web_holes    = add_web_holes(arc, profile)    if @@web_holes
-          # flange_holes = add_flange_holes(arc, profile) if @@flange_holes
+          web_holes    = add_web_holes    if @@web_holes
+          flange_holes = add_flange_holes if @@flange_holes
+          large_holes  = add_shear_holes
           # @c.erase! if !@@web_holes; @c2.erase! if !@@web_holes
-          if @@cuts_holes
-            @solid_group.explode
-            web_holes.each(&@explode) if @@web_holes
-            flange_holes.each(&@explode) if @@flange_holes
-          end
         end
 
         #these are methods not yet complete
@@ -202,16 +224,18 @@ module EA_Extensions623
         #adds in the plates
         # add_stiffeners()
         # add_shearplates()
-        @geometry = []
-        @holes    = []
-        @labels   = []
-        @plates   = []
-
-        set_groups(@plates, [@holes, @labels], @geometry)
+        set_groups#(@plates, [@holes, @labels], @geometry)
         align_profile(profile, arc) #this returns an array. The FACE that has been aligned and the ARC
         # extrude_face(profile, arc)
-        # erase_arc(arc)
-        @new_arc_group.explode
+        # @new_arc_group.explode
+        erase_arc(arc) #Move this back to the bottom of the method
+
+        if @@has_holes && @@cuts_holes
+          @solid_group.explode
+          web_holes.each(&@explode) if @@web_holes
+          flange_holes.each(&@explode) if @@flange_holes
+          large_holes.each(&@explode)
+        end
       end
 
       def activate()
@@ -275,7 +299,7 @@ module EA_Extensions623
         vertex2 = seg2.end
 
         radius = arc.radius
-        p radius
+
         centerpoint = arc.center
         vec = arc.normal
         x_axis = arc.xaxis
@@ -559,18 +583,20 @@ module EA_Extensions623
         return face
       end
 
-      def set_groups(og, ig, geo)
+      def set_groups#(og, ig, geo)
         active_model = Sketchup.active_model.active_entities.parent
-        # Sets the outer group for the beam and should be named "Beam"
-        @outer_group = active_model.entities.add_group#(og)
-        @outer_group.name = 'Beam'
-        # Sets the inside group for the beam and should be named "W--X--"
-        @inner_group = @outer_group.entities.add_group#(ig)
+        @solid_group = active_model.entities.add_group(@geometry)
+
+        @inner_group = active_model.entities.add_group(@holes, @solid_group) #Add Labels
         @inner_group.name = "#{@@beam_name}"
         @steel_layer = active_model.layers.add " Steel"
         @inner_group.layer = @steel_layer
+
+        @outer_group = active_model.entities.add_group(@inner_group)# add plates
+        @outer_group.name = 'Beam'
+        # Sets the outer group for the beam and should be named "Beam"
+        # Sets the inside group for the beam and should be named "W--X--"
         # Sets the inner most group for the beam and should be named "Difference"
-        @solid_group = @inner_group.entities.add_group(geo)
         #############################
         ##    GROUP STRUCTURE (3 groups)
         # @outer_group {
@@ -590,30 +616,27 @@ module EA_Extensions623
         @solid_group = nil
       end
 
-      def add_web_holes(path, profile)
+      def add_web_holes
+        @c = Geom::Point3d.new 0,0, @h/2
 
-        if @@has_holes
-          # @c = @inner_group.entities.add_cpoint profile.parent.bounds.center
-          @c = Geom::Point3d.new 0,0, @h/2
-        end
-
-        holes = []
         scale_web = @tw/2
         scale_hole = Geom::Transformation.scaling ORIGIN, 1, 1, scale_web
         webhole1 = @entities.add_instance @nine_sixteenths_hole, ORIGIN
         webhole1.transform! scale_hole
 
         # align1 = Geom::Transformation.axes @c.position, @x_vec, @z_vec, @y_vec
-        align1 = Geom::Transformation.axes @c, X_AXIS, Z_AXIS, Y_AXIS
+        align1 = Geom::Transformation.axes @c, Z_AXIS, Y_AXIS, X_AXIS
         webhole1.transform! align1
 
         # align_hole(webhole1, @y_vec, 0)
+        @hc >= 14 ? @h-(@tf+3) : (0.5*@h)+(0.25*@hc)
 
         c = webhole1.bounds.center
         adjust1 = @c - c
 
         adjust2 = Z_AXIS.clone
-        adjust2.length = @nnsxtnths_hole_dist_from_top
+        p @first_web_hole_dist_from_center
+        adjust2.length = @first_web_hole_dist_from_center
 
         move1 = Geom::Transformation.new adjust1
         move2 = Geom::Transformation.translation adjust2
@@ -630,6 +653,11 @@ module EA_Extensions623
         move_down = Geom::Transformation.new(slide_down)
         webhole2.transform! move_down
 
+        @holes.push webhole1, webhole2
+        return @web_holes
+      end
+
+      def spread_web_holes(holes, path)
         bottom_row_holes_count = @web_holes_count
         top_row_web_holes = @web_holes_count
 
@@ -639,16 +667,12 @@ module EA_Extensions623
 
         # Need to make the inside reference the right curve information
 
-        move_along_curve(webhole2, path, @hole_rotation_angle) #bottom row holes rotated along the arc to the right 8" segment
-        copy_along_curve(webhole1, path, @hole_rotation_angle*2, 0, top_row_web_holes, holes ) #top row holes
-        copy_along_curve(webhole2, path, @hole_rotation_angle*2, 0, bottom_row_holes_count, holes ) #bottom row holes
-
-        holes.push webhole1, webhole2
-        return holes
+        move_along_curve(holes[1], path, @hole_rotation_angle) #bottom row holes rotated along the arc to the right 8" segment
+        copy_along_curve(holes[0], path, @hole_rotation_angle*2, 0, top_row_web_holes, holes ) #top row holes
+        copy_along_curve(holes[1], path, @hole_rotation_angle*2, 0, bottom_row_holes_count, holes ) #bottom row holes
       end
 
-      def add_flange_holes(path, profile)
-        holes = []
+      def add_flange_holes
         scale_flange = @tf/2
         scale_hole = Geom::Transformation.scaling ORIGIN, 1, 1, scale_flange
 
@@ -670,19 +694,12 @@ module EA_Extensions623
         move = Geom::Transformation.new position
         flangehole1.transform! move
 
-        # set it 4" up the arc
-        vec1 = @start_direction_vector.clone
-        vec1.reverse!
-        vec1.length = @segment_length/2
-        slide_up = Geom::Transformation.new(vec1)
-
-        flangehole1.transform! slide_up
         # determine if the holes stagger or are 1-5/8" from edge
         # set it to width
-        vec2 = @top_edge_vector.clone
+        vec2 = X_AXIS.clone
         @flange_hole_stagger ? vec2.length = ((@w/2)-(@guage_width/2)) : vec2.length = 1.6250
-        vec2.reverse!
-        slide1 = Geom::Transformation.new vec2
+        # vec2.reverse!
+        slide1 = Geom::Transformation.new vec2.reverse!
         flangehole1.transform! slide1
         # copy another one
         flangehole2 = flangehole1.copy
@@ -691,6 +708,30 @@ module EA_Extensions623
         @flange_hole_stagger ? vec3.length = @guage_width : vec3.length = @w-((1.6250)*2)
         slide2 = Geom::Transformation.new vec3
         flangehole2.transform! slide2
+
+        # copy holes to the other flange
+        flangehole3 = flangehole1.copy
+        flangehole4 = flangehole2.copy
+
+        vec4 = @bottom_edge.start.position - @top_edge.end.position
+        vec4.length = @h-@tf
+        send_to_flange = Geom::Transformation.new vec4
+        flangehole3.transform! vec4
+        flangehole4.transform! vec4
+
+
+        @holes.push flangehole1, flangehole2, flangehole3, flangehole4
+        return @holes
+      end
+
+      def spread_flange_holes(holes, path)
+        # set it 4" up the arc
+        vec1 = Y_AXIS.clone # THIS NEEDS TO BE THE START VEC OF THE PATH
+        vec1.reverse!
+        vec1.length = @segment_length/2
+        slide_up = Geom::Transformation.new(vec1)
+
+        flangehole1.transform! slide_up
 
         top_inside_holes     = @flange_hole_count
         top_outside_holes    = @flange_hole_count
@@ -714,29 +755,54 @@ module EA_Extensions623
           end
         end
 
-        # copy holes to the other flange
-        flangehole3 = flangehole1.copy
-        flangehole4 = flangehole2.copy
-
-        vec4 = @bottom_edge.start.position - @top_edge.end.position
-        vec4.length = @h-@tf
-        send_to_flange = Geom::Transformation.new vec4
-        flangehole3.transform! vec4
-        flangehole4.transform! vec4
-
         # array all holes along the arc
         copy_along_curve(flangehole1, path, hole_rotation, 0, top_inside_holes, holes ) #top inside hole
         copy_along_curve(flangehole2, path, hole_rotation, 0, top_outside_holes, holes ) #top outside hole
         copy_along_curve(flangehole3, path, hole_rotation, 0, bottom_inside_holes, holes ) #bottom inside hole
         copy_along_curve(flangehole4, path, hole_rotation, 0, bottom_outside_holes, holes ) #bottom outside hole
-
-        holes.push flangehole1, flangehole2, flangehole3, flangehole4
-        return holes
       end
 
       def move_along_curve(hole, arc, angle)
         rot = Geom::Transformation.rotation arc.center, arc.normal, angle
         hole.transform! rot
+      end
+
+      def add_shear_holes
+        scale_web = @tw/2
+
+        # Sets the spacing for the 13/16" Web holes to be spaced from each other vertically
+        if @hc > 10
+          reasonable_spacing = 3
+        else
+          reasonable_spacing = 2.5
+        end
+
+        @number_of_sheer_holes = (((((@h - (2*@tf)) - (MIN_BIG_HOLE_DISTANCE_FROM_KZONE*2)) / 3).to_i) +1)
+        @number_of_sheer_holes = 2  if @hc <= 6
+
+        dist = Geom::Vector3d.new [0,0,1]
+
+        y1 = 0
+        z = (0.5*@h)
+        x = (-0.5*@tw)
+
+        #adds in the 13/16" Web/Connection holes
+        #adds in the 13/16" Web/Connection holes
+        @number_of_sheer_holes.even? ? z = (z-reasonable_spacing.to_f/2)-(((@number_of_sheer_holes-2)/2)*reasonable_spacing) : z = z-(((@number_of_sheer_holes-1)/2)*reasonable_spacing)
+
+        for n in 0..(@number_of_sheer_holes-1) do
+          point = Geom::Point3d.new x, y1, (z + (n*reasonable_spacing))
+          scale_hole = Geom::Transformation.scaling point, scale_web, 1, 1
+          t1 = Geom::Transformation.rotation point, [0,1,0], 270.degrees
+          inst =  @entities.add_instance @thirteen_sixteenths_hole, point
+          inst.transform! t1
+          inst.transform! scale_hole
+          @holes << inst
+        end
+
+
+
+        return @holes
       end
 
       def copy_along_curve(hole, arc, angle, number_of_copies, max, loot)
