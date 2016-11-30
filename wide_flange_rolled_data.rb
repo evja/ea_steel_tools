@@ -204,7 +204,6 @@ module EA_Extensions623
       end
 
       def create_beam(origin_arc)
-        arc = draw_new_arc(origin_arc)
         profile = draw_beam(@@beam_data)
 
         # @@has_holes = false # uncomment this to toggle holes
@@ -225,9 +224,10 @@ module EA_Extensions623
         # add_stiffeners()
         # add_shearplates()
         set_groups#(@plates, [@holes, @labels], @geometry)
+        arc = draw_new_arc(origin_arc)
         align_profile(profile, arc) #this returns an array. The FACE that has been aligned and the ARC
-        # extrude_face(profile, arc)
-        # @new_arc_group.explode
+        @new_arc_group.explode
+        extrude_face(profile, arc)
         erase_arc(arc) #Move this back to the bottom of the method
 
         if @@has_holes && @@cuts_holes
@@ -357,7 +357,7 @@ module EA_Extensions623
         new_angle = (2.0*seg_angle*@segment_count)
         new_path = @new_arc_group.entities.add_arc centerpoint, x_axis, arc.normal, new_radius, angle1, new_angle, @segment_count
         new_arc = new_path[0].curve
-        p new_arc.radius
+        # p new_arc.radius
 
         tune_new_arc(new_path, selected_arc)
         return new_arc
@@ -430,7 +430,7 @@ module EA_Extensions623
 
         @face_up_vec = @side_line.end.position - @side_line.start.position
         if @@roll_type == 'EASY'
-          place = Geom::Transformation.axes start_point, @x_vec, @y_vec, @z_vec
+          place = Geom::Transformation.axes start_point, @y_vec, @x_vec, @z_vec
           @outer_group.move! place
         else
           place = Geom::Transformation.axes start_point, @x_vec, @z_vec, @y_vec
@@ -443,7 +443,7 @@ module EA_Extensions623
           @entities.transform_entities r, face
         end
 
-        # position_arc(arc) #moves the arc away to be able to followme
+        position_arc(arc) #moves the arc away to be able to followme
 
         @hole_point = Geom::Point3d.new @face_handles[:top_inside].position
         v = @x_vec.clone
@@ -594,6 +594,17 @@ module EA_Extensions623
 
         @outer_group = active_model.entities.add_group(@inner_group)# add plates
         @outer_group.name = 'Beam'
+
+        b = @outer_group.bounds
+        h = b.height
+        w = b.width
+        d = b.depth
+
+        slide_over = Geom::Transformation.translation [-(@w/2),0,0]
+        @inner_group.transform! slide_over
+
+        slide_back = Geom::Transformation.translation [0,-(h/2),0]
+        @inner_group.transform! slide_back
         # Sets the outer group for the beam and should be named "Beam"
         # Sets the inside group for the beam and should be named "W--X--"
         # Sets the inner most group for the beam and should be named "Difference"
