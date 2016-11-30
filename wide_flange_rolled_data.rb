@@ -26,6 +26,7 @@ module EA_Extensions623
       MIN_BIG_HOLE_DISTANCE_FROM_KZONE = 1.25
 
       def initialize(data)
+        @active_model = Sketchup.active_model.active_entities.parent
 
         @explode = lambda {|e| e.explode}
         @erase   = lambda {|e| e.erase! }
@@ -204,15 +205,17 @@ module EA_Extensions623
       end
 
       def create_beam(origin_arc)
+        @temp_parent_group = @active_model.active_entities.add_group
+
         arc = draw_new_arc(origin_arc)
         profile = draw_beam(@@beam_data)
+        align_profile(profile, arc) #this returns an array. The FACE that has been aligned and the ARC
 
         # @@has_holes = false # uncomment this to toggle holes
         if @@has_holes
           web_holes    = add_web_holes    if @@web_holes
           flange_holes = add_flange_holes if @@flange_holes
           large_holes  = add_shear_holes
-          # @c.erase! if !@@web_holes; @c2.erase! if !@@web_holes
         end
 
         #these are methods not yet complete
@@ -225,7 +228,6 @@ module EA_Extensions623
         # add_stiffeners()
         # add_shearplates()
         set_groups#(@plates, [@holes, @labels], @geometry)
-        align_profile(profile, arc) #this returns an array. The FACE that has been aligned and the ARC
         # extrude_face(profile, arc)
         # @new_arc_group.explode
         erase_arc(arc) #Move this back to the bottom of the method
@@ -236,6 +238,10 @@ module EA_Extensions623
           flange_holes.each(&@explode) if @@flange_holes
           large_holes.each(&@explode)
         end
+      end
+
+      def explode_temp_parent_group
+        @temp_parent_group.explode
       end
 
       def activate()
@@ -430,18 +436,13 @@ module EA_Extensions623
 
         @face_up_vec = @side_line.end.position - @side_line.start.position
         if @@roll_type == 'EASY'
-          place = Geom::Transformation.axes start_point, @x_vec, @y_vec, @z_vec
-          @outer_group.move! place
+          place = Geom::Transformation.axes start_point, @y_vec, @x_vec, @z_vec
+          @temp_parent_group.move! place
         else
           place = Geom::Transformation.axes start_point, @x_vec, @z_vec, @y_vec
-          @outer_group.move! place
+          @temp_parent_group.move! place
         end
 
-        if face.normal.samedirection? start_vec
-          face_loop = face.outer_loop
-          r = Geom::Transformation.rotation start_point, @side_line.line[1], 180.degrees
-          @entities.transform_entities r, face
-        end
 
         # position_arc(arc) #moves the arc away to be able to followme
 
@@ -454,33 +455,30 @@ module EA_Extensions623
         v2.length = @h/4
 
         temp_group = @entities.add_group
-        corners = [@top_edge.start.position, @top_edge.end.position, @bottom_edge.start.position, @bottom_edge.end.position]
+        # corners = [@top_edge.start.position, @top_edge.end.position, @bottom_edge.start.position, @bottom_edge.end.position]
 
-        corners.each {|point| temp_group.entities.add_cpoint point }
+        # corners.each {|point| temp_group.entities.add_cpoint point }
 
         @start_direction_vector = face.normal
         @top_edge_vector = @top_edge.start.position - @top_edge.end.position
         @face_up_vec = @side_line.end.position - @side_line.start.position
-        temp_group.entities.clear!
-        temp_group.erase!
+        # temp_group.entities.clear!
+        # temp_group.erase!
 
         return face, arc
       end
 
       def extrude_face(face, path)
+        if face.normal.samedirection? @x_vec
+          # r = Geom::Transformation.rotation start_point, @side_line.line[1], 180.degrees
+          # @temp_parent_group.entities.transform_entities r, face
+          face.reverse!
+        end
         face.followme(path.edges)
       end
 
       def erase_arc(arc)
          arc.edges.each(&@erase)
-      end
-
-      def position_hroll(face, centerpoint)
-        vec = (@face_handles[:bottom_inside].position) - @face_handles[:top_inside].position
-        vec.length = @h/2
-        slide_down = Geom::Transformation.new(vec)
-        #moves the beam down inside the arc when you want the curve on top
-        @entities.transform_entities slide_down, face
       end
 
       def position_arc(path)
@@ -526,9 +524,9 @@ module EA_Extensions623
         turn = 180
         #draws the arcs and rotates them into position
         arc_radius_points.each do |center|
-          a = @entities.add_arc center, zero_vec, normal, @r, 0, 90.degrees, segs
+          a = @temp_parent_group.entities.add_arc center, zero_vec, normal, @r, 0, 90.degrees, segs
           rotate = Geom::Transformation.rotation center, [0,1,0], turn.degrees
-          @entities.transform_entities rotate, a
+          @temp_parent_group.entities.transform_entities rotate, a
           radius << a
           turn += 90
         end
@@ -537,7 +535,7 @@ module EA_Extensions623
         @segments = []
         count = 1
         beam_outline = @points.each do |pt|
-           a = @entities.add_line pt, @points[count.to_i]
+           a = @temp_parent_group.entities.add_line pt, @points[count.to_i]
             count < 15 ? count += 1 : count = 0
             @segments << a
         end
@@ -567,33 +565,35 @@ module EA_Extensions623
           @segments << r
         end
 
-        @control_segment = @entities.add_line @points[0], @points[1]
+        @control_segment = @temp_parent_group.entities.add_line @points[0], @points[1]
 
         #sets all of the connected @segments of the outline into a variable
         segs = @segments.first.all_connected
 
         #move the beam outline to center on the axes
         m = Geom::Transformation.new [-0.5*@w, 0, 0]
-        @entities.transform_entities m, segs
+        @temp_parent_group.entities.transform_entities m, segs
 
         #adds the face to the beam outline
-        face = @entities.add_face segs
+        face = @temp_parent_group.entities.add_face segs
         @geometry.push face
         #returns the face result of the method
         return face
       end
 
-      def set_groups#(og, ig, geo)
-        active_model = Sketchup.active_model.active_entities.parent
-        @solid_group = active_model.entities.add_group(@geometry)
-
-        @inner_group = active_model.entities.add_group(@holes, @solid_group) #Add Labels
+      def set_groups
+        # am = Sketchup.active_model.active_entities.parent
+        @solid_group = @temp_parent_group.entities.add_group(@geometry)
+        @inner_group = @entities.add_group(@holes, @solid_group) #Add Labels
         @inner_group.name = "#{@@beam_name}"
-        @steel_layer = active_model.layers.add " Steel"
+        @steel_layer = @active_model.layers.add " Steel"
         @inner_group.layer = @steel_layer
 
-        @outer_group = active_model.entities.add_group(@inner_group)# add plates
+        @outer_group = @entities.add_group(@inner_group)# add plates
         @outer_group.name = 'Beam'
+
+        explode_temp_parent_group
+
         # Sets the outer group for the beam and should be named "Beam"
         # Sets the inside group for the beam and should be named "W--X--"
         # Sets the inner most group for the beam and should be named "Difference"
@@ -621,7 +621,8 @@ module EA_Extensions623
 
         scale_web = @tw/2
         scale_hole = Geom::Transformation.scaling ORIGIN, 1, 1, scale_web
-        webhole1 = @entities.add_instance @nine_sixteenths_hole, ORIGIN
+        webhole1 = @temp_parent_group.entities.add_instance @nine_sixteenths_hole, ORIGIN
+        @holes << webhole1
         webhole1.transform! scale_hole
 
         # align1 = Geom::Transformation.axes @c.position, @x_vec, @z_vec, @y_vec
@@ -635,7 +636,6 @@ module EA_Extensions623
         adjust1 = @c - c
 
         adjust2 = Z_AXIS.clone
-        p @first_web_hole_dist_from_center
         adjust2.length = @first_web_hole_dist_from_center
 
         move1 = Geom::Transformation.new adjust1
@@ -646,6 +646,7 @@ module EA_Extensions623
         #Here on the web by now
 
         webhole2 = webhole1.copy
+        @holes << webhole2
 
         slide_down = Geom::Vector3d.new Z_AXIS
         slide_down.length = @webhole_stagger
@@ -653,8 +654,7 @@ module EA_Extensions623
         move_down = Geom::Transformation.new(slide_down)
         webhole2.transform! move_down
 
-        @holes.push webhole1, webhole2
-        return @web_holes
+        return @holes
       end
 
       def spread_web_holes(holes, path)
@@ -676,7 +676,7 @@ module EA_Extensions623
         scale_flange = @tf/2
         scale_hole = Geom::Transformation.scaling ORIGIN, 1, 1, scale_flange
 
-        flangehole1 = @entities.add_instance @nine_sixteenths_hole, ORIGIN
+        flangehole1 = @temp_parent_group.entities.add_instance @nine_sixteenths_hole, ORIGIN
         flangehole1.transform! scale_hole
 
         z = Geom::Vector3d.new(0,0,1)
@@ -794,7 +794,7 @@ module EA_Extensions623
           point = Geom::Point3d.new x, y1, (z + (n*reasonable_spacing))
           scale_hole = Geom::Transformation.scaling point, scale_web, 1, 1
           t1 = Geom::Transformation.rotation point, [0,1,0], 270.degrees
-          inst =  @entities.add_instance @thirteen_sixteenths_hole, point
+          inst =  @temp_parent_group.entities.add_instance @thirteen_sixteenths_hole, point
           inst.transform! t1
           inst.transform! scale_hole
           @holes << inst
