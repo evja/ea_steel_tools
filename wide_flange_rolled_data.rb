@@ -223,10 +223,10 @@ module EA_Extensions623
         #adds in the plates
         # add_stiffeners()
         # add_shearplates()
-        set_groups#(@plates, [@holes, @labels], @geometry)
         arc = draw_new_arc(origin_arc)
         align_profile(profile, arc) #this returns an array. The FACE that has been aligned and the ARC
-        @new_arc_group.explode
+        set_groups#(@plates, [@holes, @labels], @geometry)
+        # @new_arc_group.explode
         extrude_face(profile, arc)
         erase_arc(arc) #Move this back to the bottom of the method
 
