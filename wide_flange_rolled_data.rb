@@ -280,13 +280,13 @@ module EA_Extensions623
         #these are methods not yet complete
 
         # Adds in the labels for the steel
-        # labels = add_labels
+        arc = draw_new_arc(origin_arc)
+        labels = add_labels(arc)
         # add_up_arrow()
 
         #adds in the plates
         # add_stiffeners()
         # add_shearplates()
-        arc = draw_new_arc(origin_arc)
         align_with_curve(profile, arc) #this returns an array. The FACE that has been aligned and the ARC
         extrude_face(profile, arc)
         erase_arc(arc) #Move this back to the bottom of the method
@@ -610,12 +610,49 @@ module EA_Extensions623
         return @guage_holes
       end
 
-      def add_labels
-        cp = arc.center
-        # start_point = arc.start_edge.start.position
+      def add_labels(arc)
+        start_direction_group = @inner_group.entities.add_group
+        start_ents = start_direction_group.entities
+
+        end_direction_group = @inner_group.entities.add_group
+        end_ents = end_direction_group.entities
+
+        up_direction_group = @inner_group.entities.add_group
+        up_ents = up_direction_group.entities
 
         beam_label_group = @inner_group.entities.add_group
         label_ents = beam_label_group.entities
+
+        arc_start_line = arc.start_line
+        arc_end_line   = arc.end_line
+
+        xp1 = arc_start_line.start.position
+        xp2 = arc_start_line.end.position
+
+        yp1 = arc_end_line.start.position
+        yp2 = arc_end_line.end.position
+
+        vec1 = xp1 - xp2
+        vec2 = yp2 - yp1
+
+        beam_direction_x = vec1
+        beam_direction_y = vec2
+        heading_x = Geom::Vector3d.new beam_direction_x
+        heading_y = Geom::Vector3d.new beam_direction_y
+        heading_x[2] = 0
+        heading_y[2] = 0
+        angle_x = heading_x.angle_between NORTH
+        angle_y = heading_y.angle_between NORTH
+
+        direction1 = get_direction(angle_x)
+        direction2 = get_direction(angle_y)
+
+        #Gets the file paths for the labels
+        file_path1 = Sketchup.find_support_file "#{ROOT_FILE_PATH}/Beam Components/#{direction1}.skp", "Plugins/"
+        end_direction = @definition_list.load file_path1
+        file_path2 = Sketchup.find_support_file "#{ROOT_FILE_PATH}/Beam Components/#{direction2}.skp", "Plugins/"
+        start_direction = @definition_list.load file_path2
+
         #Adds in the label of the name of the beam at the center on both sides
         component_names = []
         @definition_list.map {|comp| component_names << comp.name}
@@ -630,16 +667,41 @@ module EA_Extensions623
           comp_def.save_as(save_path + "/#{@@beam_name}.skp")
         end
 
-        # x_vec = arc.xaxis
-        # y_vec = arc.yaxis
-        # z_vec = arc.normal
-        x_vec = @start_direction_vector
-        y_vec = @face_up_vec
-        z_vec = @top_edge_vector
-
         if z_vec[2] < 0
           z_vec.reverse!
         end
+      end
+
+      def get_direction(angel)
+        #Gets the direction based on the angles heading in relation to NORTH
+        #Single Directions
+        case angle
+        when (0.degrees)..(30.degrees)
+          hdng = 'N'
+        when (60.degrees)..(120.degrees)
+          if vec[0] >= 0
+          hdng = 'E'
+        else
+          hdng = 'W'
+        end
+        when (150.degrees)..(180.degrees)
+          hdng = 'S'
+        #Compound Directions
+        when (30.degrees)..(60.degrees)
+          if vec[0] >= 0
+            hdng = 'NE'
+          else
+            hdng = 'NW'
+          end
+        when (120.degrees)..(150.degrees)
+          if vec[0] >= 0
+            hdng = 'SE'
+          else
+            hdng = 'SW'
+          end
+        end
+
+        return hdng
       end
 
       def draw_new_arc(selected_arc)
