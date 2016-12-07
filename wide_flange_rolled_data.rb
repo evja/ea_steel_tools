@@ -34,6 +34,7 @@ module EA_Extensions623
         @holes        = []
         @web_holes    = []
         @flange_holes = []
+        @guage_holes  = []
         @shear_holes  = []
         @labels       = []
         @plates       = []
@@ -49,9 +50,6 @@ module EA_Extensions623
         @materials          = @model.materials
         @material_names     = @materials.map {|color| color.name}
         @definition_list    = @model.definitions
-
-        @working_group      = @entities.add_group
-        @working_group_ents = @working_group.entities
 
         @@beam_name         = data[:name]               #String 'W(height_class)X(weight_per_foot)'
         @@height_class      = data[:height_class]       #String 'W(number)'
@@ -77,6 +75,7 @@ module EA_Extensions623
           indigo:  {name: ' G 5/16" Thick', rgb: [118,50,225]},
           purple:  {name: ' H ¼" Thick',    rgb: [186,50,225]}
         }
+
 
         case @@stiff_thickness
         when '1/4'
@@ -171,6 +170,24 @@ module EA_Extensions623
           # p '1-5/8" from edge'
         end
 
+        #sets the working guage width for the beam
+        case @wc
+        when 4
+          @guage_width = 2.25
+        when 5, 5.25, 5.75
+          @guage_width = 2.75
+        when 5.5 .. 7.5
+          @guage_width = 3.5
+        when 8 .. 11.5
+          @guage_width = 5.5
+        when 12 .. 16.5
+          if @hc > 36 && @hc < 40
+            @guage_width = 7.5
+          else
+            @guage_width = 5.5
+          end
+        end
+
         #the thirteen points on a beam
         @points = [
           pt1 = [0,0,0],
@@ -223,12 +240,12 @@ module EA_Extensions623
 
       def load_parts
         all_stiffplates = []
-          var = @wc.to_s.split(".")
-          if var.last.to_i == 0
-            wc = var.first
-          else
-            wc = var.join('.')
-          end
+        var = @wc.to_s.split(".")
+        if var.last.to_i == 0
+          wc = var.first
+        else
+          wc = var.join('.')
+        end
         stiffener_plate = "PL #{@@height_class}(#{wc}) Stiffener"
 
         file_path1 = Sketchup.find_support_file "ea_steel_tools/Beam Components/9_16 Hole Set.skp", "Plugins"
@@ -256,12 +273,13 @@ module EA_Extensions623
           web_holes    = add_web_holes    if @@web_holes
           flange_holes = add_flange_holes if @@flange_holes
           large_holes  = add_shear_holes
+          guage_holes  = add_guage_holes
         end
 
         #these are methods not yet complete
 
         # Adds in the labels for the steel
-        # labels = add_labels(arc, origin_arc)
+        # labels = add_labels
         # add_up_arrow()
 
         #adds in the plates
@@ -283,6 +301,8 @@ module EA_Extensions623
 
       def set_groups
         active_model = Sketchup.active_model.active_entities.parent
+        @working_group      = @entities.add_group
+        @working_group_ents = @working_group.entities
         @outer_group = @working_group_ents.add_group # add plates
         @outer_group.name = 'Beam'
 
@@ -318,23 +338,6 @@ module EA_Extensions623
         #set variable for the Name, Height Class, Height, Width, flange thickness, web thickness and radius for the beams
         segs = @radius
         @all_added_entities_so_far = []
-        #sets the working guage width for the beam
-        case @wc
-        when 4
-          @guage_width = 2.25
-        when 5, 5.25, 5.75
-          @guage_width = 2.75
-        when 5.5 .. 7.5
-          @guage_width = 3.5
-        when 8 .. 11.5
-          @guage_width = 5.5
-        when 12 .. 16.5
-          if @hc > 36 && @hc < 40
-            @guage_width = 7.5
-          else
-            @guage_width = 5.5
-          end
-        end
 
         #sets the center of the radius for each beam radius
         arc_radius_points = [
@@ -425,7 +428,6 @@ module EA_Extensions623
         adjust1 = @c - c
 
         adjust2 = Z_AXIS.clone
-        p @first_web_hole_dist_from_center
         adjust2.length = @first_web_hole_dist_from_center
 
         move1 = Geom::Transformation.new adjust1
@@ -539,6 +541,92 @@ module EA_Extensions623
         return @holes
       end
 
+      def add_guage_holes
+        scale_flange = @tf/2
+        scale_guage_hole = Geom::Transformation.scaling ORIGIN, 1, 1, scale_flange
+
+        guagehole1 = @inner_group.entities.add_instance @thirteen_sixteenths_hole, ORIGIN
+        guagehole1.transform! scale_guage_hole
+
+        z = Geom::Vector3d.new(0,0,1)
+        vec = @side_line.line[1]
+        angle = vec.angle_between z
+
+        rot = Geom::Transformation.rotation ORIGIN, [0,1,0], angle
+        guagehole1.transform! rot
+
+        align_hole(guagehole1, vec, 0)
+
+        # move hole to a corner of the flange
+        position = @top_edge.start.position - ORIGIN
+
+        move = Geom::Transformation.new position
+        guagehole1.transform! move
+
+        # determine if the holes stagger or are 1-5/8" from edge
+        # set it to width
+        vec2 = X_AXIS.clone
+        vec2.length = ((@w/2)-(@guage_width/2))
+
+        slide1 = Geom::Transformation.new vec2.reverse!
+        guagehole1.transform! slide1
+        # copy another one
+        guagehole2 = guagehole1.copy
+
+        # position the copy
+        vec3 = vec2.clone
+        vec3.length = @guage_width
+        slide2 = Geom::Transformation.new vec3
+        guagehole2.transform! slide2
+
+        # copy holes to the other flange
+        guagehole3 = guagehole1.copy
+        guagehole4 = guagehole2.copy
+
+        vec4 = @bottom_edge.start.position - @top_edge.end.position
+        vec4.length = @h-@tf
+        send_to_flange = Geom::Transformation.new vec4
+        guagehole3.transform! vec4
+        guagehole4.transform! vec4
+
+        @guage_holes.push guagehole1, guagehole2, guagehole3, guagehole4
+        @all_added_entities_so_far.push guagehole1, guagehole2, guagehole3, guagehole4
+        @holes.push guagehole1, guagehole2, guagehole3, guagehole4
+        return @guage_holes
+      end
+
+      def add_labels
+        cp = arc.center
+        # start_point = arc.start_edge.start.position
+
+        beam_label_group = @inner_group.entities.add_group
+        label_ents = beam_label_group.entities
+        #Adds in the label of the name of the beam at the center on both sides
+        component_names = []
+        @definition_list.map {|comp| component_names << comp.name}
+        if component_names.include? @@beam_name
+          comp_def = @definition_list["#{@@beam_name}"]
+        else
+          comp_def = @definition_list.add "#{@@beam_name}"
+          comp_def.description = "The #{@@beam_name} label"
+          ents = comp_def.entities
+          _3d_text = ents.add_3d_text("#{@@beam_name}", TextAlignCenter, "1CamBam_Stick_7", false, false, 3.0, 3.0, 0.0, false, 0.0)
+          save_path = Sketchup.find_support_file "Components", ""
+          comp_def.save_as(save_path + "/#{@@beam_name}.skp")
+        end
+
+        # x_vec = arc.xaxis
+        # y_vec = arc.yaxis
+        # z_vec = arc.normal
+        x_vec = @start_direction_vector
+        y_vec = @face_up_vec
+        z_vec = @top_edge_vector
+
+        if z_vec[2] < 0
+          z_vec.reverse!
+        end
+      end
+
       def draw_new_arc(selected_arc)
         # Selected Arc Data
         arc = selected_arc
@@ -559,7 +647,6 @@ module EA_Extensions623
         percent = angle2/360.degrees
 
         drctn = check_arc_direction(selected_arc)
-
         # New Arc Data
         if @@roll_type == 'EASY'
           case @@placement[1]
@@ -572,7 +659,7 @@ module EA_Extensions623
             extra = (@w/2)
           end
           new_radius = radius+@@radius_offset+extra
-        else
+        else #roll type is hard
           case @@placement[0]
           when 'T'
             if drctn == 0
@@ -652,8 +739,10 @@ module EA_Extensions623
         @v3 = Geom::Vector3d.linear_combination(0.500, v1, 0.500, v2)
         # @entities.add_cline(c, @v3)
 
-        if @v3[2] >= 0
-          direction = 1 # 1 equals that the z value of the vector is positive and assumes the attempt is to make the beam above or below. 1 is above and 0 is below
+        if arc.normal[0] == 0 && arc.normal[1] == 0 && arc.normal[2] > 0
+          direction = 1
+        elsif @v3[2] >= 0
+          direction = 1 # 1 means the z value of the vector is + and assumes you want the beam above or below. 1 is above and 0 is below
         end
         return direction
       end
@@ -692,8 +781,20 @@ module EA_Extensions623
           place = Geom::Transformation.axes start_point, @y_vec, @x_vec, @z_vec
           @solid_group.entities.transform_entities place, @geometry
           @inner_group.entities.transform_entities place, @holes
-        else
-          place = Geom::Transformation.axes start_point, @x_vec, @z_vec, @y_vec
+          if @@placement[0] == 'T'
+            tempvec = @z_vec.clone.reverse!
+            tempvec.length = @h
+            mvdwn = Geom::Transformation.translation tempvec
+            @solid_group.entities.transform_entities mvdwn, @geometry
+            @inner_group.entities.transform_entities mvdwn, @holes
+          end
+        else # Roll Type is Hard
+          vec_set = Geom::Vector3d.new [0,0,-0.5*@h]
+          mvdwn = Geom::Transformation.translation vec_set
+          @solid_group.entities.transform_entities mvdwn, @geometry
+          @inner_group.entities.transform_entities mvdwn, @holes
+
+          place = Geom::Transformation.axes start_point, @z_vec, @x_vec, @y_vec
           @solid_group.entities.transform_entities place, @geometry
           @inner_group.entities.transform_entities place, @holes
         end
@@ -860,41 +961,6 @@ module EA_Extensions623
           if ent.is_a? Sketchup::Edge
             return ent.curve
           end
-        end
-      end
-
-      def add_labels(arc, old_arc)
-        h = @h
-        tw = @tw
-
-        cp = arc.center
-        # start_point = arc.start_edge.start.position
-
-        beam_label_group = @inner_group.entities.add_group
-        label_ents = beam_label_group.entities
-        #Adds in the label of the name of the beam at the center on both sides
-        component_names = []
-        @definition_list.map {|comp| component_names << comp.name}
-        if component_names.include? @@beam_name
-          comp_def = @definition_list["#{@@beam_name}"]
-        else
-          comp_def = @definition_list.add "#{@@beam_name}"
-          comp_def.description = "The #{@@beam_name} label"
-          ents = comp_def.entities
-          _3d_text = ents.add_3d_text("#{@@beam_name}", TextAlignCenter, "1CamBam_Stick_7", false, false, 3.0, 3.0, 0.0, false, 0.0)
-          save_path = Sketchup.find_support_file "Components", ""
-          comp_def.save_as(save_path + "/#{@@beam_name}.skp")
-        end
-
-        # x_vec = arc.xaxis
-        # y_vec = arc.yaxis
-        # z_vec = arc.normal
-        x_vec = @start_direction_vector
-        y_vec = @face_up_vec
-        z_vec = @top_edge_vector
-
-        if z_vec[2] < 0
-          z_vec.reverse!
         end
       end
 
