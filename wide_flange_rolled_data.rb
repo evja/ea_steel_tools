@@ -623,8 +623,8 @@ module EA_Extensions623
         beam_label_group = @inner_group.entities.add_group
         label_ents = beam_label_group.entities
 
-        arc_start_line = arc.start_line
-        arc_end_line   = arc.end_line
+        arc_start_line = arc.first_edge
+        arc_end_line   = arc.last_edge
 
         xp1 = arc_start_line.start.position
         xp2 = arc_start_line.end.position
@@ -644,8 +644,8 @@ module EA_Extensions623
         angle_x = heading_x.angle_between NORTH
         angle_y = heading_y.angle_between NORTH
 
-        direction1 = get_direction(angle_x)
-        direction2 = get_direction(angle_y)
+        direction1 = get_direction(angle_x, vec1)
+        direction2 = get_direction(angle_y, vec2)
 
         #Gets the file paths for the labels
         file_path1 = Sketchup.find_support_file "#{ROOT_FILE_PATH}/Beam Components/#{direction1}.skp", "Plugins/"
@@ -667,12 +667,9 @@ module EA_Extensions623
           comp_def.save_as(save_path + "/#{@@beam_name}.skp")
         end
 
-        if z_vec[2] < 0
-          z_vec.reverse!
-        end
       end
 
-      def get_direction(angel)
+      def get_direction(angle, vec)
         #Gets the direction based on the angles heading in relation to NORTH
         #Single Directions
         case angle
