@@ -35,6 +35,7 @@ module EA_Extensions623
         @web_holes    = []
         @flange_holes = []
         @guage_holes  = []
+        @studs        = []
         @shear_holes  = []
         @labels       = []
         @plates       = []
@@ -451,56 +452,70 @@ module EA_Extensions623
       end
 
       def add_flange_holes
-        scale_flange = @tf/2
-        scale_hole = Geom::Transformation.scaling ORIGIN, 1, 1, scale_flange
+        if @tf < 0.75
+          scale_flange = @tf/2
+          scale_hole = Geom::Transformation.scaling ORIGIN, 1, 1, scale_flange
 
-        flangehole1 = @inner_group.entities.add_instance @nine_sixteenths_hole, ORIGIN
-        flangehole1.transform! scale_hole
+          flangehole1 = @inner_group.entities.add_instance @nine_sixteenths_hole, ORIGIN
+          flangehole1.transform! scale_hole
 
-        z = Geom::Vector3d.new(0,0,1)
-        vec = @side_line.line[1]
-        angle = vec.angle_between z
+          z = Geom::Vector3d.new(0,0,1)
+          vec = @side_line.line[1]
+          angle = vec.angle_between z
 
-        rot = Geom::Transformation.rotation ORIGIN, [0,1,0], angle
-        flangehole1.transform! rot
+          rot = Geom::Transformation.rotation ORIGIN, [0,1,0], angle
+          flangehole1.transform! rot
 
-        align_hole(flangehole1, vec, 0)
-        # move hole to a corner of the flange
-        # c = flangehole1.bounds.center
-        position = @top_edge.start.position - ORIGIN
+          align_hole(flangehole1, vec, 0)
+          # move hole to a corner of the flange
+          # c = flangehole1.bounds.center
+          position = @top_edge.start.position - ORIGIN
 
-        move = Geom::Transformation.new position
-        flangehole1.transform! move
+          move = Geom::Transformation.new position
+          flangehole1.transform! move
 
-        # determine if the holes stagger or are 1-5/8" from edge
-        # set it to width
-        vec2 = X_AXIS.clone
-        @flange_hole_stagger ? vec2.length = ((@w/2)-(@guage_width/2)) : vec2.length = 1.6250
-        # vec2.reverse!
-        slide1 = Geom::Transformation.new vec2.reverse!
-        flangehole1.transform! slide1
-        # copy another one
-        flangehole2 = flangehole1.copy
-        # position the copy
-        vec3 = vec2.clone
-        @flange_hole_stagger ? vec3.length = @guage_width : vec3.length = @w-((1.6250)*2)
-        slide2 = Geom::Transformation.new vec3
-        flangehole2.transform! slide2
+          # determine if the holes stagger or are 1-5/8" from edge
+          # set it to width
+          vec2 = X_AXIS.clone
+          @flange_hole_stagger ? vec2.length = ((@w/2)-(@guage_width/2)) : vec2.length = 1.6250
+          # vec2.reverse!
+          slide1 = Geom::Transformation.new vec2.reverse!
+          flangehole1.transform! slide1
+          # copy another one
+          flangehole2 = flangehole1.copy
+          # position the copy
+          vec3 = vec2.clone
+          @flange_hole_stagger ? vec3.length = @guage_width : vec3.length = @w-((1.6250)*2)
+          slide2 = Geom::Transformation.new vec3
+          flangehole2.transform! slide2
 
-        # copy holes to the other flange
-        flangehole3 = flangehole1.copy
-        flangehole4 = flangehole2.copy
+          # copy holes to the other flange
+          flangehole3 = flangehole1.copy
+          flangehole4 = flangehole2.copy
 
-        vec4 = @bottom_edge.start.position - @top_edge.end.position
-        vec4.length = @h-@tf
-        send_to_flange = Geom::Transformation.new vec4
-        flangehole3.transform! vec4
-        flangehole4.transform! vec4
+          vec4 = @bottom_edge.start.position - @top_edge.end.position
+          vec4.length = @h-@tf
+          send_to_flange = Geom::Transformation.new vec4
+          flangehole3.transform! vec4
+          flangehole4.transform! vec4
 
-        @flange_holes.push flangehole1, flangehole2, flangehole3, flangehole4
-        @all_added_entities_so_far.push flangehole1, flangehole2, flangehole3, flangehole4
-        @holes.push flangehole1, flangehole2, flangehole3, flangehole4
-        return @flange_holes
+          @flange_holes.push flangehole1, flangehole2, flangehole3, flangehole4
+          @all_added_entities_so_far.push flangehole1, flangehole2, flangehole3, flangehole4
+          @holes.push flangehole1, flangehole2, flangehole3, flangehole4
+          return @flange_holes
+        else # add in 1/2" studs
+          @flange_hole_stagger ? dist = @guage_width/2 : dist = (@w/2) - 1.6250
+          stud1 = @outer_group.entities.add_instance @half_inch_stud, [dist, 0, @h]
+
+          stud2 = stud1.copy
+          place_2nd_stud = Geom::Transformation.translation [(@flange_hole_stagger ? -@guage_width : (@w - (1.6250*2))*-1), 0, 0]
+          stud2.transform! place_2nd_stud
+
+          @studs.push stud1, stud2
+          @all_added_entities_so_far.push stud1, stud2
+          return @guage_holes
+        end
+
       end
 
       def add_shear_holes
@@ -781,22 +796,26 @@ module EA_Extensions623
           place = Geom::Transformation.axes start_point, @y_vec, @x_vec, @z_vec
           @solid_group.entities.transform_entities place, @geometry
           @inner_group.entities.transform_entities place, @holes
+          @outer_group.entities.transform_entities place, @studs
           if @@placement[0] == 'T'
             tempvec = @z_vec.clone.reverse!
             tempvec.length = @h
             mvdwn = Geom::Transformation.translation tempvec
             @solid_group.entities.transform_entities mvdwn, @geometry
             @inner_group.entities.transform_entities mvdwn, @holes
+            @outer_group.entities.transform_entities mvdwn, @studs
           end
         else # Roll Type is Hard
           vec_set = Geom::Vector3d.new [0,0,-0.5*@h]
           mvdwn = Geom::Transformation.translation vec_set
           @solid_group.entities.transform_entities mvdwn, @geometry
           @inner_group.entities.transform_entities mvdwn, @holes
+          @outer_group.entities.transform_entities mvdwn, @studs
 
           place = Geom::Transformation.axes start_point, @z_vec, @x_vec, @y_vec
           @solid_group.entities.transform_entities place, @geometry
           @inner_group.entities.transform_entities place, @holes
+          @outer_group.entities.transform_entities place, @studs
         end
 
         if face.normal.samedirection? start_vec
@@ -849,6 +868,8 @@ module EA_Extensions623
         @holes        = []
         @web_holes    = []
         @flange_holes = []
+        @guage_holes  = []
+        @studs        = []
         @shear_holes  = []
         @labels       = []
         @plates       = []
