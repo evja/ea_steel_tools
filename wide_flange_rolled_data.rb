@@ -266,7 +266,8 @@ module EA_Extensions623
       end
 
       def create_beam(origin_arc)
-        set_groups#(@plates, [@holes, @labels], @geometry)
+        #Completed Methods
+        set_groups
         profile = draw_beam(@@beam_data)
 
         # @@has_holes = false # uncomment this to toggle holes
@@ -277,21 +278,23 @@ module EA_Extensions623
           guage_holes  = add_guage_holes
         end
 
-        #these are methods not yet complete
-
-        # Adds in the labels for the steel
         arc = draw_new_arc(origin_arc)
-        labels = add_labels(arc)
-        # add_up_arrow()
 
-        #adds in the plates
+        #Methods in progress
+        # Adds in the labels for the steel
+        labels = add_labels(arc)
+
+
+        #Methods Not Started
+
+        # adds in the plates
         # add_stiffeners()
         # add_shearplates()
+
         align_with_curve(profile, arc) #this returns an array. The FACE that has been aligned and the ARC
         extrude_face(profile, arc)
         erase_arc(arc) #Move this back to the bottom of the method
         @working_group.explode
-
         if @@has_holes && @@cuts_holes
           @solid_group.explode
           web_holes.each(&@explode) if @@web_holes
@@ -515,7 +518,6 @@ module EA_Extensions623
           @all_added_entities_so_far.push stud1, stud2
           return @guage_holes
         end
-
       end
 
       def add_shear_holes
@@ -647,13 +649,35 @@ module EA_Extensions623
         direction1 = get_direction(angle_x, vec1)
         direction2 = get_direction(angle_y, vec2)
 
-        #Gets the file paths for the labels
+        #Gets the file paths for the direction labels
+        # Direction Labels have the axis at the center of mass
         file_path1 = Sketchup.find_support_file "#{ROOT_FILE_PATH}/Beam Components/#{direction1}.skp", "Plugins/"
-        end_direction = @definition_list.load file_path1
+        start_direction = @definition_list.load file_path1
         file_path2 = Sketchup.find_support_file "#{ROOT_FILE_PATH}/Beam Components/#{direction2}.skp", "Plugins/"
-        start_direction = @definition_list.load file_path2
+        end_direction = @definition_list.load file_path2
 
-        #Adds in the label of the name of the beam at the center on both sides
+        direction_insertion_point1 = [(@tw/2), 0, @h/2]
+        direction_insertion_point2 = [(-@tw/2), 0, @h/2]
+
+        tr = Geom::Transformation.axes direction_insertion_point1, Y_AXIS, Z_AXIS
+        tr2 = Geom::Transformation.axes direction_insertion_point2, Y_AXIS.reverse, Z_AXIS
+
+        start = true
+        if start
+          start_label = start_ents.add_instance start_direction, ORIGIN
+          start_label.move! tr
+
+          start_label2 = start_ents.add_instance start_direction, ORIGIN
+          start_label2.move! tr2
+
+          end_label = end_ents.add_instance end_direction, ORIGIN
+          end_label.move! tr
+
+          end_label2 = end_ents.add_instance end_direction, ORIGIN
+          end_label2.move! tr2
+        end
+
+        #gets the name of the beam (Size of the beam)
         component_names = []
         @definition_list.map {|comp| component_names << comp.name}
         if component_names.include? @@beam_name
@@ -667,6 +691,32 @@ module EA_Extensions623
           comp_def.save_as(save_path + "/#{@@beam_name}.skp")
         end
 
+        label_width  = comp_def.bounds.width
+        label_height = comp_def.bounds.height
+        label_center = comp_def.bounds.center
+
+        tr3 = Geom::Transformation.axes [(@tw/2) + 0.0625, (@segment_length/2)-(label_width/2), (@h/2)-(label_height/2)], Y_AXIS, Z_AXIS
+        tr4 = Geom::Transformation.axes [-(@tw/2) - 0.0625, (@segment_length/2)+(label_width/2), (@h/2)-(label_height/2)], Y_AXIS.reverse, Z_AXIS
+        # Adds in the labels and sets them in position
+        beam_label = label_ents.add_instance comp_def, ORIGIN
+        beam_label.move! tr3
+
+        beam_label2 = label_ents.add_instance comp_def, ORIGIN
+        beam_label2.move! tr4
+
+        # Adds in the Up Arrow
+        file_path = Sketchup.find_support_file "#{ROOT_FILE_PATH}/Beam Components/UP.skp", "Plugins/"
+        up_direction = @definition_list.load file_path
+
+        up_label = up_ents.add_instance up_direction, ORIGIN
+        up_label.move! tr
+
+        up_label2 = up_ents.add_instance up_direction, ORIGIN
+        up_label2.move! tr2
+
+
+        @labels.push start_direction_group, end_direction_group, beam_label_group, up_direction_group
+        @all_added_entities_so_far.push end_direction_group, beam_label_group, up_direction_group
       end
 
       def get_direction(angle, vec)
@@ -854,26 +904,26 @@ module EA_Extensions623
         if @@roll_type == 'EASY'
           place = Geom::Transformation.axes start_point, @y_vec, @x_vec, @z_vec
           @solid_group.entities.transform_entities place, @geometry
-          @inner_group.entities.transform_entities place, @holes
+          @inner_group.entities.transform_entities place, @holes, @labels
           @outer_group.entities.transform_entities place, @studs
           if @@placement[0] == 'T'
             tempvec = @z_vec.clone.reverse!
             tempvec.length = @h
             mvdwn = Geom::Transformation.translation tempvec
             @solid_group.entities.transform_entities mvdwn, @geometry
-            @inner_group.entities.transform_entities mvdwn, @holes
+            @inner_group.entities.transform_entities mvdwn, @holes, @labels
             @outer_group.entities.transform_entities mvdwn, @studs
           end
         else # Roll Type is Hard
           vec_set = Geom::Vector3d.new [0,0,-0.5*@h]
           mvdwn = Geom::Transformation.translation vec_set
           @solid_group.entities.transform_entities mvdwn, @geometry
-          @inner_group.entities.transform_entities mvdwn, @holes
+          @inner_group.entities.transform_entities mvdwn, @holes, @labels
           @outer_group.entities.transform_entities mvdwn, @studs
 
           place = Geom::Transformation.axes start_point, @z_vec, @x_vec, @y_vec
           @solid_group.entities.transform_entities place, @geometry
-          @inner_group.entities.transform_entities place, @holes
+          @inner_group.entities.transform_entities place, @holes, @labels
           @outer_group.entities.transform_entities place, @studs
         end
 
