@@ -478,7 +478,6 @@ module EA_Extensions623
 
           #initialize some variables
           all_holes = []
-          @all_studs = []
           count = 0
 
           #Setst the scale depth for the web and the flange
@@ -1245,6 +1244,10 @@ module EA_Extensions623
               hole.explode
             end
             thirteen_sixteenths_holes.each {|hole| hole.explode} if not column
+          end
+
+          if not @all_studs.empty?
+            @all_studs.each {|stud| stud.layer = @steel_layer }
           end
 
           # #insert stiffener plates in the beam
