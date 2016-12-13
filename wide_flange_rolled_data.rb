@@ -38,7 +38,8 @@ module EA_Extensions623
         @studs        = []
         @shear_holes  = []
         @labels       = []
-        @plates       = []
+        @sh_plates    = []
+        @stiff_plates = []
 
         @arc  = 0 #This is the new arc
         @face = 0 # This is the profile
@@ -212,7 +213,7 @@ module EA_Extensions623
 
       def activate()
         model = @model
-        # model.start_operation("Roll Steel", true)
+        model.start_operation("Roll Steel", true)
         pot = []
         arcs = check_for_multiples(@selected_curve, pot)
         load_parts
@@ -222,7 +223,7 @@ module EA_Extensions623
           reset_tool
         end
 
-        # model.commit_operation
+        model.commit_operation
 
         Sketchup.send_action "selectSelectionTool:"
       end
@@ -278,18 +279,15 @@ module EA_Extensions623
           guage_holes  = add_guage_holes
         end
 
+        # Draw the New Arc with 8" Segments
         arc = draw_new_arc(origin_arc)
 
-        #Methods in progress
         # Adds in the labels for the steel
         labels = add_labels(arc)
 
-
-        #Methods Not Started
-
-        # adds in the plates
-        # add_stiffeners()
-        # add_shearplates()
+        # Adds in the plates
+        add_stiffeners(@stiff_scale, @stiff_color)
+        add_shearplates(@shear_scale, @shear_color)
 
         align_with_curve(profile, arc) #this returns an array. The FACE that has been aligned and the ARC
         extrude_face(profile, arc)
@@ -312,7 +310,7 @@ module EA_Extensions623
 
         @inner_group = @outer_group.entities.add_group #Add Labels
         @inner_group.name = "#{@@beam_name}"
-        @steel_layer = active_model.layers.add " Steel"
+        @steel_layer = Sketchup.active_model.layers.add " Steel"
         @inner_group.layer = @steel_layer
 
         @solid_group = @inner_group.entities.add_group
@@ -514,9 +512,15 @@ module EA_Extensions623
           place_2nd_stud = Geom::Transformation.translation [(@flange_hole_stagger ? -@guage_width : (@w - (1.6250*2))*-1), 0, 0]
           stud2.transform! place_2nd_stud
 
-          @studs.push stud1, stud2
-          @all_added_entities_so_far.push stud1, stud2
-          return @guage_holes
+          cpoint = [0,0,@h/2]
+          rot = Geom::Transformation.rotation cpoint, [0,1,0], 180.degrees
+
+          stud3 = stud2.copy
+          stud4 = stud1.copy
+          @outer_group.entities.transform_entities rot, stud3, stud4
+
+          @studs.push stud1, stud2, stud3, stud4
+          @all_added_entities_so_far.push stud1, stud2, stud3, stud4
         end
       end
 
@@ -719,6 +723,122 @@ module EA_Extensions623
         @all_added_entities_so_far.push end_direction_group, beam_label_group, up_direction_group
       end
 
+      def add_stiffeners(scale, color)
+        all_stiffplates = []
+        var = @wc.to_s.split(".")
+        if var.last.to_i == 0
+          wc = var.first
+        else
+          wc = var.join('.')
+        end
+
+        stiffener_plate = "PL #{@@height_class}(#{wc}) Stiffener"
+
+        file_path_stiffener = Sketchup.find_support_file "#{ROOT_FILE_PATH}/Beam Components/#{stiffener_plate}.skp", "Plugins/"
+
+        #Sets the x y and z values for placement of the plates
+        x = (-0.5*@tw)-0.0625
+        y = 0 #STIFF_LOCATION
+        z = (0.5*@h)
+
+        # Adds the stiffener from the component list if there already is one, otherwise it puts a new one in
+        stiffener = @definition_list.load file_path_stiffener
+
+        #sets a scale object to be called on the stiffeners based on the scale
+        resize1 = Geom::Transformation.scaling [x-0.0625,y,z], 1, scale, 1
+
+        #add 2 instances of the stiffener plate
+        stiffener1 = @outer_group.entities.add_instance stiffener, ORIGIN
+        stiffener2 = @outer_group.entities.add_instance stiffener, ORIGIN
+        #rotates two of the stiffeners to the opposite side of the beam
+        place1 = Geom::Transformation.axes [x,y,z], Y_AXIS, X_AXIS
+        place2 = Geom::Transformation.axes [-x,y,z], Y_AXIS.reverse, X_AXIS.reverse
+        stiffener1.move! place1
+        stiffener2.move! place2
+        all_stiffplates.push stiffener1, stiffener2
+
+
+        all_stiffplates.each_with_index do |plate, i|
+          if plate === stiffener1 || plate === stiffener2
+            plate.transform! resize1
+          end
+        end
+
+        all_stiffplates.each {|plate| plate.material = color }
+        @stiff_plates.push stiffener1, stiffener2
+        #returns the all plates array
+        return all_stiffplates
+      end
+
+      def add_shearplates(scale, color)
+        all_shearplates = []
+
+        var = @wc.to_s.split(".")
+        if var.last.to_i == 0
+          wc = var.first
+        else
+          wc = var.join('.')
+        end
+
+        to_w10_shear_plate = "PL #{@@height_class}(#{wc}) to W10"
+        to_w12_shear_plate = "PL #{@@height_class}(#{wc}) to W12"
+        resize = Geom::Transformation.scaling 1, (1+scale.to_r.to_f), 1
+
+
+        file_path_lg_shear_plate = Sketchup.find_support_file "#{ROOT_FILE_PATH}/Beam Components/#{to_w12_shear_plate}.skp", "Plugins/"
+        small_shear_plate = "PL #{@@height_class}(#{wc}) to #{@@height_class}" #This is for all beams smaller than W10's
+
+        if @hc < 10
+          file_path_sm_shear_plate = Sketchup.find_support_file "#{ROOT_FILE_PATH}/Beam Components/#{small_shear_plate}.skp", "Plugins/"
+        else
+          file_path_sm_shear_plate = Sketchup.find_support_file "#{ROOT_FILE_PATH}/Beam Components/#{to_w10_shear_plate}.skp", "Plugins/"
+        end
+
+        #Sets the x y and z values for placement of the plates
+        x = (-0.5*@tw)-0.0625
+        y = 0 #STIFF_LOCATION
+        z = (0.5*@h)
+
+        if @hc >= 6
+        # adds in the shear plate if the beam is longer than the minimum beam length
+          shear_plate = @definition_list.load file_path_sm_shear_plate
+          shear_pl1 = @outer_group.entities.add_instance shear_plate, ORIGIN
+          shear_pl2 = @outer_group.entities.add_instance shear_plate, ORIGIN
+
+          place1 = Geom::Transformation.axes [-x,y,z], Y_AXIS, X_AXIS.reverse
+          place2 = Geom::Transformation.axes [x,y,z], Y_AXIS.reverse, X_AXIS
+
+          shear_pl1.move! place1
+          shear_pl2.move! place2
+
+          # scales the plates to the correct thickness
+          shear_pl1.transform! resize
+          shear_pl2.transform! resize
+          all_shearplates.push shear_pl1, shear_pl2
+          @sh_plates.push shear_pl1, shear_pl2
+
+          # adds in the other two shear plates if the height is higher than 12
+          if @hc >= 12
+            lg_shear_plate = @definition_list.load file_path_lg_shear_plate
+
+            shear_pl3 = @outer_group.entities.add_instance lg_shear_plate, ORIGIN
+            shear_pl4 = @outer_group.entities.add_instance lg_shear_plate, ORIGIN
+
+            shear_pl3.move! place1
+            shear_pl4.move! place2
+
+            shear_pl3.transform! resize
+            shear_pl4.transform! resize
+
+            all_shearplates.push shear_pl3, shear_pl4
+            @sh_plates.push shear_pl3, shear_pl4
+          end
+        end
+
+        all_shearplates.each {|plate| plate.material = color}
+        return all_shearplates
+      end
+
       def get_direction(angle, vec)
         #Gets the direction based on the angles heading in relation to NORTH
         #Single Directions
@@ -770,7 +890,7 @@ module EA_Extensions623
         @arc_center = @solid_group.entities.add_cpoint centerpoint
         percent = angle2/360.degrees
 
-        drctn = check_arc_direction(selected_arc)
+        @drctn = check_arc_direction(selected_arc)
         # New Arc Data
         if @@roll_type == 'EASY'
           case @@placement[1]
@@ -786,14 +906,16 @@ module EA_Extensions623
         else #roll type is hard
           case @@placement[0]
           when 'T'
-            if drctn == 0
+            if @drctn == 0
               offset = @h/2
+              @@radius_offset *= -1
             else
               offset = -1*(@h/2)
             end
           when 'B'
-            if drctn == 0
+            if @drctn == 0
               offset = -1*(@h/2)
+              @@radius_offset *= -1
             else
               offset = @h/2
             end
@@ -863,11 +985,16 @@ module EA_Extensions623
         @v3 = Geom::Vector3d.linear_combination(0.500, v1, 0.500, v2)
         # @entities.add_cline(c, @v3)
 
+        @v3.x = @v3.x.to_i
+        @v3.y = @v3.y.to_i
+        @v3.z = @v3.z.to_i
+
         if arc.normal[0] == 0 && arc.normal[1] == 0 && arc.normal[2] > 0
           direction = 1
         elsif @v3[2] >= 0
           direction = 1 # 1 means the z value of the vector is + and assumes you want the beam above or below. 1 is above and 0 is below
         end
+         p direction
         return direction
       end
 
@@ -906,6 +1033,8 @@ module EA_Extensions623
           @solid_group.entities.transform_entities place, @geometry
           @inner_group.entities.transform_entities place, @holes, @labels
           @outer_group.entities.transform_entities place, @studs
+          @outer_group.entities.transform_entities place, @sh_plates
+          @outer_group.entities.transform_entities place, @stiff_plates
           if @@placement[0] == 'T'
             tempvec = @z_vec.clone.reverse!
             tempvec.length = @h
@@ -913,18 +1042,49 @@ module EA_Extensions623
             @solid_group.entities.transform_entities mvdwn, @geometry
             @inner_group.entities.transform_entities mvdwn, @holes, @labels
             @outer_group.entities.transform_entities mvdwn, @studs
+            @outer_group.entities.transform_entities mvdwn, @sh_plates
+            @outer_group.entities.transform_entities mvdwn, @stiff_plates
           end
         else # Roll Type is Hard
-          vec_set = Geom::Vector3d.new [0,0,-0.5*@h]
-          mvdwn = Geom::Transformation.translation vec_set
-          @solid_group.entities.transform_entities mvdwn, @geometry
-          @inner_group.entities.transform_entities mvdwn, @holes, @labels
-          @outer_group.entities.transform_entities mvdwn, @studs
+          if @drctn == 1
+            vec_set = Geom::Vector3d.new [0,0,-0.5*@h]
+            mvdwn = Geom::Transformation.translation vec_set
+            @solid_group.entities.transform_entities mvdwn, @geometry
+            @inner_group.entities.transform_entities mvdwn, @holes, @labels
+            @outer_group.entities.transform_entities mvdwn, @studs
+            @outer_group.entities.transform_entities mvdwn, @sh_plates
+            @outer_group.entities.transform_entities mvdwn, @stiff_plates
 
-          place = Geom::Transformation.axes start_point, @z_vec, @x_vec, @y_vec
-          @solid_group.entities.transform_entities place, @geometry
-          @inner_group.entities.transform_entities place, @holes, @labels
-          @outer_group.entities.transform_entities place, @studs
+            place = Geom::Transformation.axes start_point, @z_vec, @x_vec, @y_vec
+            @solid_group.entities.transform_entities place, @geometry
+            @inner_group.entities.transform_entities place, @holes, @labels
+            @outer_group.entities.transform_entities place, @studs
+            @outer_group.entities.transform_entities place, @sh_plates
+            @outer_group.entities.transform_entities place, @stiff_plates
+          else
+            cpoint  = [0,0,@h/2]
+            flip = Geom::Transformation.rotation cpoint, [0,1,0], 180.degrees
+            @solid_group.entities.transform_entities flip, @geometry
+            @inner_group.entities.transform_entities flip, @holes, @labels
+            @outer_group.entities.transform_entities flip, @studs
+            @outer_group.entities.transform_entities flip, @sh_plates
+            @outer_group.entities.transform_entities flip, @stiff_plates
+
+            vec_set = Geom::Vector3d.new [0,0,-0.5*@h]
+            mvdwn = Geom::Transformation.translation vec_set
+            @solid_group.entities.transform_entities mvdwn, @geometry
+            @inner_group.entities.transform_entities mvdwn, @holes, @labels
+            @outer_group.entities.transform_entities mvdwn, @studs
+            @outer_group.entities.transform_entities mvdwn, @sh_plates
+            @outer_group.entities.transform_entities mvdwn, @stiff_plates
+
+            place = Geom::Transformation.axes start_point, @z_vec, @x_vec, @y_vec
+            @solid_group.entities.transform_entities place, @geometry
+            @inner_group.entities.transform_entities place, @holes, @labels
+            @outer_group.entities.transform_entities place, @studs
+            @outer_group.entities.transform_entities place, @sh_plates
+            @outer_group.entities.transform_entities place, @stiff_plates
+          end
         end
 
         if face.normal.samedirection? start_vec
@@ -981,7 +1141,8 @@ module EA_Extensions623
         @studs        = []
         @shear_holes  = []
         @labels       = []
-        @plates       = []
+        @sh_plates    = []
+        @stiff_plates = []
 
         @arc  = 0 #This is the new arc
         @face = 0 # This is the profile
