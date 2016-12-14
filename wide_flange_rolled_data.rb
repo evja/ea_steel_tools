@@ -291,6 +291,7 @@ module EA_Extensions623
 
         align_with_curve(profile, arc) #this returns an array. The FACE that has been aligned and the ARC
         extrude_face(profile, arc)
+        spread_parts(arc)
         erase_arc(arc) #Move this back to the bottom of the method
         @working_group.explode
         if @@has_holes && @@cuts_holes
@@ -931,6 +932,8 @@ module EA_Extensions623
         value = (@segment_length/2.0)/new_radius
         seg_angle = Math.asin(value)
         @hole_rotation_angle = seg_angle*4
+        @guage_hole_rotation_angle = @hole_rotation_angle * (@segment_count/2)
+        # @stiffner_rotation_angle =
 
         #this sets the web and flange hole counts
         @web_holes_count = ((@segment_count)/4).to_i
@@ -1152,6 +1155,59 @@ module EA_Extensions623
         face.followme(path.edges)
       end
 
+      def spread_parts(arc)
+        @guage_holes.each do |hole|
+          slide(hole, arc, BIG_HOLES_LOCATION)
+          spread(hole, arc, @guage_hole_rotation_angle, 0, 1)
+        end
+        @shear_holes.each do |hole|
+          slide(hole, arc, BIG_HOLES_LOCATION)
+          spread(hole, arc, @guage_hole_rotation_angle, 0, 1)
+        end
+        # @flange_holes.each do |hole|
+        #   slide(hole, arc, BIG_HOLES_LOCATION)
+        #   spread(hole, arc, @guage_hole_rotation_angle, 0, 1)
+        # end
+
+      end
+
+      def slide(part, arc, distance)
+        slide_vec = arc.first_edge.end.position - arc.first_edge.start.position
+        slide_vec.length = distance
+        slide     = Geom::Transformation.translation slide_vec
+        part.transform! slide
+      end
+
+      def spread(part, arc, angle, number_of_copies, max)
+        if number_of_copies == max
+          return
+        else
+          center = arc.center
+          pivot = arc.normal
+          x_vec = arc.xaxis
+
+          rot = Geom::Transformation.rotation center, pivot, angle
+          copy = part.copy
+          copy.transform! rot
+          number_of_copies += 1
+          spread(copy, arc, angle, number_of_copies, max)
+        end
+      end
+
+      # def copy_along_curve(hole, arc, angle, number_of_copies, max, loot)
+      #   if number_of_copies == max
+      #     return loot
+      #   else
+      #     rot = Geom::Transformation.rotation arc.center, arc.normal, angle
+      #     new_hole = hole.copy
+      #     loot << new_hole
+      #     @all_added_entities_so_far.push new_hole
+      #     new_hole.transform! rot
+      #     number_of_copies += 1
+      #     copy_along_curve(new_hole, arc, angle, number_of_copies, max, loot)
+      #   end
+      # end
+
       def erase_arc(arc)
          arc.edges.each(&@erase)
       end
@@ -1219,19 +1275,6 @@ module EA_Extensions623
       end
 
 
-      def copy_along_curve(hole, arc, angle, number_of_copies, max, loot)
-        if number_of_copies == max
-          return loot
-        else
-          rot = Geom::Transformation.rotation arc.center, arc.normal, angle
-          new_hole = hole.copy
-          loot << new_hole
-          @all_added_entities_so_far.push new_hole
-          new_hole.transform! rot
-          number_of_copies += 1
-          copy_along_curve(new_hole, arc, angle, number_of_copies, max, loot)
-        end
-      end
 
       def align_hole(hole, align_vec, count)
         hole_loop = get_hole_component_curve(hole)
