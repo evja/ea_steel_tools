@@ -936,6 +936,7 @@ module EA_Extensions623
         @angle_to_center_of_arc = (@segment_count*(@seg_angle*2))/2
 
         #this sets the web and flange hole counts
+        @flange_hole_count = @web_holes_count
         @web_holes_count = (((@segment_count)-2)/4).to_i
         @flange_hole_stagger ? @flange_hole_count = @web_holes_count : @flange_hole_count = @web_holes_count*2
 
@@ -1170,10 +1171,40 @@ module EA_Extensions623
           spread(hole, arc, @guage_hole_rotation_angle, 0, 1, true, @shear_holes)
         end
 
-        # Spread the 9/16" Flange Holes
+        # outside_holes_count = @flange_hole_count
+        # inside_holes_count  = @flange_hole_count
+
+        # # Spread the 9/16" Flange Holes
+        # if @flange_hole_stagger
+        #   hole_rotation = @hole_rotation_angle*2
+        #   if @segment_count % 4 == 1 || @segment_count % 4 == 2
+        #     outside_holes_count -= 1
+        #   end
+        #   @flange_holes[0,2].each do |hole|
+        #     spread(hole, arc, (@hole_rotation_angle*1.75), 0, 1, false)
+        #     spread(hole, arc, hole_rotation, 0, outside_holes_count, true, @flange_holes)
+        #   end
+        #   @flange_holes[2,3].each do |hole|
+        #     spread(hole, arc, (@hole_rotation_angle*0.75), 0, 1, false)
+        #     spread(hole, arc, hole_rotation, 0, inside_holes_count, true, @flange_holes)
+        #   end
+        # else
+        #   hole_rotation = @hole_rotation_angle
+        #   if @segment_count % 4 == 3 || @segment_count % 4 == 0
+        #     top_inside_holes     += 1
+        #     top_outside_holes    += 1
+        #     bottom_inside_holes  += 1
+        #     bottom_outside_holes += 1
+        #   end
+        #   @flange_holes.each do |hole|
+        #     spread(hole, arc, (@hole_rotation_angle*0.75), 0, 1, false)
+        #     spread(hole, arc, hole_rotation, 0, @flange_holes_count, true, @flange_holes)
+        #   end
+        # end
+
         @flange_holes.each do |hole|
           spread(hole, arc, (@hole_rotation_angle*0.75), 0, 1, false)
-          spread(hole, arc, @hole_rotation_angle, 0, @flange_hole_count, true, @flange_holes)
+          spread(hole, arc, @hole_rotation_angle, 0, @flange_holes_count, true, [])
         end
 
         # Spread the 9/16" Web Holes
@@ -1239,7 +1270,7 @@ module EA_Extensions623
             copy = part.copy
             copy.transform! rot
             number_of_copies += 1
-            array << copy
+            # array << copy
             spread(copy, arc, angle, number_of_copies, max, copy)
           else
             part.transform! rot
