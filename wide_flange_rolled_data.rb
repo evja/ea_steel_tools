@@ -12,12 +12,6 @@ module EA_Extensions623
       ##################################
       #Sets the root radus for the beams
       RADIUS = 3
-      #This sets the distance from the end of the beam the direction labels go
-      LABELX = 10
-      #Sets the distance from the ends of the beams that holes cannot be, in inches
-      NO_HOLE_ZONE = 6
-      #Setc the north direction as the green axis
-      NORTH = Geom::Vector3d.new [0,1,0]
       # This sets the stiffener location from each end of the beam
       STIFF_LOCATION = 2
       #Distance from the end of the beam the 13/14" holes are placed
@@ -37,7 +31,10 @@ module EA_Extensions623
         @guage_holes  = []
         @studs        = []
         @shear_holes  = []
-        @labels       = []
+        @start_labels = []
+        @end_labels   = []
+        @up_label     = []
+        @beam_labels  = []
         @sh_plates    = []
         @stiff_plates = []
 
@@ -648,8 +645,8 @@ module EA_Extensions623
         heading_y = Geom::Vector3d.new beam_direction_y
         heading_x[2] = 0
         heading_y[2] = 0
-        angle_x = heading_x.angle_between NORTH
-        angle_y = heading_y.angle_between NORTH
+        angle_x = heading_x.angle_between Y_AXIS
+        angle_y = heading_y.angle_between Y_AXIS
 
         direction1 = get_direction(angle_x, vec1)
         direction2 = get_direction(angle_y, vec2)
@@ -703,25 +700,27 @@ module EA_Extensions623
         tr3 = Geom::Transformation.axes [(@tw/2) + 0.0625, (@segment_length/2)-(label_width/2), (@h/2)-(label_height/2)], Y_AXIS, Z_AXIS
         tr4 = Geom::Transformation.axes [-(@tw/2) - 0.0625, (@segment_length/2)+(label_width/2), (@h/2)-(label_height/2)], Y_AXIS.reverse, Z_AXIS
         # Adds in the labels and sets them in position
-        beam_label = label_ents.add_instance comp_def, ORIGIN
-        beam_label.move! tr3
+        @beam_label = label_ents.add_instance comp_def, ORIGIN
+        @beam_label.move! tr3
 
-        beam_label2 = label_ents.add_instance comp_def, ORIGIN
-        beam_label2.move! tr4
+        @beam_label2 = label_ents.add_instance comp_def, ORIGIN
+        @beam_label2.move! tr4
 
         # Adds in the Up Arrow
         file_path = Sketchup.find_support_file "#{ROOT_FILE_PATH}/Beam Components/UP.skp", "Plugins/"
         up_direction = @definition_list.load file_path
 
-        up_label = up_ents.add_instance up_direction, ORIGIN
-        up_label.move! tr
+        # up_label = up_ents.add_instance up_direction, ORIGIN
+        # up_label.move! tr
 
-        up_label2 = up_ents.add_instance up_direction, ORIGIN
-        up_label2.move! tr2
+        # up_label2 = up_ents.add_instance up_direction, ORIGIN
+        # up_label2.move! tr2
 
-
-        @labels.push start_direction_group, end_direction_group, beam_label_group, up_direction_group
-        @all_added_entities_so_far.push end_direction_group, beam_label_group, up_direction_group
+        @start_labels.push start_direction_group
+        @end_labels.push end_direction_group
+        @up_label.push up_direction_group
+        @beam_labels.push beam_label_group
+        @all_added_entities_so_far.push end_direction_group, beam_label_group, up_direction_group, start_direction_group
       end
 
       def add_stiffeners(scale, color)
@@ -909,14 +908,14 @@ module EA_Extensions623
           when 'T'
             if @drctn == 0
               offset = @h/2
-              @@radius_offset *= -1
+              # @@radius_offset *= -1
             else
               offset = -1*(@h/2)
             end
           when 'B'
             if @drctn == 0
               offset = -1*(@h/2)
-              @@radius_offset *= -1
+              # @@radius_offset *= -1
             else
               offset = @h/2
             end
@@ -930,16 +929,17 @@ module EA_Extensions623
 
         @segment_count = get_segment_count(percent, radius, @segment_length)
         value = (@segment_length/2.0)/new_radius
-        seg_angle = Math.asin(value)
-        @hole_rotation_angle = seg_angle*4
+        @seg_angle = Math.asin(value)
+        @hole_rotation_angle = @seg_angle*4
         @guage_hole_rotation_angle = @hole_rotation_angle * (@segment_count/2)
         # @stiffner_rotation_angle =
+        @angle_to_center_of_arc = (@segment_count*(@seg_angle*2))/2
 
         #this sets the web and flange hole counts
-        @web_holes_count = ((@segment_count)/4).to_i
+        @web_holes_count = (((@segment_count)-2)/4).to_i
         @flange_hole_stagger ? @flange_hole_count = @web_holes_count : @flange_hole_count = @web_holes_count*2
 
-        new_angle = (2.0*seg_angle*@segment_count)
+        new_angle = (2.0*@seg_angle*@segment_count)
         new_path = @solid_group.entities.add_arc centerpoint, x_axis, arc.normal, new_radius, angle1, new_angle, @segment_count
         new_arc = new_path[0].curve
         # p new_arc.radius
@@ -997,7 +997,6 @@ module EA_Extensions623
         elsif @v3[2] >= 0
           direction = 1 # 1 means the z value of the vector is + and assumes you want the beam above or below. 1 is above and 0 is below
         end
-         p direction
         return direction
       end
 
@@ -1034,7 +1033,7 @@ module EA_Extensions623
         if @@roll_type == 'EASY'
           place = Geom::Transformation.axes start_point, @y_vec, @x_vec, @z_vec
           @solid_group.entities.transform_entities place, @geometry
-          @inner_group.entities.transform_entities place, @holes, @labels
+          @inner_group.entities.transform_entities place, @holes, @beam_labels, @start_labels, @end_labels, @up_label
           @outer_group.entities.transform_entities place, @studs
           @outer_group.entities.transform_entities place, @sh_plates
           @outer_group.entities.transform_entities place, @stiff_plates
@@ -1043,7 +1042,7 @@ module EA_Extensions623
             tempvec.length = @h
             mvdwn = Geom::Transformation.translation tempvec
             @solid_group.entities.transform_entities mvdwn, @geometry
-            @inner_group.entities.transform_entities mvdwn, @holes, @labels
+            @inner_group.entities.transform_entities mvdwn, @holes, @beam_labels, @start_labels, @end_labels, @up_label
             @outer_group.entities.transform_entities mvdwn, @studs
             @outer_group.entities.transform_entities mvdwn, @sh_plates
             @outer_group.entities.transform_entities mvdwn, @stiff_plates
@@ -1053,14 +1052,14 @@ module EA_Extensions623
             vec_set = Geom::Vector3d.new [0,0,-0.5*@h]
             mvdwn = Geom::Transformation.translation vec_set
             @solid_group.entities.transform_entities mvdwn, @geometry
-            @inner_group.entities.transform_entities mvdwn, @holes, @labels
+            @inner_group.entities.transform_entities mvdwn, @holes, @beam_labels, @start_labels, @end_labels, @up_label
             @outer_group.entities.transform_entities mvdwn, @studs
             @outer_group.entities.transform_entities mvdwn, @sh_plates
             @outer_group.entities.transform_entities mvdwn, @stiff_plates
 
             place = Geom::Transformation.axes start_point, @z_vec, @x_vec, @y_vec
             @solid_group.entities.transform_entities place, @geometry
-            @inner_group.entities.transform_entities place, @holes, @labels
+            @inner_group.entities.transform_entities place, @holes, @beam_labels, @start_labels, @end_labels, @up_label
             @outer_group.entities.transform_entities place, @studs
             @outer_group.entities.transform_entities place, @sh_plates
             @outer_group.entities.transform_entities place, @stiff_plates
@@ -1068,7 +1067,7 @@ module EA_Extensions623
             cpoint  = [0,0,@h/2]
             flip = Geom::Transformation.rotation cpoint, [0,1,0], 180.degrees
             @solid_group.entities.transform_entities flip, @geometry
-            @inner_group.entities.transform_entities flip, @holes, @labels
+            @inner_group.entities.transform_entities flip, @holes, @beam_labels, @start_labels, @end_labels, @up_label
             @outer_group.entities.transform_entities flip, @studs
             @outer_group.entities.transform_entities flip, @sh_plates
             @outer_group.entities.transform_entities flip, @stiff_plates
@@ -1076,14 +1075,14 @@ module EA_Extensions623
             vec_set = Geom::Vector3d.new [0,0,-0.5*@h]
             mvdwn = Geom::Transformation.translation vec_set
             @solid_group.entities.transform_entities mvdwn, @geometry
-            @inner_group.entities.transform_entities mvdwn, @holes, @labels
+            @inner_group.entities.transform_entities mvdwn, @holes, @beam_labels, @start_labels, @end_labels, @up_label
             @outer_group.entities.transform_entities mvdwn, @studs
             @outer_group.entities.transform_entities mvdwn, @sh_plates
             @outer_group.entities.transform_entities mvdwn, @stiff_plates
 
             place = Geom::Transformation.axes start_point, @z_vec, @x_vec, @y_vec
             @solid_group.entities.transform_entities place, @geometry
-            @inner_group.entities.transform_entities place, @holes, @labels
+            @inner_group.entities.transform_entities place, @holes, @beam_labels, @start_labels, @end_labels, @up_label
             @outer_group.entities.transform_entities place, @studs
             @outer_group.entities.transform_entities place, @sh_plates
             @outer_group.entities.transform_entities place, @stiff_plates
@@ -1143,7 +1142,10 @@ module EA_Extensions623
         @guage_holes  = []
         @studs        = []
         @shear_holes  = []
-        @labels       = []
+        @start_labels = []
+        @end_labels   = []
+        @up_label     = []
+        @beam_labels  = []
         @sh_plates    = []
         @stiff_plates = []
 
@@ -1156,18 +1158,65 @@ module EA_Extensions623
       end
 
       def spread_parts(arc)
+        # Spread the 13/16" Flange Holes
         @guage_holes.each do |hole|
           slide(hole, arc, BIG_HOLES_LOCATION)
-          spread(hole, arc, @guage_hole_rotation_angle, 0, 1)
+          spread(hole, arc, @guage_hole_rotation_angle, 0, 1, true, @guage_holes)
         end
+
+        # Spread the 13/16" Web Holes
         @shear_holes.each do |hole|
           slide(hole, arc, BIG_HOLES_LOCATION)
-          spread(hole, arc, @guage_hole_rotation_angle, 0, 1)
+          spread(hole, arc, @guage_hole_rotation_angle, 0, 1, true, @shear_holes)
         end
-        # @flange_holes.each do |hole|
-        #   slide(hole, arc, BIG_HOLES_LOCATION)
-        #   spread(hole, arc, @guage_hole_rotation_angle, 0, 1)
-        # end
+
+        # Spread the 9/16" Flange Holes
+        @flange_holes.each do |hole|
+          spread(hole, arc, (@hole_rotation_angle*0.75), 0, 1, false)
+          spread(hole, arc, @hole_rotation_angle, 0, @flange_hole_count, true, @flange_holes)
+        end
+
+        # Spread the 9/16" Web Holes
+        @web_holes.each do |hole|
+          slide(hole, arc, BIG_HOLES_LOCATION)
+        end
+        r = Geom::Transformation.rotation arc.center, arc.normal, @hole_rotation_angle/2
+        r2 = Geom::Transformation.rotation arc.center, arc.normal, @hole_rotation_angle*1.5
+        @web_holes.first.transform! r
+        @web_holes.last.transform! r2
+        spread(@web_holes.first, arc, @hole_rotation_angle*2, 0, @web_holes_count, true, @web_holes)
+        spread(@web_holes.last, arc, @hole_rotation_angle*2, 0, @web_holes_count, true, @web_holes)
+
+        # Spreads the Beam Label
+        @beam_labels.each do |label|
+          spread(label, arc, @angle_to_center_of_arc, 0, 1, false)
+        end
+
+        # Spred the Direction Labels
+        @start_labels.each do |label|
+          spread(label, arc, @hole_rotation_angle, 0, 1, false)
+        end
+        al = (@angle_to_center_of_arc*2)-(@hole_rotation_angle)
+        p al.radians
+        @end_labels.each do |label|
+          spread(label, arc, al, 0, 1, false)
+        end
+
+        # Spread the Stiffeners
+        ang = (@angle_to_center_of_arc*2) - ((@seg_angle/2)*2)
+        p ang.radians
+        @stiff_plates.each do |plate|
+          slide(plate, arc, STIFF_LOCATION)
+          spread(plate, arc, ang, 0,1, true, @stiff_plates)
+        end
+
+        #Spread Shear PLates
+        @sh_plates[0..1].each do |plate|
+          spread(plate, arc, @angle_to_center_of_arc + (@hole_rotation_angle*2), 0, 1, false)
+        end
+        @sh_plates[2..3].each do |plate|
+          spread(plate, arc, @angle_to_center_of_arc - (@hole_rotation_angle*2), 0, 1, false)
+        end
 
       end
 
@@ -1178,35 +1227,27 @@ module EA_Extensions623
         part.transform! slide
       end
 
-      def spread(part, arc, angle, number_of_copies, max)
+      def spread(part, arc, angle, number_of_copies, max, copy, *array)
         if number_of_copies == max
           return
         else
           center = arc.center
           pivot = arc.normal
           x_vec = arc.xaxis
-
           rot = Geom::Transformation.rotation center, pivot, angle
-          copy = part.copy
-          copy.transform! rot
-          number_of_copies += 1
-          spread(copy, arc, angle, number_of_copies, max)
+          if copy
+            copy = part.copy
+            copy.transform! rot
+            number_of_copies += 1
+            array << copy
+            spread(copy, arc, angle, number_of_copies, max, copy)
+          else
+            part.transform! rot
+            number_of_copies += 1
+            spread(part, arc, angle, number_of_copies, max, copy)
+          end
         end
       end
-
-      # def copy_along_curve(hole, arc, angle, number_of_copies, max, loot)
-      #   if number_of_copies == max
-      #     return loot
-      #   else
-      #     rot = Geom::Transformation.rotation arc.center, arc.normal, angle
-      #     new_hole = hole.copy
-      #     loot << new_hole
-      #     @all_added_entities_so_far.push new_hole
-      #     new_hole.transform! rot
-      #     number_of_copies += 1
-      #     copy_along_curve(new_hole, arc, angle, number_of_copies, max, loot)
-      #   end
-      # end
 
       def erase_arc(arc)
          arc.edges.each(&@erase)
