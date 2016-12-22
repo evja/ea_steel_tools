@@ -297,9 +297,10 @@ module EA_Extensions623
         @working_group.explode
         if @@has_holes && @@cuts_holes
           @solid_group.explode
-          web_holes.each(&@explode) if @@web_holes
-          flange_holes.each(&@explode) if @@flange_holes
-          large_holes.each(&@explode)
+          @web_holes.each(&@explode) if @@web_holes
+          @flange_holes.each(&@explode) if @@flange_holes
+          @shear_holes.each(&@explode)
+          @guage_holes.each(&@explode)
         end
       end
 
@@ -316,6 +317,7 @@ module EA_Extensions623
         @inner_group.layer = @steel_layer
 
         @solid_group = @inner_group.entities.add_group
+        @centergroup = @solid_group.entities.add_group
 
         b = @outer_group.bounds
         h = b.height
@@ -864,7 +866,14 @@ module EA_Extensions623
 
         angle1 = arc.start_angle
         angle2 = arc.end_angle
-        @arc_center = @solid_group.entities.add_cpoint centerpoint
+        @arc_center = @centergroup.entities.add_cpoint centerpoint
+        # other_center = @centergroup.entities.add_cpoint centerpoint
+        # v = vec.clone
+        # v.length = @h
+        # move = Geom::Transformation.translation v
+        # @centergroup.entities.transform_entities move, other_center
+        # cline = @centergroup.entities.add_line centerpoint, other_center.position
+        # cline.hidden = true
         percent = angle2/360.degrees
 
         @drctn = check_arc_direction(selected_arc)
@@ -910,7 +919,6 @@ module EA_Extensions623
         @seg_angle = @half_angle*2.0000
         @hole_rotation_angle = @seg_angle*2.000
         @guage_hole_rotation_angle = @hole_rotation_angle * (@segment_count/2)
-        # @stiffner_rotation_angle =
         @angle_to_center_of_arc = (@segment_count*@seg_angle)/2
 
         #this sets the web and flange hole counts
@@ -1112,6 +1120,7 @@ module EA_Extensions623
         @outer_group   = nil
         @inner_group   = nil
         @solid_group   = nil
+        @centergroup   = nil
 
         @geometry     = []
         @holes        = []
@@ -1153,55 +1162,89 @@ module EA_Extensions623
           end
         end
 
-        outside_holes_count = @flange_hole_count
-        inside_holes_count  = @flange_hole_count
-
         # Spread the 9/16" Flange Holes
-        if @@has_holes && @@flange_holes
-          if @flange_hole_stagger
-            hole_rotation = @hole_rotation_angle*2
-            if @segment_count % 4 == 1 || @segment_count % 4 == 2
-              outside_holes_count -= 1
-            end
-            @flange_holes[0,2].each do |hole|
-              spread(hole, arc, (@hole_rotation_angle*1.75), 0, 1, false)
-              spread(hole, arc, hole_rotation, 0, outside_holes_count, true, @flange_holes)
-            end
-            @flange_holes[2,3].each do |hole|
-              spread(hole, arc, (@hole_rotation_angle*0.75), 0, 1, false)
-              spread(hole, arc, hole_rotation, 0, inside_holes_count, true, @flange_holes)
-            end
-          else
-            hole_rotation = @hole_rotation_angle
-            if @segment_count % 4 == 3 || @segment_count % 4 == 0
-              p @flange_hole_count
-              @flange_hole_count += 1
-            end
-            @flange_holes.each do |hole|
-              spread(hole, arc, (@hole_rotation_angle*0.75), 0, 1, false)
-              spread(hole, arc, hole_rotation, 0, @flange_hole_count, true, @flange_holes)
-            end
+        tofh = []
+        tifh = []
+        bofh = []
+        bifh = []
+        outside_part_count = ((@segment_count-2)/4).to_i
+        inside_part_count  = ((@segment_count-2)/4).to_i
+
+        if @flange_hole_stagger #stagger the flange holes
+          spread_angle = @hole_rotation_angle*2
+          outside_part_count = ((@segment_count-2)/4).to_i
+          inside_part_count  = ((@segment_count-2)/4).to_i
+          if (@segment_count-2) % 4 == 1 || (@segment_count-2) % 4 == 2
+            inside_part_count -= 1
+          end
+        else #dont stagger the flange holes
+          spread_angle = @hole_rotation_angle
+          outside_part_count = ((@segment_count-2)/2).to_i
+          inside_part_count  = outside_part_count
+        end
+
+        out_tr = Geom::Transformation.rotation arc.center, arc.normal, @seg_angle
+        in_tr  = Geom::Transformation.rotation arc.center, arc.normal, @seg_angle*2
+        if @@has_holes && @@flange_holes && @studs.empty?
+          @flange_holes.each do |hole|
+            slide(hole, arc, BIG_HOLES_LOCATION)
           end
 
-          count = @flange_hole_count.to_i
           @flange_holes.each do |hole|
-            spread(hole, arc, (@hole_rotation_angle*0.75), 0, 1, false)
-            spread(hole, arc, @hole_rotation_angle, 0, count, true, @flange_holes)
+            hole.transform! out_tr
           end
+
+          if @flange_hole_stagger
+            @flange_holes[1].transform! in_tr
+            @flange_holes[3].transform! in_tr
+          end
+
+            spread(@flange_holes[0], arc, spread_angle, 0, outside_part_count, true, tofh)
+            spread(@flange_holes[1], arc, spread_angle, 0, inside_part_count, true, tifh)
+            spread(@flange_holes[2], arc, spread_angle, 0, outside_part_count, true, bofh)
+            spread(@flange_holes[3], arc, spread_angle, 0, inside_part_count, true, bifh)
+            [tofh,tifh,bofh,bifh].flatten.each{|h| @flange_holes.push h}
+        else
+          @studs.each do |stud|
+            slide(stud, arc, BIG_HOLES_LOCATION)
+          end
+          @studs.each do |stud|
+            stud.transform! out_tr
+          end
+
+          if @flange_hole_stagger
+            @studs[1].transform! in_tr
+            @studs[3].transform! in_tr
+          end
+          spread(@studs[0], arc, spread_angle, 0, outside_part_count, true, tofh)
+          spread(@studs[1], arc, spread_angle, 0, inside_part_count, true, tifh)
+          spread(@studs[2], arc, spread_angle, 0, outside_part_count, true, bofh)
+          spread(@studs[3], arc, spread_angle, 0, inside_part_count, true, bifh)
+          [tofh,tifh,bofh,bifh].flatten.each{|h| @studs.push h}
         end
 
         # Spread the 9/16" Web Holes
+        th = []
+        bh = []
+          top_row_web_holes = ((@segment_count-2)/4).to_i
+          bottom_row_web_holes = top_row_web_holes
+        if (@segment_count-2) % 4 == 1 || (@segment_count-2) % 4 == 2
+          bottom_row_web_holes -= 1
+        end
+
         if @@has_holes && @@web_holes
           @web_holes.each do |hole|
             slide(hole, arc, BIG_HOLES_LOCATION)
           end
-          r = Geom::Transformation.rotation arc.center, arc.normal, @hole_rotation_angle/2
-          r2 = Geom::Transformation.rotation arc.center, arc.normal, @hole_rotation_angle*1.5
-          @web_holes.first.transform! r
-          @web_holes.last.transform! r2
-          spread(@web_holes.first, arc, @hole_rotation_angle*2, 0, @web_holes_count, true, @web_holes)
-          spread(@web_holes.last, arc, @hole_rotation_angle*2, 0, @web_holes_count, true, @web_holes)
+          top_w_hole_rot = Geom::Transformation.rotation arc.center, arc.normal, @seg_angle
+          bottom_w_hole_rot = Geom::Transformation.rotation arc.center, arc.normal, @seg_angle*3
+          @web_holes.first.transform! top_w_hole_rot
+          @web_holes.last.transform! bottom_w_hole_rot
+          spread(@web_holes.first, arc, @hole_rotation_angle*2, 0, top_row_web_holes, true, th)
+          spread(@web_holes.last, arc, @hole_rotation_angle*2, 0, bottom_row_web_holes, true, bh)
         end
+        th.each {|h| @web_holes.push h} # these throw the new copies of the web holes into the web holes array for optional explding
+        bh.each {|h| @web_holes.push h}
 
         # Spreads the Beam Label
         @beam_labels.each do |label|
@@ -1229,7 +1272,7 @@ module EA_Extensions623
         end
 
         #Spread Shear Plates
-        if @@has_shearplates
+        if @@has_shearplates && !@sh_plates.empty?
           @sh_plates[0..1].each do |plate|
             slide(plate, arc, @segment_length/2)
             spread(plate, arc, @seg_angle*1.5, 0, 1, false)
@@ -1248,9 +1291,9 @@ module EA_Extensions623
         part.transform! slide
       end
 
-      def spread(part, arc, angle, number_of_copies, max, copy, *array)
-        if number_of_copies == max
-          return
+      def spread(part, arc, angle, number_of_copies, max, copy, array = [])
+        if number_of_copies == max || array.count >= max
+          return array
         else
           center = arc.center
           pivot = arc.normal
@@ -1260,12 +1303,12 @@ module EA_Extensions623
             copy = part.copy
             copy.transform! rot
             number_of_copies += 1
-            array << copy if array
-            spread(copy, arc, angle, number_of_copies, max, copy, *array)
+            array << copy
+            spread(copy, arc, angle, number_of_copies, max, copy, array)
           else
             part.transform! rot
             number_of_copies += 1
-            spread(part, arc, angle, number_of_copies, max, copy)
+            spread(part, arc, angle, number_of_copies, max, copy, array)
           end
         end
       end
