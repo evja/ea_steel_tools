@@ -29,7 +29,7 @@ module EA_Extensions623
         end
 
         options = {
-          :title           => 'Wide Flange Steel',
+          :title           => "Wide Flange Steel #{VERSION_NUM}",
           :preferences_key => 'WFS',
           :width           => 400,
           :height          => 460,

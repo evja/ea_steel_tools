@@ -210,7 +210,7 @@ module EA_Extensions623
 
       def activate()
         model = @model
-        # model.start_operation("Roll Steel", true)
+        model.start_operation("Roll Steel", true)
         pot = []
         arcs = check_for_multiples(@selected_curve, pot)
         load_parts
@@ -220,7 +220,7 @@ module EA_Extensions623
           reset_tool
         end
 
-        # model.commit_operation
+        model.commit_operation
 
         Sketchup.send_action "selectSelectionTool:"
       end
@@ -548,7 +548,6 @@ module EA_Extensions623
         x = (-0.5*@tw)
 
         #adds in the 13/16" Web/Connection holes
-        #adds in the 13/16" Web/Connection holes
         @number_of_sheer_holes.even? ? z = (z-reasonable_spacing.to_f/2)-(((@number_of_sheer_holes-2)/2)*reasonable_spacing) : z = z-(((@number_of_sheer_holes-1)/2)*reasonable_spacing)
 
         for n in 0..(@number_of_sheer_holes-1) do
@@ -699,12 +698,34 @@ module EA_Extensions623
           comp_def.save_as(save_path + "/#{@@beam_name}.skp")
         end
 
+        if arc.radius > 216
+          inlabel_offset = 1/16.to_f
+        elsif arc.radius >= 144
+          inlabel_offset = 2/16.to_f
+        elsif arc.radius >= 96
+          inlabel_offset = 3/16.to_f
+        elsif arc.radius >= 84
+          inlabel_offset = 4/16.to_f
+        elsif arc.radius >= 72
+          inlabel_offset = 5/16.to_f
+        elsif arc.radius >= 60
+          inlabel_offset = 6/16.to_f
+        elsif arc.radius >= 56
+          inlabel_offset = 7/16.to_f
+        elsif arc.radius >= 48
+          inlabel_offset = 8/16.to_f
+        elsif arc.radius >= 40
+          inlabel_offset = 9/16.to_f
+        elsif arc.radius >= 0
+          inlabel_offset = 1.to_f
+        end
+
         label_width  = comp_def.bounds.width
         label_height = comp_def.bounds.height
         label_center = comp_def.bounds.center
 
-        tr3 = Geom::Transformation.axes [(@tw/2) + 0.0625, (@segment_length/2)-(label_width/2), (@h/2)-(label_height/2)], Y_AXIS, Z_AXIS
-        tr4 = Geom::Transformation.axes [-(@tw/2) - 0.0625, (@segment_length/2)+(label_width/2), (@h/2)-(label_height/2)], Y_AXIS.reverse, Z_AXIS
+        tr3 = Geom::Transformation.axes [(@tw/2) + 0.0625, ((@segment_length/2)-(label_width/2))-(7/16.to_f), (@h/2)-(label_height/2)], Y_AXIS, Z_AXIS
+        tr4 = Geom::Transformation.axes [-(@tw/2) - inlabel_offset, ((@segment_length/2)+(label_width/2))+(7/16.to_f), (@h/2)-(label_height/2)], Y_AXIS.reverse, Z_AXIS
         # Adds in the labels and sets them in position
         @beam_label = label_ents.add_instance comp_def, ORIGIN
         @beam_label.move! tr3
@@ -852,6 +873,7 @@ module EA_Extensions623
 
       def draw_new_arc(selected_arc)
         # Selected Arc Data
+        @drctn = check_arc_direction(selected_arc)
         arc = selected_arc
         seg1 = arc.first_edge
         seg2 = arc.last_edge
@@ -867,16 +889,17 @@ module EA_Extensions623
         angle1 = arc.start_angle
         angle2 = arc.end_angle
         @arc_center = @centergroup.entities.add_cpoint centerpoint
-        # other_center = @centergroup.entities.add_cpoint centerpoint
-        # v = vec.clone
-        # v.length = @h
-        # move = Geom::Transformation.translation v
-        # @centergroup.entities.transform_entities move, other_center
-        # cline = @centergroup.entities.add_line centerpoint, other_center.position
-        # cline.hidden = true
+        if @@roll_type == 'EASY'
+          other_center = @centergroup.entities.add_cpoint centerpoint
+          v = vec.clone
+          v.length = @h
+          move = Geom::Transformation.translation v
+          @centergroup.entities.transform_entities move, other_center
+          cline = @centergroup.entities.add_line centerpoint, other_center.position
+          cline.hidden = true
+        end
         percent = angle2/360.degrees
 
-        @drctn = check_arc_direction(selected_arc)
         # New Arc Data
         if @@roll_type == 'EASY'
           case @@placement[1]
@@ -983,6 +1006,12 @@ module EA_Extensions623
         elsif @v3[2] >= 0
           direction = 1 # 1 means the z value of the vector is + and assumes you want the beam above or below. 1 is above and 0 is below
         end
+
+        # if arc.normal[2] < 0 && @@roll_type == 'EASY'
+        #   flip = Geom::Transformation.rotation arc.center, @v3, 180.degrees
+        #   @solid_group.entities.transform_entities flip, arc
+        # end
+
         return direction
       end
 
@@ -1148,18 +1177,22 @@ module EA_Extensions623
 
         # Spread the 13/16" Flange Holes
         if @@has_holes && @guage_holes
+        fsh = []
           @guage_holes.each do |hole|
             slide(hole, arc, BIG_HOLES_LOCATION)
-            spread(hole, arc, @guage_hole_rotation_angle, 0, 1, true, @guage_holes)
+            fsh.push spread(hole, arc, @guage_hole_rotation_angle, 0, 1, true, [])
           end
+          fsh.flatten.each {|h| @guage_holes.push h}
         end
 
         # Spread the 13/16" Web Holes
         if @@has_holes
+        wsh = []
           @shear_holes.each do |hole|
             slide(hole, arc, BIG_HOLES_LOCATION)
-            spread(hole, arc, @guage_hole_rotation_angle, 0, 1, true, @shear_holes)
+            wsh.push spread(hole, arc, @guage_hole_rotation_angle, 0, 1, true, [])
           end
+          wsh.flatten.each {|h| @shear_holes.push h}
         end
 
         # Spread the 9/16" Flange Holes
@@ -1204,7 +1237,7 @@ module EA_Extensions623
             spread(@flange_holes[2], arc, spread_angle, 0, outside_part_count, true, bofh)
             spread(@flange_holes[3], arc, spread_angle, 0, inside_part_count, true, bifh)
             [tofh,tifh,bofh,bifh].flatten.each{|h| @flange_holes.push h}
-        else
+        elsif @@has_holes && !@studs.empty?
           @studs.each do |stud|
             slide(stud, arc, BIG_HOLES_LOCATION)
           end
@@ -1317,70 +1350,6 @@ module EA_Extensions623
          arc.edges.each(&@erase)
       end
 
-################################
-# METHODS CURRENTLY NOT IN USE
-################################
-
-      def move_along_curve(hole, arc, angle)
-        rot = Geom::Transformation.rotation arc.center, arc.normal, angle
-        hole.transform! rot
-      end
-
-      def spread_web_holes(holes, path)
-        bottom_row_holes_count = @web_holes_count
-        top_row_web_holes = @web_holes_count
-
-        if @segment_count % 4 == 1 || @segment_count % 4 == 2
-          bottom_row_holes_count -= 1
-        end
-
-        # Need to make the inside reference the right curve information
-
-        move_along_curve(holes[1], path, @hole_rotation_angle) #bottom row holes rotated along the arc to the right 8" segment
-        copy_along_curve(holes[0], path, @hole_rotation_angle*2, 0, top_row_web_holes, holes ) #top row holes
-        copy_along_curve(holes[1], path, @hole_rotation_angle*2, 0, bottom_row_holes_count, holes ) #bottom row holes
-      end
-
-      def spread_flange_holes(holes, path) # The holes need to be an array of the 4 flange holes
-        # set it 4" up the arc
-        # vec1 = Y_AXIS.clone # THIS NEEDS TO BE THE START VEC OF THE PATH
-        # vec1.reverse!
-        # vec1.length = @segment_length/2
-        # slide_up = Geom::Transformation.new(vec1)
-
-        # flangehole1.transform! slide_up
-
-        top_inside_holes     = @flange_hole_count
-        top_outside_holes    = @flange_hole_count
-        bottom_inside_holes  = @flange_hole_count
-        bottom_outside_holes = @flange_hole_count
-
-        if @flange_hole_stagger
-          move_along_curve(flangehole2, path, @hole_rotation_angle)
-          hole_rotation = @hole_rotation_angle*2
-          if @segment_count % 4 == 1 || @segment_count % 4 == 2
-            top_outside_holes -= 1
-            bottom_outside_holes -= 1
-          end
-        else
-          hole_rotation = @hole_rotation_angle
-          if @segment_count % 4 == 3 || @segment_count % 4 == 0
-            top_inside_holes     += 1
-            top_outside_holes    += 1
-            bottom_inside_holes  += 1
-            bottom_outside_holes += 1
-          end
-        end
-
-        # array all holes along the arc
-        copy_along_curve(holes[0], path, hole_rotation, 0, top_inside_holes, holes ) #top inside hole
-        copy_along_curve(holes[1], path, hole_rotation, 0, top_outside_holes, holes ) #top outside hole
-        copy_along_curve(holes[2], path, hole_rotation, 0, bottom_inside_holes, holes ) #bottom inside hole
-        copy_along_curve(holes[3], path, hole_rotation, 0, bottom_outside_holes, holes ) #bottom outside hole
-      end
-
-
-
       def align_hole(hole, align_vec, count)
         hole_loop = get_hole_component_curve(hole)
         hole_vec = hole.transformation.zaxis
@@ -1395,7 +1364,7 @@ module EA_Extensions623
         align_hole(hole, align_vec, count)
       end
 
-      def get_hole_component_curve(hole)
+       def get_hole_component_curve(hole)
         hole.definition.entities[0].definition.entities.each do |ent|
           if ent.is_a? Sketchup::Edge
             return ent.curve

@@ -47,7 +47,7 @@ module EA_Extensions623
         end
 
         @options = {
-          :title           => 'Wide Flange Steel v1.0', #change the version number with ever y cahnge
+          :title           => "Wide Flange Steel #{VERSION_NUM}" , #change the version number with ever y cahnge
           :preferences_key => 'WFS',
           :width           => 400,
           :height          => 480,
