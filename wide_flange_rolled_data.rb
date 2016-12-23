@@ -1007,10 +1007,10 @@ module EA_Extensions623
           direction = 1 # 1 means the z value of the vector is + and assumes you want the beam above or below. 1 is above and 0 is below
         end
 
-        # if arc.normal[2] < 0 && @@roll_type == 'EASY'
-        #   flip = Geom::Transformation.rotation arc.center, @v3, 180.degrees
-        #   @solid_group.entities.transform_entities flip, arc
-        # end
+        if arc.normal[2] < 0 && @@roll_type == 'EASY'
+          flip = Geom::Transformation.rotation arc.center, @v3, 180.degrees
+          @solid_group.entities.transform_entities flip, arc
+        end
 
         return direction
       end
