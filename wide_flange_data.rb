@@ -478,7 +478,6 @@ module EA_Extensions623
 
           #initialize some variables
           all_holes = []
-          @all_studs = []
           count = 0
 
           #Setst the scale depth for the web and the flange
@@ -814,7 +813,7 @@ module EA_Extensions623
             comp_def.description = "The #{@@beam_name} label"
             ents = comp_def.entities
             _3d_text = ents.add_3d_text("#{@@beam_name}", TextAlignCenter, "1CamBam_Stick_7", false, false, 3.0, 3.0, 0.0, false, 0.0)
-            p "loaded CamBam_Stick_7: #{_3d_text}"
+            # p "loaded CamBam_Stick_7: #{_3d_text}"
             save_path = Sketchup.find_support_file "Components", ""
             comp_def.save_as(save_path + "/#{@@beam_name}.skp")
           end
@@ -1245,6 +1244,10 @@ module EA_Extensions623
               hole.explode
             end
             thirteen_sixteenths_holes.each {|hole| hole.explode} if not column
+          end
+
+          if not @all_studs.empty?
+            @all_studs.each {|stud| stud.layer = @steel_layer }
           end
 
           # #insert stiffener plates in the beam

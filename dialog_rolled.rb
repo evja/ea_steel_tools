@@ -22,7 +22,6 @@ module EA_Extensions623
       def activate
         @model = Sketchup.active_model
         @entities = @model.active_entities
-        @model.start_operation("Rolled Steel", true)
         @path = @model.selection
         sel = @path[0]
         @selection_count = 0
@@ -31,7 +30,7 @@ module EA_Extensions623
           @@beam_data         = {}             #Hash   {:d=>4.16, :bf=>4.06, :tf=>0.345, :tw=>0.28, :r=>0.2519685039370079, :width_class=>4}"
           @@beam_name         = ''             #String 'W(height_class)X(weight_per_foot)'
           @@height_class      = ''             #String 'W(number)'
-          @@placement         = 'BO'           #String 'TOP' or 'BOTTOM'
+          @@placement         = 'BC'           #String 'TOP' or 'BOTTOM'
           @@has_holes         = true           #Boolean
           @@web_holes         = true
           @@flange_holes      = true
@@ -48,7 +47,7 @@ module EA_Extensions623
         end
 
         @options = {
-          :title           => 'Wide Flange Steel v1.0', #change the version number with ever y cahnge
+          :title           => "Wide Flange Steel #{VERSION_NUM}" , #change the version number with ever y cahnge
           :preferences_key => 'WFS',
           :width           => 400,
           :height          => 480,
@@ -117,7 +116,7 @@ module EA_Extensions623
       def run_dialog
         add_parent_window(@options)
         add_beam_selections
-        add_rolltypes
+        # add_rolltypes
         add_path_selection_group
         add_options_group
         initiate_dialog
@@ -186,45 +185,6 @@ module EA_Extensions623
       end
 
 
-      def add_rolltypes
-
-        roll_type = SKUI::Label.new( 'Roll Type' )
-        roll_type.position(290, 15)
-        @group.add_control( roll_type )
-
-        path = File.join( SKUI::PATH, '..', 'icons' )
-        file = File.join( path, 'wfs_icon_rolled_hard.png' )
-
-        img_hardroll = SKUI::Image.new( file )
-        img_hardroll.position( 280, 40 )
-        img_hardroll.width = 24
-        @group.add_control( img_hardroll )
-
-        path = File.join( SKUI::PATH, '..', 'icons' )
-        file = File.join( path, 'wfs_icon_rolled.png' )
-
-        img_easyroll = SKUI::Image.new( file )
-        img_easyroll.position( 320, 40 )
-        img_easyroll.width = 24
-        @group.add_control( img_easyroll )
-
-
-        sel_roll_hard = SKUI::RadioButton.new('')
-        sel_roll_hard.position(285,70)
-        sel_roll_hard.checked = true if @@roll_type == 'HARD'
-        sel_roll_hard.on ( :change ) { |control|
-          @@roll_type = 'HARD' if control.checked?
-        }
-        @group.add_control( sel_roll_hard )
-
-        sel_roll_easy = SKUI::RadioButton.new('')
-        sel_roll_easy.position(325,70)
-        sel_roll_easy.checked = true if @@roll_type == 'EASY'
-        sel_roll_easy.on ( :change ) { |control|
-          @@roll_type = 'EASY' if control.checked?
-        }
-        @group.add_control( sel_roll_easy )
-      end
 
       def add_path_selection_group
         group2 = SKUI::Groupbox.new( 'Path Position' )
@@ -298,6 +258,84 @@ module EA_Extensions623
           @@placement = 'BI' if control.checked?
         }
         group2.add_control( b_in_select )
+
+
+        roll_type = SKUI::Label.new( 'Roll Type' )
+        roll_type.position(290, 15)
+        @group.add_control( roll_type )
+
+        path = File.join( SKUI::PATH, '..', 'icons' )
+        file = File.join( path, 'wfs_icon_rolled_hard.png' )
+
+        img_hardroll = SKUI::Image.new( file )
+        img_hardroll.position( 280, 40 )
+        img_hardroll.width = 24
+        @group.add_control( img_hardroll )
+
+        path = File.join( SKUI::PATH, '..', 'icons' )
+        file = File.join( path, 'wfs_icon_rolled.png' )
+
+        img_easyroll = SKUI::Image.new( file )
+        img_easyroll.position( 320, 40 )
+        img_easyroll.width = 24
+        @group.add_control( img_easyroll )
+
+        if @@roll_type == 'HARD'
+          b_in_select.visible  = false
+          b_out_select.visible = false
+          t_in_select.visible  = false
+          t_out_select.visible = false
+        end
+
+        sel_roll_hard = SKUI::RadioButton.new('')
+        sel_roll_hard.position(285,70)
+        sel_roll_hard.checked = true if @@roll_type == 'HARD'
+        sel_roll_hard.on ( :change ) { |control|
+          if control.checked?
+            @@roll_type = 'HARD'
+            b_in_select.visible  = false
+            b_out_select.visible = false
+            t_in_select.visible  = false
+            t_out_select.visible = false
+            if @@placement.include?('T')
+              @@placement = 'TC'
+              t_center_select.checked = true
+              t_out_select.checked = false
+              t_in_select.checked = false
+            elsif @@placement.include?('B')
+              @@placement = 'BC'
+              b_center_select.checked = true
+              b_out_select.checked = false
+              b_in_select.checked = false
+            end
+          end
+        }
+        @group.add_control( sel_roll_hard )
+
+        sel_roll_easy = SKUI::RadioButton.new('')
+        sel_roll_easy.position(325,70)
+        sel_roll_easy.checked = true if @@roll_type == 'EASY'
+        sel_roll_easy.on ( :change ) { |control|
+          if control.checked?
+            @@roll_type = 'EASY'
+            b_in_select.visible  = true
+            b_out_select.visible = true
+            t_in_select.visible  = true
+            t_out_select.visible = true
+            if @@placement.include?('T')
+              @@placement = 'TC'
+              t_center_select.checked = true
+              t_out_select.checked = false
+              t_in_select.checked = false
+            elsif @@placement.include?('B')
+              @@placement = 'BC'
+              b_center_select.checked = true
+              b_out_select.checked = false
+              b_in_select.checked = false
+            end
+          end
+        }
+        @group.add_control( sel_roll_easy )
       end
 
       def add_options_group
@@ -512,7 +550,6 @@ module EA_Extensions623
             # segment_length:    @@segment_length
           }
           Sketchup.active_model.select_tool EASteelTools::RolledSteel.new(data)
-          Sketchup.active_model.commit_operation
           control.window.close
         }
 
