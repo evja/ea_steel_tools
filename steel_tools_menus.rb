@@ -8,6 +8,7 @@ module EA_Extensions623
     require FNAME+'/'+'dialog_rolled.rb'
     require FNAME+'/'+'wide_flange_rolled_data.rb'
     require FNAME+'/'+'breakout.rb'
+
     # require 'hss_column_data.rb'         # Coming Soon
 
   if !file_loaded?('ea_steel_tools_menu_loader')
@@ -52,11 +53,12 @@ module EA_Extensions623
     # cmd.menu_text = "Wide HSS Columns"
     # toolbar = toolbar.add_item cmd
     # toolbar.show
-    
+
     UI.add_context_menu_handler do |menu|
       if( EASteelTools::BreakoutMod.qualify_selection(Sketchup.active_model.selection) )
-          menu.add_separator
-          menu.add_item($exStrings.GetString("Breakout")) { bo = EASteelTools::Breakout.new }
+        menu.add_separator
+        menu.add_item("Breakout") { EASteelTools::Breakout.new }
+        menu.add_separator
       end
     end
 
