@@ -18,11 +18,9 @@ module EA_Extensions623
             if ent.class == Sketchup::Group || ent.class == Sketchup::ComponentInstance
               p sel[0].entities.count
               if ent.name.match(BEAM_REGEX)
-                p 'found the inner beam'
                 return true
                 possibilities.push 'True'
               else
-                p 'cant find the inner beam'
                 possibilities.push 'False'
               end
             else
@@ -32,7 +30,7 @@ module EA_Extensions623
           end
 
           p possibilities
-          p possibilities.count
+          # p possibilities.count
           if possibilities.include?('True')
             return true
           else
@@ -46,9 +44,7 @@ module EA_Extensions623
               if ent.name.match(BEAM_REGEX)
                 return true
                 possibilities.push 'True'
-                p 'found the inner beam'
               else
-                p 'cant find the inner beam'
                 possibilities.push 'False'
               end
 
@@ -79,8 +75,6 @@ module EA_Extensions623
 	  		@multiple = ''
 	  		@path = @model.path
 	  		activise
-
-	  		p 'all variables initialized'
 			end
 
   		def sanitize_selection(sel)
@@ -92,6 +86,7 @@ module EA_Extensions623
           @multiple = false
           p 'single'
   				@steel_members.push validate_selection(sel[0])
+          @beam_name = @steel_members[0].name
           p @steel_members
   			end
   		end
@@ -111,17 +106,19 @@ module EA_Extensions623
   			sanitize_selection(@selection)
         @steel_members.each {|mem| scrape(mem)}
         find_breakout_location
+        clear_model
+        create_new_file
   		end
 
+      def is_plate?(entity)
+        #write code to see if the part is a plate
+      end
+
   		def scrape(part)
-        p part
-        p part.class
-        p ' in the scrape'
         if part.class == Sketchup::Group
-          p 'found a group'
+          p part.entities.count
     			part.entities.each do |e|
             if e.class == Sketchup::Group && e.name.match(BEAM_REGEX)
-              p 'changed the beam color'
               e.material = BEAM_COLOR
               # p e.name
               # p e.class
@@ -129,7 +126,6 @@ module EA_Extensions623
             end
 
             if e.class == Sketchup::Group && !e.name.match(BEAM_REGEX)
-              p 'changed the beam color'
               e.material = PLATE_COLOR
               # p e.name
               # p e.class
@@ -137,7 +133,6 @@ module EA_Extensions623
             end
 
             if e.class == Sketchup::ComponentInstance
-              p 'changed the plate color'
               e.material = PLATE_COLOR
               # p e.class
               # p e.definition
@@ -149,6 +144,7 @@ module EA_Extensions623
             # p e.bounds.depth
           end
         elsif part.class == Sketchup::ComponentInstance
+          p part.definition.entities.count
           part.definition.entities.each do |e|
             if e.class == Sketchup::Group && e.name.match(BEAM_REGEX)
               e.material = BEAM_COLOR
@@ -177,11 +173,62 @@ module EA_Extensions623
         end
   		end
 
-  		def find_breakout_location
-        # system("explorer #{@path}")
-        # button_click = Proc.new {
-        #   Tk.getOpenFile
-        # }
+      def check_for_duplicate_files(dir, file)
+        if File.exist?(file)
+          UI.messagebox('File already exists')
+          return false
+        else
+          return true
+        end
+      end
+
+      def clear_model
+        @entities.each do |ent|
+          if ent.class == Sketchup::Group || ent.class == Sketchup::ComponentInstance
+            if ent.hidden?
+              ent.hidden = false
+            end
+            if ent.locked?
+              ent.locked = false
+            end
+          end
+        end
+        @selection.add @entities.to_a
+        @selection.remove @steel_members.to_a
+        @entities.erase_entities(@selection.to_a)
+      end
+
+      def create_new_file()
+        if @multiple
+          #dont do anything yet
+        else
+          @new_file = UI.savepanel("Save the Breakout", @path, "#{@beam_name}.skp" )
+          @model.save_copy(@new_file,Sketchup::Model::VERSION_2017)
+
+          # @sketchup = Sketchup.file_new
+          # @model_2 = @sketchup.active_model
+          # p1 = [0,0,0]
+          # p2 = [10,10,10]
+          # ents = @model_2.entities
+          # ents.add_line p1, p2
+          # @new_file = UI.savepanel("Save the Breakout", @path, "#{@beam_name}.skp" )
+          # Sketchup.open_file(File.join(@new_file))
+          UI.openURL(File.join(@new_file))
+        end
+      end
+
+      # def check_for_directory(dir)
+
+      # end
+
+      def find_breakout_location
+        f1 = 'Steel'
+        f2 = 'SketchUp Break-Outs'
+        d = @path.split('\\')
+        d.pop
+        d.pop
+        @path = File.join(d, f1, f2)
+        Dir.chdir("#{@path}")
   		end
 
 
