@@ -920,7 +920,7 @@ module EA_Extensions623
             combo3 = rot4 * rot5
             rot6 = Geom::Transformation.rotation loc3, [0,0,1], 270.degrees
 
-            n == 1 ? (a1, a2, a3, a4 = north, south, east, west) : (a1, a2 ,a3 ,a4 = west, east, north, south)
+            n == 1 ? (a1, a2, a3, a4 = north, south, west, east) : (a1, a2 ,a3 ,a4 = east, west, north, south)
 
             d1 = group.add_instance a4, loc1 #North & West
             d2 = group.add_instance a3, loc2 # South & East
