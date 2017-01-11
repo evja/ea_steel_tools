@@ -49,14 +49,10 @@ module EA_Extensions623
           p 'single'
           @steel_members.push validate_selection(sel[0])
           @beam_name = @steel_members[0].name
-          p @steel_members
         end
       end
 
       def validate_selection(sel)
-        p sel
-        p sel.class
-        p sel.name
         if sel.class == Sketchup::Group && sel.name.match(GROUP_REGEX)
           return sel
         else

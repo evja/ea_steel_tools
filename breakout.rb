@@ -64,7 +64,7 @@ module EA_Extensions623
   		def scrape(part)
         parts = []
         if part.class == Sketchup::Group
-          p part.entities.count
+          # p part.entities.count
     			part.entities.each do |e|
             if e.name.match(BEAM_REGEX)
               # e.material = BEAM_COLOR
@@ -91,7 +91,7 @@ module EA_Extensions623
           end
 
         elsif part.class == Sketchup::ComponentInstance
-          p part.definition.entities.count
+          # p part.definition.entities.count
           part.definition.entities.each do |e|
             if e.class == Sketchup::Group && e.name.match(BEAM_REGEX)
               # e.material = BEAM_COLOR
