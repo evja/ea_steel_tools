@@ -36,8 +36,8 @@ module EA_Extensions623
      Sketchup.active_model.select_tool @two = EASteelTools::RolledDialog.new
     }
     @@EA_tools_menu.add_item cmd1
-    cmd1.small_icon = "icons/wfs_icon_rolled.png"
-    cmd1.large_icon = "icons/wfs_icon_rolled.png"
+    cmd1.small_icon = "icons/wfs_icon_rolled_easy.png"
+    cmd1.large_icon = "icons/wfs_icon_rolled_easy.png"
     cmd1.tooltip = "Draw Rolled Wide Flange Steel"
     cmd1.status_bar_text = "Draw Rolled Steel"
     cmd1.menu_text = "Wide Rolled Flange Steel"
