@@ -5,7 +5,7 @@ module EA_Extensions623
     require 'sketchup.rb'
     GROUP_REGEX = /([A-Z,a-z]{2})(\d{3})/
     BEAM_REGEX = /(([W,w])\d{1,2}([X,x])\d{1,3})/
-    BEAM_COLOR = 220,20,60
+    BEAM_COLOR = "3 Broken Out"
     PLATE_COLOR = 'black'
 
     module BreakoutSendMod
@@ -31,6 +31,7 @@ module EA_Extensions623
         @model = Sketchup.active_model
         @entities = @model.entities
         @selection = @model.selection
+        @materials = @model.materials
         @plates = []
         @steel_members = []
         @labels = []
@@ -77,6 +78,7 @@ module EA_Extensions623
               member_definition.save_as(new_file)
               Sketchup.undo
               paths.push new_file
+              member.material = @materials[BEAM_COLOR]
             else
               Sketchup.undo
             end
@@ -93,6 +95,7 @@ module EA_Extensions623
             # temp_group.explode
             Sketchup.undo
             UI.openURL(@new_file_path)
+            steel_member.material = @materials[BEAM_COLOR]
           end
         end
       end
