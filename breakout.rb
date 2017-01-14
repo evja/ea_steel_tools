@@ -3,7 +3,6 @@
 module EA_Extensions623
   module EASteelTools
 		require 'sketchup.rb'
-		SKETCHUP_CONSOLE.show
 
     module BreakoutMod
       def self.qualify_model(model)
