@@ -77,7 +77,10 @@ module EA_Extensions623
               member_definition.save_as(new_file)
               Sketchup.undo
               paths.push new_file
+            else
+              Sketchup.undo
             end
+
           end
           paths.each {|path| UI.openURL(path)}
         else
@@ -117,13 +120,23 @@ module EA_Extensions623
       end
 
       def find_breakout_location
-        f1 = 'Steel'
-        f2 = 'SketchUp Break-Outs'
-        d = @path.split('\\')
-        d.pop
-        d.pop
-        @path = File.join(d, f1, f2)
-        Dir.chdir("#{@path}")
+        begin
+          f1 = 'Steel'
+          f2 = 'SketchUp Break-Outs'
+          d = @path.split('\\')
+          d.pop
+          d.pop
+          @path = File.join(d, f1, f2)
+          Dir.chdir("#{@path}")
+        rescue Exception => e
+          a = @model.path.split('\\')
+          a.pop
+          @path = File.join(a)
+          Dir.chdir("#{@path}")
+          puts e.message
+          puts e.backtrace.inspect
+          UI.messagebox("OOPS!! I could not find a folder name 'SketchUp Break-Outs' in the Steel folder, please check that the folder exists and is named correctly")
+        end
       end
 
 

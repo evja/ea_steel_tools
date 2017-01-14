@@ -25,7 +25,7 @@ module EA_Extensions623
       #Distance from the end of the beam the 13/14" holes are placed
       BIG_HOLES_LOCATION = 4
       # Minimum distance from the inside of the flanges to the center of 13/16" holes can be
-      MIN_BIG_HOLE_DISTANCE_FROM_KZONE = 1.25
+      MIN_BIG_HOLE_DISTANCE_FROM_KZONE = 1.5
       #########################################
       #@@@@@@@@@@@ COLUMN variables @@@@@@@@@@#
       #########################################s
@@ -143,7 +143,7 @@ module EA_Extensions623
         @tw    = values[:tw].to_f
         @wc    = values[:width_class].to_f
         @r     = values[:r].to_f
-        @number_of_sheer_holes = (((((@h - (2*@tf)) - (MIN_BIG_HOLE_DISTANCE_FROM_KZONE*2)) / 3).to_i) +1)
+        @number_of_sheer_holes = (((((@h - ((2*@tf) + (@r*2))) - (MIN_BIG_HOLE_DISTANCE_FROM_KZONE*2)) / 3).to_i) +1)
 
 
         #the thirteen points on a beam
@@ -671,11 +671,9 @@ module EA_Extensions623
               z = (0.5*@h)
 
               # Sets the spacing for the 13/16" Web holes to be spaced from each other vertically
-              if @hc > 10
+              if @hc >= 10
                 reasonable_spacing = 3
-              elsif @hc == 10
-                reasonable_spacing = 2.5
-              elsif @hc <= 8
+              elsif @hc < 10
                 @number_of_sheer_holes = 2  if @hc <= 6
                 reasonable_spacing = 2.5
               end

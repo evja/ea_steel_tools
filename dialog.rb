@@ -31,8 +31,8 @@ module EA_Extensions623
         options = {
           :title           => "Wide Flange Steel #{VERSION_NUM}",
           :preferences_key => 'WFS',
-          :width           => 400,
-          :height          => 460,
+          :width           => 416,
+          :height          => 475,
           :resizable       => false
         }
 
@@ -66,13 +66,13 @@ module EA_Extensions623
         list = all_height_classes
         height_class_dropdown = SKUI::Listbox.new( list )
         @@height_class.empty? ? @@height_class = (height_class_dropdown.value = height_class_dropdown.items.sample) : height_class_dropdown.value = height_class_dropdown.items.grep(@@height_class).first.to_s
-        height_class_dropdown.position( 85, 25 )
+        height_class_dropdown.position( 115, 25 )
         height_class_dropdown.width = 170
 
         list = all_beams_in(@@height_class)
         beam_size_dropdown = SKUI::Listbox.new( list )
         @@beam_name.empty? ? @@beam_name = (beam_size_dropdown.value = beam_size_dropdown.items.first) : @@beam_name = (beam_size_dropdown.value = beam_size_dropdown.items.grep(@@beam_name).first.to_s)
-        beam_size_dropdown.position( 85, 55 )
+        beam_size_dropdown.position( 115, 55 )
         beam_size_dropdown.width = 170
 
         group.add_control( beam_size_dropdown )
@@ -82,7 +82,7 @@ module EA_Extensions623
           list = all_beams_in(control.value)
           beam_size_dropdown = SKUI::Listbox.new( list )
           @@beam_name = beam_size_dropdown.value = beam_size_dropdown.items.first
-          beam_size_dropdown.position( 85, 55 )
+          beam_size_dropdown.position( 115, 55 )
           beam_size_dropdown.width = 170
           group.add_control( beam_size_dropdown )
           beam_size_dropdown.on( :change ) { |control, value|
@@ -118,7 +118,7 @@ module EA_Extensions623
         group2.add_control( img_profile )
 
         top_select = SKUI::RadioButton.new ('Draw From Top')
-        top_select.position(122, 21)
+        top_select.position(122, 18)
         top_select.checked = true if @@placement == 'TOP'
         top_select.on (:change ) { |control|
           @@placement = 'TOP' if control.checked?
@@ -169,7 +169,7 @@ module EA_Extensions623
 
         # create 2 radio buttins for 16" and 24"
         sel_16 = SKUI::RadioButton.new("16\"")
-        sel_16.position(140,20)
+        sel_16.position(148,20)
         sel_16.checked = true if @@hole_spacing == 16
         sel_16.on(:change) {|control|
           @@hole_spacing = 16 if control.checked?
@@ -178,7 +178,7 @@ module EA_Extensions623
         group3.add_control(sel_16)
 
         sel_24 = SKUI::RadioButton.new("24\"")
-        sel_24.position(180,20)
+        sel_24.position(195,20)
         sel_24.checked = true if @@hole_spacing == 24
         sel_24.on(:change) {|control|
           @@hole_spacing = 24 if control.checked?
@@ -209,7 +209,7 @@ module EA_Extensions623
 
         # create 3 radio buttons for the stiffener thickness
         sel_stiff_thck_1 = SKUI::RadioButton.new("1/4\"")
-        sel_stiff_thck_1.position(110, 45)
+        sel_stiff_thck_1.position(120, 45)
         sel_stiff_thck_1.checked = true if @@stiff_thickness == '1/4'
         sel_stiff_thck_1.on(:change) {|control|
           @@stiff_thickness = '1/4' if control.checked?
@@ -218,7 +218,7 @@ module EA_Extensions623
         container_stiff.add_control(sel_stiff_thck_1)
 
         sel_stiff_thck_4 = SKUI::RadioButton.new("5/16\"")
-        sel_stiff_thck_4.position(170, 45)
+        sel_stiff_thck_4.position(180, 45)
         sel_stiff_thck_4.checked = true if @@stiff_thickness == '5/16'
         sel_stiff_thck_4.on(:change) {|control|
           @@stiff_thickness = '5/16' if control.checked?
@@ -227,7 +227,7 @@ module EA_Extensions623
         container_stiff.add_control(sel_stiff_thck_4)
 
         sel_stiff_thck_2 = SKUI::RadioButton.new("3/8\"")
-        sel_stiff_thck_2.position(230, 45)
+        sel_stiff_thck_2.position(240, 45)
         sel_stiff_thck_2.checked = true if @@stiff_thickness == '3/8'
         sel_stiff_thck_2.on(:change) {|control|
           @@stiff_thickness = '3/8' if control.checked?
@@ -236,7 +236,7 @@ module EA_Extensions623
         container_stiff.add_control(sel_stiff_thck_2)
 
         sel_stiff_thck_3 = SKUI::RadioButton.new("1/2\"")
-        sel_stiff_thck_3.position(290, 45)
+        sel_stiff_thck_3.position(300, 45)
         sel_stiff_thck_3.checked = true if @@stiff_thickness == '1/2'
         sel_stiff_thck_3.on(:change) {|control|
           @@stiff_thickness = '1/2' if control.checked?
@@ -261,7 +261,7 @@ module EA_Extensions623
 
         # create 3 radio buttons for the shearplate thickness
         sel_shear_thck_1 = SKUI::RadioButton.new("3/8\"")
-        sel_shear_thck_1.position(110, 70)
+        sel_shear_thck_1.position(120, 70)
         sel_shear_thck_1.checked = true if @@shearpl_thickness == '3/8'
         sel_shear_thck_1.on(:change) {|control|
           @@shearpl_thickness = '3/8' if control.checked?
@@ -270,7 +270,7 @@ module EA_Extensions623
         container_shear.add_control(sel_shear_thck_1)
 
         sel_shear_thck_2 = SKUI::RadioButton.new("1/2\"")
-        sel_shear_thck_2.position(170, 70)
+        sel_shear_thck_2.position(180, 70)
         sel_shear_thck_2.checked = true if @@shearpl_thickness == '1/2'
         sel_shear_thck_2.on(:change) {|control|
           @@shearpl_thickness = '1/2' if control.checked?
@@ -279,7 +279,7 @@ module EA_Extensions623
         container_shear.add_control(sel_shear_thck_2)
 
         sel_shear_thck_3 = SKUI::RadioButton.new("5/8\"")
-        sel_shear_thck_3.position(230, 70)
+        sel_shear_thck_3.position(240, 70)
         sel_shear_thck_3.checked = true if @@shearpl_thickness == '5/8'
         sel_shear_thck_3.on(:change) {|control|
           @@shearpl_thickness = '5/8' if control.checked?
@@ -288,7 +288,7 @@ module EA_Extensions623
         container_shear.add_control(sel_shear_thck_3)
 
         sel_shear_thck_4 = SKUI::RadioButton.new("3/4\"")
-        sel_shear_thck_4.position(290, 70)
+        sel_shear_thck_4.position(300, 70)
         sel_shear_thck_4.checked = true if @@shearpl_thickness == '3/4'
         sel_shear_thck_4.on(:change) {|control|
           @@shearpl_thickness = '3/4' if control.checked?
