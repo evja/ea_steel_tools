@@ -9,7 +9,8 @@ module EA_Extensions623
     require FNAME+'/'+'wide_flange_rolled_data.rb'
     require FNAME+'/'+'breakout.rb'
     require FNAME+'/'+'breakout_send.rb'
-    require FNAME+'/'+'test.rb'
+    require FNAME+'/'+'load_schemas.rb'
+    # require FNAME+'/'+'test.rb'
 
     # require 'hss_column_data.rb'         # Coming Soon
 
