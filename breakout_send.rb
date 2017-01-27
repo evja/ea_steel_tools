@@ -6,7 +6,9 @@ module EA_Extensions623
     GROUP_REGEX = /([A-Z,a-z]{2})(\d{3})/
     BEAM_REGEX = /(([W,w])\d{1,2}([X,x])\d{1,3})/
     BEAM_COLOR = "3 Broken Out"
-    PLATE_COLOR = 'black'
+    SERVER_PATH = "//DELL/Data"
+    JOBS_LOCATION = "3X Jobs(server)"
+    # Function for getting the server is pushd //DELL/Data
 
     module BreakoutSendMod
       def self.qualify_selection(sel)
@@ -38,6 +40,10 @@ module EA_Extensions623
         @multiple = ''
         @path = @model.path
         go
+      end
+
+      def set_breakout_directory(path)
+        @@breakout_dir = path
       end
 
       def sanitize_selection(sel)
@@ -79,6 +85,7 @@ module EA_Extensions623
               Sketchup.undo
               paths.push new_file
               member.material = @materials[BEAM_COLOR]
+              set_breakout_directory(@path)
             else
               Sketchup.undo
             end
@@ -90,55 +97,59 @@ module EA_Extensions623
           temp_group = @model.active_entities.add_group(steel_member)
           defn = temp_group.definition
           @new_file_path = UI.savepanel("Save the Breakout", @path, "#{@beam_name}.skp" )
-          if @new_file_path
+          p @new_file_path
+          if !@new_file_path.nil?
             defn.save_as(@new_file_path)
-            # temp_group.explode
-            Sketchup.undo
             UI.openURL(@new_file_path)
             steel_member.material = @materials[BEAM_COLOR]
+            set_breakout_directory(@path)
           end
+          Sketchup.undo
         end
       end
 
-      def add_scenes
-        pages = @mod2.pages
-        view = @mod2.active_view
-        perspective_scene = pages.add "Perspective"
-        front_scene = pages.add "Front"
-        plates_scene = pages.add "Plates"
-        pages.selected_page = pages[0]
+      def directory_exists?(directory)
+        File.directory?(directory)
       end
 
-      def position_member(member)
-        tr = Geom::Transformation.axes ORIGIN, X_AXIS, Y_AXIS, Z_AXIS
-        member.move! tr
-        d = member.bounds.depth
-        h = member.bounds.height
-        w = member.bounds.width
-
-        x = X_AXIS.reverse
-        x.length = w/2
-        slide = Geom::Transformation.translation x
-        member.move! slide
+      def get_assumed_names
+        model_names = @model.path.split('\\').last.split(' ')
+        name_option1 = model_names.first
+        name_option2 = model_names[0] + ' ' + model_names[1]
+        return [name_option2, name_option1]
       end
 
       def find_breakout_location
         begin
-          f1 = 'Steel'
-          f2 = 'SketchUp Break-Outs'
-          d = @path.split('\\')
-          d.pop
-          d.pop
-          @path = File.join(d, f1, f2)
-          Dir.chdir("#{@path}")
+          Dir.chdir("#{SERVER_PATH}") #This needs to find the DELL instead of the X: drive for those who have the drive on the network
+          p Dir.pwd
+          if defined? @@breakout_dir #Check if you have saved the path
+            @path = @@breakout_dir
+            puts 'Preset Path Found'
+          else #Check the server for job folder
+            ########################################################################
+            ## This is where i need to search the directories and find the breakout folders.
+            ###########################################################################
+            possible_names = get_assumed_names
+            p possible_names
+            possible_names.each do |name|
+              path_to_job = Dir["**/*#{name}*/*Steel*/*Break*"]
+              if !path_to_job.empty?
+                @path = File.expand_path(path_to_job.first)
+                p @path
+                return
+              end
+            ####################################################################
+            end
+          end
+          @path = SERVER_PATH
+          UI.messagebox("Could not find the job folder in 3X Jobs(server), Perhaps it's in the ARCHIVE")
+          p 'set default server jobs'
         rescue Exception => e
-          a = @model.path.split('\\')
-          a.pop
-          @path = File.join(a)
-          Dir.chdir("#{@path}")
           puts e.message
           puts e.backtrace.inspect
-          UI.messagebox("OOPS!! I could not find a folder name 'SketchUp Break-Outs' in the Steel folder, please check that the folder exists and is named correctly")
+          Dir.chdir("#{SERVER_PATH}")
+          UI.messagebox("I could not find the 'Stee/SketchUp Break-Outs' for this job. manually locate it and i will save the path until you close SketchUp ")
         end
       end
 
@@ -146,3 +157,10 @@ module EA_Extensions623
     end
   end
 end
+
+
+
+
+# Dir.chdir(@server_path) do
+#   a = Dir["picture_*@2x.*"]
+# end

@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Copyright by: buildingSMART International Ltd, 1996-2013
+
+Any technical documentation made available by buildingSMART International Limited
+is the copyrighted work of buildingSMART International Limited and is owned by the
+buildingSMART International Limited. It may be photocopied, used in software development,
+or translated into another computer language without prior written consent from
+buildingSMART International Limited provided that full attribution is given.
+Prior written consent is required if changes are made to the technical specification.
+This material is delivered to you as is and buildingSMART International Limited makes
+no warranty of any kind with regard to it, including, but not limited to, the implied
+warranties as to its accuracy or fitness for a particular purpose. Any use of the
+technical documentation or the information contained therein is at the risk of the user.
+Documentation may include technical or other inaccuracies or typographical errors.
+buildingSMART International Limited shall not be liable for errors contained therein or
+for incidental consequential damages in connection with the furnishing, performance or use
+of the material. The information contained in this document is subject to change without notice.
+
+Content:
+full ifcXML schema definition (XSD) for the IFC4 release (released for production)
+
+Issue date:
+February 28, 2013
+
+Development Team:
+Modeling Support Group of buildingSMART International
+compiled by Thomas Liebich tl@aec3.de
+-->
+<!-- created with EXPTOOL V20130124 (perl 5 program) written by Thomas Liebich, AEC3, tl@aec3.de -->
+<!-- validated with XMLspy2013 (http://www.xmlspy.com) by Thomas Liebich, AEC3, tl@aec3.de -->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:ifc="http://www.buildingsmart-tech.org/ifcXML/IFC4/final" elementFormDefault="qualified" attributeFormDefault="unqualified">
+
+	<xs:element name="WideFlangeBeam" type="3DS:WideFlangeBeam" nillable="true"/>
+	<xs:complexType name="WideFlangeBeam">
+		<xs:complexContent>
+			<xs:attribute name="Name" use="optional"/>
+			<xs:attribute name="Description" use="optional"/>
+			<xs:attribute name="ObjectType" use="optional"/>
+			<xs:attribute name="Tag" use="optional"/>
+			<xs:attribute name="PredefinedType" use="optional"/>
+		</xs:complexContent>
+	</xs:complexType>
+
+	<xs:element name="Plate" type="3DS:Plate" nillable="true"/>
+	<xs:complexType name="Plate">
+		<xs:complexContent>
+			<xs:attribute name="Name" use="optional"/>
+			<xs:attribute name="Description" use="optional"/>
+			<xs:attribute name="ObjectType" use="optional"/>
+			<xs:attribute name="Tag" use="optional"/>
+			<xs:attribute name="PredefinedType" use="optional"/>
+		</xs:complexContent>
+	</xs:complexType>
+
+
+	<!-- <xs:element name="ShearPlate" type="3DS:ShearPlate" nillable="true"/>
+	<xs:complexType name="ShearPlate">
+		<xs:complexContent>
+			<xs:attribute name="PredefinedType" use="optional"/>
+		</xs:complexContent>
+	</xs:complexType> -->
+
+<!-- 	<xs:element name="StiffenerPlate" type="3DS:StiffenerPlate" nillable="true"/>
+	<xs:complexType name="StiffenerPlate">
+		<xs:complexContent>
+			<xs:attribute name="PredefinedType" use="optional"/>
+		</xs:complexContent>
+	</xs:complexType>
+
+	<xs:element name="ContinuityPlate" type="3DS:ContinuityPlate" nillable="true"/>
+	<xs:complexType name="ContinuityPlate">
+		<xs:complexContent>
+			<xs:attribute name="PredefinedType" use="optional"/>
+		</xs:complexContent>
+	</xs:complexType>
+ -->
+</xs:schema>

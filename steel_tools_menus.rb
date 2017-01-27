@@ -7,6 +7,7 @@ module EA_Extensions623
     require FNAME+'/'+'wide_flange_data.rb'
     require FNAME+'/'+'dialog_rolled.rb'
     require FNAME+'/'+'wide_flange_rolled_data.rb'
+    require FNAME+'/'+'breakout_setup.rb'
     require FNAME+'/'+'breakout.rb'
     require FNAME+'/'+'breakout_send.rb'
     require FNAME+'/'+'load_schemas.rb'
