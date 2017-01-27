@@ -127,9 +127,6 @@ module EA_Extensions623
             @path = @@breakout_dir
             puts 'Preset Path Found'
           else #Check the server for job folder
-            ########################################################################
-            ## This is where i need to search the directories and find the breakout folders.
-            ###########################################################################
             possible_names = get_assumed_names
             p possible_names
             possible_names.each do |name|
@@ -139,12 +136,10 @@ module EA_Extensions623
                 p @path
                 return
               end
-            ####################################################################
             end
           end
           @path = SERVER_PATH
           UI.messagebox("Could not find the job folder in 3X Jobs(server), Perhaps it's in the ARCHIVE")
-          p 'set default server jobs'
         rescue Exception => e
           puts e.message
           puts e.backtrace.inspect
