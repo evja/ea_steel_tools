@@ -121,12 +121,20 @@ module EA_Extensions623
 
       def find_breakout_location
         begin
-          Dir.chdir("#{SERVER_PATH}") #This needs to find the DELL instead of the X: drive for those who have the drive on the network
-          p Dir.pwd
-          if defined? @@breakout_dir #Check if you have saved the path
+          a = @path.split("\\")
+          a.pop
+          a.pop
+          b = Dir.chdir(File.join(a))
+          b1 = Dir["**/*Steel*/*Break*"]
+          if !b1.empty? && File.expand_path(b1.first)
+            c = File.expand_path(b1.first)
+            @path = c
+            return
+          elsif defined? @@breakout_dir #Check if you have saved the path
             @path = @@breakout_dir
             puts 'Preset Path Found'
           else #Check the server for job folder
+            Dir.chdir("#{SERVER_PATH}") #This needs to find the DELL instead of the X: drive for those who have the drive on the network
             possible_names = get_assumed_names
             p possible_names
             possible_names.each do |name|
