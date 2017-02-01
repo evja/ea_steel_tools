@@ -126,7 +126,7 @@ module EA_Extensions623
           a.pop
           b = Dir.chdir(File.join(a))
           b1 = Dir["**/*Steel*/*Break*"]
-          if !b1.empty? && File.expand_path(b1.first)
+          if !b1.empty? && File.expand_path(b1.first) #Check if you are in the master model
             @path = File.expand_path(b1.first)
             return
           elsif defined? @@breakout_dir #Check if you have saved the path

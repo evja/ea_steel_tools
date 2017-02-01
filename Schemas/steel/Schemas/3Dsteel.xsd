@@ -30,8 +30,8 @@ compiled by Thomas Liebich tl@aec3.de
 <!-- validated with XMLspy2013 (http://www.xmlspy.com) by Thomas Liebich, AEC3, tl@aec3.de -->
 <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:ifc="http://www.buildingsmart-tech.org/ifcXML/IFC4/final" elementFormDefault="qualified" attributeFormDefault="unqualified">
 
-	<xs:element name="WideFlangeBeam" type="3DS:WideFlangeBeam" nillable="true"/>
-	<xs:complexType name="WideFlangeBeam">
+	<xs:element name="Plate" type="3DS:Plate" nillable="true"/>
+	<xs:complexType name="Plate">
 		<xs:complexContent>
 			<xs:attribute name="Name" use="optional"/>
 			<xs:attribute name="Description" use="optional"/>
@@ -41,8 +41,8 @@ compiled by Thomas Liebich tl@aec3.de
 		</xs:complexContent>
 	</xs:complexType>
 
-	<xs:element name="Plate" type="3DS:Plate" nillable="true"/>
-	<xs:complexType name="Plate">
+	<xs:element name="WideFlangeBeam" type="3DS:WideFlangeBeam" nillable="true"/>
+	<xs:complexType name="WideFlangeBeam">
 		<xs:complexContent>
 			<xs:attribute name="Name" use="optional"/>
 			<xs:attribute name="Description" use="optional"/>
