@@ -1,0 +1,22 @@
+Plate
+{
+  Name
+  Description
+  ObjectType
+  Tag
+  PredefinedType
+}
+
+WideFlangeBeam
+{
+  Name
+  Description
+  ObjectType
+  Tag
+  PredefinedType
+}
+
+// Blacklist Attributes
+{
+  instanceAttributes
+}

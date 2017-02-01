@@ -2,7 +2,14 @@
 
 module EA_Extensions623
   module EASteelTools
-		require 'sketchup.rb'
+    require 'sketchup.rb'
+
+    DICTIONARY_NAME       = "3DS Steel"
+    SCHEMA_KEY            = "SchemaType"
+    SCHEMA_VALUE          = ":Plate"
+
+    DONE_COLOR = '1 Done'
+    PLATE_COLOR = 'Black'
 
     module BreakoutMod
       def self.qualify_model(model)
@@ -27,106 +34,67 @@ module EA_Extensions623
     end
 
     class Breakout
+      include BreakoutSetup
 
       def initialize
+        @users_template = Sketchup.template
+        # Sketchup.template= Sketchup.find_support_file('Breakout.skp', "Plugins/#{FNAME}/Models/")
         @model = Sketchup.active_model
+        BreakoutSetup.set_styles(@model)
+        BreakoutSetup.set_scenes(@model)
         @entities = @model.entities
         @materials = @model.materials
         @selection = @model.selection
+        @styles = @model.styles
         @plates = []
         @steel_member = @entities.first
         @member_name = @steel_member.name
         @labels = []
         activate
-			end
+      end
 
       def activate
-        add_scenes
-        set_colors
         position_member(@steel_member)
+        color_steel_member(@steel_member)
         components = scrape(@steel_member)
+        temp_color(@plates)
+        #last method This resets the users template to what they had in the beginning
+        # Sketchup.template = @users_template
       end
 
-      def set_colors
-        material_files = Sketchup.find_support_files('skm', 'Plugins/ea_steel_tools/Colors')
-        material_files.each do |m_file|
-          @materials.load(m_file)
-        end
-        @done_color = @materials['1 Done']
-        @steel_member.material = @done_color
+      def user_check(entities)
+        #This code will color all the classified plates black and siuspend the operation and allow the user to visually
+        #check that all the plates are accounted for and hit ENTER if to continue or ESC if they need to do some modeling.
       end
 
-      def is_plate?(entity)
-        #write code to see if the part is a plate
+      def color_steel_member(member)
+        member.material = @materials[DONE_COLOR]
       end
 
   		def scrape(part)
-        parts = []
         if part.class == Sketchup::Group
-          # p part.entities.count
     			part.entities.each do |e|
-            if e.name.match(BEAM_REGEX)
-              # e.material = BEAM_COLOR
-              # p e.name
-              # p e.class
-              # p e.definition
+            if e.definition.attribute_dictionary("#{DICTIONARY_NAME}", "#{SCHEMA_KEY}").values.include?(SCHEMA_VALUE)
+              @plates.push e
             end
-
-            if e.class == Sketchup::Group && !e.name.match(BEAM_REGEX)
-              if e.class == Sketchup::ComponentInstance
-                # e.material = PLATE_COLOR
-                # p e.class
-                # p e.definition
-              end
-
-              if e.class == Sketchup::Group
-                # e.material = PLATE_COLOR
-                # p e.class
-                # p e.definition
-              end
-            end
-
-
           end
-
-        elsif part.class == Sketchup::ComponentInstance
-          # p part.definition.entities.count
+        else
           part.definition.entities.each do |e|
-            if e.class == Sketchup::Group && e.name.match(BEAM_REGEX)
-              # e.material = BEAM_COLOR
-              # p e.name
-              # p e.class
-              # p e.definition
+            if e.definition.attribute_dictionary("#{DICTIONARY_NAME}", "#{SCHEMA_KEY}").values.include?(SCHEMA_VALUE)
+              @plates.push e
             end
-
-            if e.class == Sketchup::Group && !e.name.match(BEAM_REGEX)
-              # e.material = BEAM_COLOR
-              # p e.name
-              # p e.class
-              # p e.definition
-            end
-            if e.class == Sketchup::ComponentInstance
-              # e.material = PLATE_COLOR
-              # p e.class
-              # p e.definition
-            end
-            # p e.name
-            # p e.class
-            # p e.bounds.height
-            # p e.bounds.width
-            # p e.bounds.depth
           end
         end
-        return parts
   		end
 
-      def add_scenes
-        pages = @model.pages
-        view = @model.active_view
-        perspective_scene = pages.add "Perspective"
-        front_scene = pages.add "Front"
-        plates_scene = pages.add "Plates"
-        pages.selected_page = pages[0]
+      def temp_color(plates)
+        if plates.nil?
+          return
+        else
+          plates.each do |p|
+            p.material = PLATE_COLOR
+          end
+        end
       end
 
       def position_member(member)

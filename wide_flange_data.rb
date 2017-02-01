@@ -1046,7 +1046,7 @@ module EA_Extensions623
             end
           end
 
-          all_stiffplates.each {|plate| plate.material = color }
+          all_stiffplates.each {|plate| plate.material = color; plate.definition.add_classification("3DS Steel", "Plate") }
           #returns the all plates array
           return all_stiffplates
         rescue Exception => e
@@ -1121,7 +1121,7 @@ module EA_Extensions623
             end
           end
 
-          all_shearplates.each {|plate| plate.material = color}
+          all_shearplates.each {|plate| plate.material = color; plate.definition.add_classification("3DS Steel", "Plate")}
           return all_shearplates
         rescue Exception => e
           puts e.message

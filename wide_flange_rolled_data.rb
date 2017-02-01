@@ -65,6 +65,7 @@ module EA_Extensions623
         @@shearpl_thickness = data[:shearpl_thickness]  #String '1/4' or '3/8' or '1/2'
         @@roll_type         = data[:roll_type]
         @@radius_offset     = data[:radius_offset]
+        # @@segment_length    = date[:seg_length] #Update the dialog to allow for 4" 8" & 16" Segements on the rolled tool
 
         colors = {
           orange:  {name: ' C ¾" Thick',    rgb: [225,135,50]},
@@ -272,7 +273,7 @@ module EA_Extensions623
         set_groups
         profile = draw_beam(@@beam_data)
 
-        # @@has_holes = false # uncomment this to toggle holes
+        @@has_holes = false # uncomment this to toggle holes
         if @@has_holes
           web_holes    = add_web_holes    if @@web_holes
           flange_holes = add_flange_holes if @@flange_holes
@@ -293,7 +294,7 @@ module EA_Extensions623
         align_with_curve(profile, arc) #this returns an array. The FACE that has been aligned and the ARC
         extrude_face(profile, arc)
         spread_parts(arc)
-        erase_arc(arc) #Move this back to the bottom of the method
+        erase_arc(arc) #Keep this at the bottom of the #create_beam method
         @working_group.explode
         if @@has_holes && @@cuts_holes
           @solid_group.explode
@@ -783,7 +784,7 @@ module EA_Extensions623
         @stiff_plates.each_with_index do |plate, i|
           plate.transform! resize1
         end
-        @stiff_plates.each {|plate| plate.material = color }
+        @stiff_plates.each {|plate| plate.material = color; plate.definition.add_classification("3DS Steel", "Plate") }
       end
 
       def add_shearplates(scale, color)
@@ -835,7 +836,7 @@ module EA_Extensions623
           end
         end
 
-        all_shearplates.each {|plate| plate.material = color}
+        all_shearplates.each {|plate| plate.material = color; plate.definition.add_classification("3DS Steel", "Plate")}
         return all_shearplates
       end
 
@@ -1040,7 +1041,9 @@ module EA_Extensions623
         @y_vec  = pt - center
         @z_vec  = arc.normal
 
+        flipped = false
         if @z_vec[2] < 0
+          flipped = true
           @z_vec.reverse!
         end
 
@@ -1063,6 +1066,7 @@ module EA_Extensions623
             @outer_group.entities.transform_entities mvdwn, @stiff_plates
           end
         else # Roll Type is Hard
+          @z_vec.reverse! if !flipped
           if @drctn == 1
             vec_set = Geom::Vector3d.new [0,0,-0.5*@h]
             mvdwn = Geom::Transformation.translation vec_set
@@ -1136,9 +1140,7 @@ module EA_Extensions623
 
       def position_arc(path)
         vec = path.normal
-        if vec[2] < 0
-          vec.reverse!
-        end
+
         vec.length = @h*2
         slide_out = Geom::Transformation.new(vec)
         @inner_group.entities.transform_entities slide_out, path
