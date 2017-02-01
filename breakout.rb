@@ -4,9 +4,9 @@ module EA_Extensions623
   module EASteelTools
     require 'sketchup.rb'
 
-    CLASSIFICATION_SCHEMA = "3DS Steel"
+    DICTIONARY_NAME       = "3DS Steel"
     SCHEMA_KEY            = "SchemaType"
-    SCHEMA_VALUE          = "Plate"
+    SCHEMA_VALUE          = ":Plate"
 
     DONE_COLOR = '1 Done'
     PLATE_COLOR = 'Black'
@@ -57,13 +57,9 @@ module EA_Extensions623
         position_member(@steel_member)
         color_steel_member(@steel_member)
         components = scrape(@steel_member)
+        temp_color(@plates)
         #last method This resets the users template to what they had in the beginning
         # Sketchup.template = @users_template
-      end
-
-      def is_plate?(entity)
-        #write code to see if the part is a plate
-        @plates.push entity if entity.definition.attribute_dictionaries["#{CLASSIFICATION_SCHEMA}"]["#{SCHEMA_KEY}"] == SCHEMA_VALUE
       end
 
       def user_check(entities)
@@ -76,66 +72,30 @@ module EA_Extensions623
       end
 
   		def scrape(part)
-        parts = []
         if part.class == Sketchup::Group
-          # p part.entities.count
     			part.entities.each do |e|
-            if e.name.match(BEAM_REGEX)
-              # e.material = BEAM_COLOR
-              # p e.name
-              # p e.class
-              # p e.definition
+            if e.definition.attribute_dictionary("#{DICTIONARY_NAME}", "#{SCHEMA_KEY}").values.include?(SCHEMA_VALUE)
+              @plates.push e
             end
-
-            if e.class == Sketchup::Group && !e.name.match(BEAM_REGEX)
-              if e.class == Sketchup::ComponentInstance
-                e.material = PLATE_COLOR
-                # p e.class
-                # p e.definition
-              end
-
-              if e.class == Sketchup::Group
-                e.material = PLATE_COLOR
-                # p e.class
-                # p e.definition
-              end
-            elsif e.class == Sketchup::ComponentInstance
-                e.material = PLATE_COLOR
-            end
-
-
           end
-
-        elsif part.class == Sketchup::ComponentInstance
-          # p part.definition.entities.count
+        else
           part.definition.entities.each do |e|
-            if e.class == Sketchup::Group && e.name.match(BEAM_REGEX)
-              # e.material = BEAM_COLOR
-              # p e.name
-              # p e.class
-              # p e.definition
+            if e.definition.attribute_dictionary("#{DICTIONARY_NAME}", "#{SCHEMA_KEY}").values.include?(SCHEMA_VALUE)
+              @plates.push e
             end
-
-            if e.class == Sketchup::Group && !e.name.match(BEAM_REGEX)
-              # e.material = BEAM_COLOR
-              # p e.name
-              # p e.class
-              # p e.definition
-            end
-            if e.class == Sketchup::ComponentInstance
-              e.material = PLATE_COLOR
-              # p e.class
-              # p e.definition
-            end
-            # p e.name
-            # p e.class
-            # p e.bounds.height
-            # p e.bounds.width
-            # p e.bounds.depth
           end
         end
-        return parts
   		end
+
+      def temp_color(plates)
+        if plates.nil?
+          return
+        else
+          plates.each do |p|
+            p.material = PLATE_COLOR
+          end
+        end
+      end
 
       def position_member(member)
         tr = Geom::Transformation.axes ORIGIN, X_AXIS, Y_AXIS, Z_AXIS
