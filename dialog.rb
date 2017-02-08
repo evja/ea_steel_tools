@@ -357,6 +357,12 @@ module EA_Extensions623
         @window1.release
       end
 
+      def deactivate(view)
+        @window1.close
+        Sketchup.send_action "selectSelectionTool:"
+        view.invalidate
+      end
+
     end #class
 
   end #module

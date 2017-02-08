@@ -68,6 +68,12 @@ module EA_Extensions623
 
       end
 
+      def deactivate(view)
+        @window.close
+        Sketchup.send_action "selectSelectionTool:"
+        view.invalidate
+      end
+
       def make_cursor
         cursor = Sketchup.find_support_file("icons/wfs_icon_rolled_select.png", "Plugins/ea_steel_tools")
         @select_path_cursor = UI.create_cursor(cursor, 0, 0)

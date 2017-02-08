@@ -16,15 +16,15 @@ module EA_Extensions623
         ents = model.entities
         if model.entities.count == 1
           if ents[0].class == Sketchup::Group && ents[0].name.match(GROUP_REGEX)
-            p 'passed as a group'
+            # p 'passed as a group'
             return true
 
           elsif ents[0].class == Sketchup::ComponentInstance && ents[0].definition.name.match(GROUP_REGEX)
-            p 'passed as a Component'
+            # p 'passed as a Component'
             return true
 
           else
-            p 'not validated'
+            # p 'not validated'
             return false
           end
         else
@@ -37,11 +37,12 @@ module EA_Extensions623
       include BreakoutSetup
 
       def initialize
-        @users_template = Sketchup.template
+        # @users_template = Sketchup.template
         # Sketchup.template= Sketchup.find_support_file('Breakout.skp', "Plugins/#{FNAME}/Models/")
         @model = Sketchup.active_model
         BreakoutSetup.set_styles(@model)
         BreakoutSetup.set_scenes(@model)
+        BreakoutSetup.set_materials(@model)
         @entities = @model.entities
         @materials = @model.materials
         @selection = @model.selection
@@ -54,12 +55,15 @@ module EA_Extensions623
       end
 
       def activate
+        # @model.start_operation("Breakout", true)
         position_member(@steel_member)
         color_steel_member(@steel_member)
         components = scrape(@steel_member)
         temp_color(@plates)
         #last method This resets the users template to what they had in the beginning
         # Sketchup.template = @users_template
+
+        # @model.commit_operation
       end
 
       def user_check(entities)
@@ -89,6 +93,7 @@ module EA_Extensions623
 
       def temp_color(plates)
         if plates.nil?
+          p "no plates found"
           return
         else
           plates.each do |p|

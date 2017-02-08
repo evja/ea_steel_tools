@@ -81,15 +81,13 @@ module EA_Extensions623
             member_definition = temp_group.definition
             new_file = UI.savepanel("Save the Breakout", @path, "#{member.name}.skp" )
             if new_file
+              Sketchup.undo
               member_definition.save_as(new_file)
-              Sketchup.undo
               paths.push new_file
-              member.material = @materials[BEAM_COLOR]
+              member.material = @materials["#{BEAM_COLOR}"]
               set_breakout_directory(@path)
-            else
-              Sketchup.undo
             end
-
+            temp_group.explode if temp_group
           end
           paths.each {|path| UI.openURL(path)}
         else
@@ -100,11 +98,11 @@ module EA_Extensions623
           p @new_file_path
           if !@new_file_path.nil?
             defn.save_as(@new_file_path)
+            steel_member.material = @materials["#{BEAM_COLOR}"]
             UI.openURL(@new_file_path)
-            steel_member.material = @materials[BEAM_COLOR]
             set_breakout_directory(@path)
           end
-          Sketchup.undo
+        temp_group.explode if temp_group
         end
       end
 
