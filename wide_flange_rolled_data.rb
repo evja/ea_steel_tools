@@ -273,7 +273,7 @@ module EA_Extensions623
         set_groups
         profile = draw_beam(@@beam_data)
 
-        @@has_holes = false # uncomment this to toggle holes
+        # @@has_holes = false # uncomment this to toggle holes
         if @@has_holes
           web_holes    = add_web_holes    if @@web_holes
           flange_holes = add_flange_holes if @@flange_holes
