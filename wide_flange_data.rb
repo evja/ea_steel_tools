@@ -479,6 +479,12 @@ module EA_Extensions623
           file_path1 = Sketchup.find_support_file "#{ROOT_FILE_PATH}/Beam Components/9_16 Hole Set.skp", "Plugins/"
           nine_sixteenths_hole = @definition_list.load file_path1
 
+          #load the 1/2" studs ready for placing
+          file_path_stud = Sketchup.find_support_file "#{ROOT_FILE_PATH}/Beam Components/2½ x½_ Studs.skp", "Plugins/"
+          half_inch_stud = @definition_list.load file_path_stud
+
+          @@force_studs ? element = half_inch_stud : element = nine_sixteenths_hole
+
           count = 0
 
           #Setst the scale depth for the web and the flange
@@ -490,28 +496,29 @@ module EA_Extensions623
             if count.even? && @tw <= 0.75
               #Adds in the top row of web holes
               placement1 = [fhpX, (0.5*@tw), @hc >= 14 ? @h-(@tf+3) : (0.5*@h)+(0.25*@hc)]
-              inst = @inner_group.entities.add_instance nine_sixteenths_hole, placement1
+              inst = @inner_group.entities.add_instance element, placement1
               t = Geom::Transformation.rotation placement1, [1,0,0], 270.degrees
               inst.transform! t
-              inst.transform! tran1
-              @nine_sixteenths_holes << inst
+              inst.transform! tran1 unless @@force_studs
+              @@force_studs ? @all_studs << inst : @nine_sixteenths_holes << inst
 
               break if shpX > length
 
               #Adds in the bottom row of web holes
               placement2 = [shpX, (0.5*@tw), @hc >= 14 ? @h-(@tf+9) : (0.5*@h)-(0.25*@hc)]
-              inst = @inner_group.entities.add_instance nine_sixteenths_hole, placement2
+              inst = @inner_group.entities.add_instance element, placement2
               t = Geom::Transformation.rotation placement2, [1,0,0], 270.degrees
               inst.transform! t
-              inst.transform! tran1
-              @nine_sixteenths_holes << inst
+              inst.transform! tran1 unless @@force_studs
+
+              @@force_studs ? @all_studs << inst : @nine_sixteenths_holes << inst
             end
             #this keeps track of where on the beam the holes shouldbe placed
             fhpX += @@hole_spacing
             shpX += @@hole_spacing
             count += 1
           end
-          @nine_sixteenths_holes
+
         rescue Exception => e
           puts e.message
           puts e.backtrace.inspect
