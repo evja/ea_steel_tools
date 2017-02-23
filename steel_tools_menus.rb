@@ -11,6 +11,7 @@ module EA_Extensions623
     require FNAME+'/'+'breakout.rb'
     require FNAME+'/'+'breakout_send.rb'
     require FNAME+'/'+'load_schemas.rb'
+    require FNAME+'/Updater/'+'updater.rb'
     # require FNAME+'/'+'test.rb'
 
     # require 'hss_column_data.rb'         # Coming Soon
@@ -56,10 +57,10 @@ module EA_Extensions623
     # cmd3.menu_text = "Wide HSS Columns"
     # toolbar = toolbar.add_item cmd3
 
-    # cmd4 = UI::Command.new("Update Steel Tool") {
-    #  EASteelTools::ToolUpdater.new
-    # }
-    # @@EA_tools_menu.add_item cmd4
+    cmd4 = UI::Command.new("Update Steel Tool(Not Working)") {
+     EASteelTools::ToolUpdater.new
+    }
+    @@EA_tools_menu.add_item cmd4
 
     UI.add_context_menu_handler do |menu|
       if not( EASteelTools::BreakoutMod.qualify_model(Sketchup.active_model) )
