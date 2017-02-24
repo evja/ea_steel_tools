@@ -61,6 +61,7 @@ module EA_Extensions623
         @@has_shearplates   = data[:shearplates]        #Boolean
         @@stiff_thickness   = data[:stiff_thickness]    #String '1/4' or '3/8' or '1/2'
         @@shearpl_thickness = data[:shearpl_thickness]  #String '1/4' or '3/8' or '1/2'
+        @@force_studs       = data[:force_studs]
 
         colors = {
           orange:  {name: ' C ¾" Thick',    rgb: [225,135,50]},
@@ -169,6 +170,8 @@ module EA_Extensions623
         @x_red = Geom::Vector3d.new 1,0,0
         @y_green = Geom::Vector3d.new 0,1,0
         @z_blue = Geom::Vector3d.new 0,0,1
+
+        @nine_sixteenths_holes = []
 
         self.reset(nil)
       end
@@ -476,8 +479,12 @@ module EA_Extensions623
           file_path1 = Sketchup.find_support_file "#{ROOT_FILE_PATH}/Beam Components/9_16 Hole Set.skp", "Plugins/"
           nine_sixteenths_hole = @definition_list.load file_path1
 
-          #initialize some variables
-          all_holes = []
+          #load the 1/2" studs ready for placing
+          file_path_stud = Sketchup.find_support_file "#{ROOT_FILE_PATH}/Beam Components/2½ x½_ Studs.skp", "Plugins/"
+          half_inch_stud = @definition_list.load file_path_stud
+
+          @@force_studs ? element = half_inch_stud : element = nine_sixteenths_hole
+
           count = 0
 
           #Setst the scale depth for the web and the flange
@@ -489,28 +496,29 @@ module EA_Extensions623
             if count.even? && @tw <= 0.75
               #Adds in the top row of web holes
               placement1 = [fhpX, (0.5*@tw), @hc >= 14 ? @h-(@tf+3) : (0.5*@h)+(0.25*@hc)]
-              inst = @inner_group.entities.add_instance nine_sixteenths_hole, placement1
+              inst = @inner_group.entities.add_instance element, placement1
               t = Geom::Transformation.rotation placement1, [1,0,0], 270.degrees
               inst.transform! t
-              inst.transform! tran1
-              all_holes << inst
+              inst.transform! tran1 unless @@force_studs
+              @@force_studs ? @all_studs << inst : @nine_sixteenths_holes << inst
 
               break if shpX > length
 
               #Adds in the bottom row of web holes
               placement2 = [shpX, (0.5*@tw), @hc >= 14 ? @h-(@tf+9) : (0.5*@h)-(0.25*@hc)]
-              inst = @inner_group.entities.add_instance nine_sixteenths_hole, placement2
+              inst = @inner_group.entities.add_instance element, placement2
               t = Geom::Transformation.rotation placement2, [1,0,0], 270.degrees
               inst.transform! t
-              inst.transform! tran1
-              all_holes << inst
+              inst.transform! tran1 unless @@force_studs
+
+              @@force_studs ? @all_studs << inst : @nine_sixteenths_holes << inst
             end
             #this keeps track of where on the beam the holes shouldbe placed
             fhpX += @@hole_spacing
             shpX += @@hole_spacing
             count += 1
           end
-          all_holes
+
         rescue Exception => e
           puts e.message
           puts e.backtrace.inspect
@@ -555,7 +563,6 @@ module EA_Extensions623
 
 
           #initialize some variables
-          all_holes = []
           @all_studs = []
           count = 0
 
@@ -568,7 +575,7 @@ module EA_Extensions623
 
             # inserts 9/16" holes in the flanges if the flange thickness is less than 3/4"
             # and inserts 1/2" studs on the top flange if it is thicker than 3/4"
-            if @tf <= 0.75
+            if @tf <= 0.75 && @@force_studs == false
               holes = [
                 #adds the first row of 9/16" holes in the top flange
                 (inst1 = @inner_group.entities.add_instance nine_sixteenths_hole, [fhpX, y, @h] unless stagger && count.odd?),
@@ -584,12 +591,14 @@ module EA_Extensions623
               holes.compact! if stagger
               holes.each_with_index do |hole, i|
                 i.even? ? (hole.transform! tran2) : (hole.transform! tran3)
-                all_holes.push hole
+                @nine_sixteenths_holes.push hole
               end
-            else # Adds the 1/2" Studs where hole could go if the flange was less than 3/4"
+            else # Adds the 1/2" Studs where holes could go if the flange was less than 3/4"
               #puts studs on the beam if the flange thickness is thicker than 3/4"
+
               inst1 = @outer_group.entities.add_instance half_inch_stud, [fhpX, y, @h] unless stagger && count.odd?
-              inst2 = @outer_group.entities.add_instance half_inch_stud, [fhpX, -y, @h] unless stagger && count.odd?
+              inst2 = @outer_group.entities.add_instance half_inch_stud, [fhpX, -y, @h] unless stagger && count.even?
+
               @all_studs << inst1
               @all_studs << inst2
             end
@@ -599,7 +608,15 @@ module EA_Extensions623
             shpX += hole_spacing_update
             count += 1
           end
-          all_holes
+
+          @all_studs.compact! if not @all_studs.empty?
+          if @@force_studs
+            @all_studs.each do |stud|
+              copy = stud.copy
+              tran = Geom::Transformation.rotation [0,0,@h/2], X_AXIS, 180.degrees
+              copy.transform! tran
+            end
+          end
         rescue Exception => e
           puts e.message
           puts e.backtrace.inspect
@@ -1221,8 +1238,8 @@ module EA_Extensions623
           beam.name = "Difference"
 
           #add holes to the beam
-          nine_sixteenths_holes = add_9_16_flange_holes(length) if @@has_holes
-          nine_sixteenths_holes += add_9_16_web_holes(length) if @@has_holes
+          add_9_16_flange_holes(length) if @@has_holes
+          add_9_16_web_holes(length) if @@has_holes
 
           #insert all labels in the beam and column, insert 13/16" if it is a beam
           if vec[0] == 0 && vec[1] == 0
@@ -1238,7 +1255,7 @@ module EA_Extensions623
           # Cuts the holes if the option is checked
           if @@cuts_holes && @@has_holes
             beam.explode
-            nine_sixteenths_holes.each do |hole|
+            @nine_sixteenths_holes.each do |hole|
               hole.explode
             end
             thirteen_sixteenths_holes.each {|hole| hole.explode} if not column

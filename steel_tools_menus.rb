@@ -32,7 +32,6 @@ module EA_Extensions623
     cmd.status_bar_text = "Draw Flange"
     cmd.menu_text = "Wide Flange Steel"
     toolbar = toolbar.add_item cmd
-    toolbar.show
 
     cmd1 = UI::Command.new("Rolled") {
      Sketchup.active_model.select_tool @two = EASteelTools::RolledDialog.new
@@ -46,17 +45,21 @@ module EA_Extensions623
     toolbar = toolbar.add_item cmd1
     toolbar.show
 
-    # cmd = UI::Command.new("HSS") {
+    # cmd3 = UI::Command.new("HSS") {
     #  Sketchup.active_model.select_tool EASteelTools::HssColumn.new
     # }
-    # @@EA_tools_menu.add_item cmd
-    # cmd.small_icon = "icons/wfs_icon_column.png"
-    # cmd.large_icon = "icons/wfs_icon_column.png"
-    # cmd.tooltip = "Draw Hollow Structural Sections"
-    # cmd.status_bar_text = "Draw Column"
-    # cmd.menu_text = "Wide HSS Columns"
-    # toolbar = toolbar.add_item cmd
-    # toolbar.show
+    # @@EA_tools_menu.add_item cmd3
+    # cmd3.small_icon = "icons/wfs_icon_column.png"
+    # cmd3.large_icon = "icons/wfs_icon_column.png"
+    # cmd3.tooltip = "Draw Hollow Structural Sections"
+    # cmd3.status_bar_text = "Draw Column"
+    # cmd3.menu_text = "Wide HSS Columns"
+    # toolbar = toolbar.add_item cmd3
+
+    # cmd4 = UI::Command.new("Update Steel Tool") {
+    #  EASteelTools::ToolUpdater.new
+    # }
+    # @@EA_tools_menu.add_item cmd4
 
     UI.add_context_menu_handler do |menu|
       if not( EASteelTools::BreakoutMod.qualify_model(Sketchup.active_model) )

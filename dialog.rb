@@ -24,7 +24,7 @@ module EA_Extensions623
           @@has_shearplates   = true           #Boolean
           @@stiff_thickness   = '1/4'          #String '1/4' or '3/8' or '1/2'
           @@shearpl_thickness = '1/2'          #String '3/8' or '1/2' or '3/4'
-
+          @@force_studs       = false          #Boolean
           @@state = 1
         end
 
@@ -96,6 +96,14 @@ module EA_Extensions623
           @@beam_name = control.value
           p @@beam_name
         }
+
+        chk_force_studs = SKUI::Checkbox.new( 'Force Studs' )
+        chk_force_studs.position( 300, 20 )
+        chk_force_studs.checked = @@force_studs
+        chk_force_studs.on( :change ) { |control|
+          @@force_studs                = control.checked?
+        }
+        group.add_control( chk_force_studs )
         ##################################################################################
         ##################################################################################
 
@@ -325,7 +333,8 @@ module EA_Extensions623
             stiffeners:        @@has_stiffeners,
             shearplates:       @@has_shearplates,
             stiff_thickness:   @@stiff_thickness,
-            shearpl_thickness: @@shearpl_thickness
+            shearpl_thickness: @@shearpl_thickness,
+            force_studs:       @@force_studs
           }
           control.window.close
           Sketchup.active_model.select_tool EASteelTools::FlangeTool.new(data)
