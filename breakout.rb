@@ -14,7 +14,8 @@ module EA_Extensions623
     module BreakoutMod
       def self.qualify_model(model)
         ents = model.entities
-        if model.entities.count == 1
+        if model.title.match GROUP_REGEX
+        # if model.entities.count == 1
           if ents[0].class == Sketchup::Group && ents[0].name.match(GROUP_REGEX)
             # p 'passed as a group'
             return true
@@ -36,13 +37,12 @@ module EA_Extensions623
     class Breakout
       include BreakoutSetup
 
-      def initialize
+      def activate
+        @@environment_set = false if not defined? @@environment_set
+        @model = Sketchup.active_model
+        @model.start_operation("Breakout", true)
         # @users_template = Sketchup.template
         # Sketchup.template= Sketchup.find_support_file('Breakout.skp', "Plugins/#{FNAME}/Models/")
-        @model = Sketchup.active_model
-        BreakoutSetup.set_styles(@model)
-        BreakoutSetup.set_scenes(@model)
-        BreakoutSetup.set_materials(@model)
         @entities = @model.entities
         @materials = @model.materials
         @selection = @model.selection
@@ -51,19 +51,26 @@ module EA_Extensions623
         @steel_member = @entities.first
         @member_name = @steel_member.name
         @labels = []
-        activate
-      end
-
-      def activate
-        # @model.start_operation("Breakout", true)
+        @status_text = "Please Verify that all the plates are accounted for: RIGHT ARROW = 'Proceed' LEFT ARROW = 'Go Back'"
+        @state = 0
+        set_envoronment if @@environment_set == false
         position_member(@steel_member)
         color_steel_member(@steel_member)
         components = scrape(@steel_member)
+        UI.messagebox("The function could not find any classified plates") if @plates.empty?
         temp_color(@plates)
         #last method This resets the users template to what they had in the beginning
         # Sketchup.template = @users_template
 
-        # @model.commit_operation
+        @model.commit_operation
+        # Sketchup.status_text =("Please Verify that all the plates are accounted for: Enter = 'Accept' Esc = 'No, need to classify some'")
+      end
+
+      def set_envoronment
+        BreakoutSetup.set_styles(@model)
+        BreakoutSetup.set_scenes(@model)
+        BreakoutSetup.set_materials(@model)
+        @@environment_set = true
       end
 
       def user_check(entities)
@@ -79,16 +86,19 @@ module EA_Extensions623
         if part.class == Sketchup::Group
     			part.entities.each do |e|
             if e.definition.attribute_dictionary("#{DICTIONARY_NAME}", "#{SCHEMA_KEY}").values.include?(SCHEMA_VALUE)
-              @plates.push e
+              a = {object: e, orig_color: e.material, vol: e.volume}
+              @plates.push a
             end
           end
         else
           part.definition.entities.each do |e|
             if e.definition.attribute_dictionary("#{DICTIONARY_NAME}", "#{SCHEMA_KEY}").values.include?(SCHEMA_VALUE)
-              @plates.push e
+              a = {object: e, orig_color: e.material, vol: e.volume}
+              @plates.push a
             end
           end
         end
+        p @plates.first
   		end
 
       def temp_color(plates)
@@ -96,10 +106,18 @@ module EA_Extensions623
           p "no plates found"
           return
         else
-          plates.each do |p|
-            p.material = PLATE_COLOR
+          plates.each do |plate|
+            plate[:object].material = PLATE_COLOR
+            # plates[plate].material = PLATE_COLOR
           end
         end
+      end
+
+      def restore_material(plates)
+        plates.each do |plate|
+          plate[:object].material = plate[:orig_color]
+        end
+        @state = 1 if @state == 0
       end
 
       def position_member(member)
@@ -113,6 +131,34 @@ module EA_Extensions623
         x.length = w/2
         slide = Geom::Transformation.translation x
         member.move! slide
+      end
+
+      def onKeyDown(key, repeat, flags, view)
+        if @state == 0 && key == VK_RIGHT
+          p 'state was 0'
+          restore_material(@plates)
+          @state = 1
+          Sketchup.status_text = "Breaking out the paltes"
+          p 'state is 1'
+        elsif @state == 0 && key == VK_LEFT
+          p 'state was 1'
+          restore_material(@plates)
+          Sketchup.status_text = "Classify Plates Then Start Again"
+          @state = 2
+          p 'state is 2'
+        end
+      end
+
+      def onMouseMove(flags, x, y, view)
+        Sketchup.status_text = @status_text if @state == 0
+      end
+
+      def suspend(view)
+        view.invalidate
+      end
+
+      def resume(view)
+        view.invalidate
       end
 
   	end

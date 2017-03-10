@@ -1,0 +1,936 @@
+{
+	"auto_complete":
+	{
+		"selected_items":
+		[
+			[
+				"ea_steel",
+				"ea_steel_tools_loader"
+			],
+			[
+				"nin",
+				"nine_sixteenths_hole"
+			],
+			[
+				"comp",
+				"compact"
+			],
+			[
+				"fore",
+				"force_studs"
+			],
+			[
+				"for",
+				"force_studs"
+			],
+			[
+				"SCHE",
+				"SCHEMA_KEY"
+			],
+			[
+				"segment",
+				"segment_length"
+			],
+			[
+				"temp",
+				"temp_color"
+			],
+			[
+				"J",
+				"JOBS_LOCATION"
+			],
+			[
+				"Cou",
+				"could"
+			],
+			[
+				"path",
+				"path_to_job"
+			],
+			[
+				"new",
+				"new_file"
+			],
+			[
+				"break",
+				"breakout_dir"
+			],
+			[
+				"brea",
+				"breakout_dir"
+			],
+			[
+				"nam",
+				"name_option2"
+			],
+			[
+				"name",
+				"name_option1"
+			],
+			[
+				"bre",
+				"breakout_dir"
+			],
+			[
+				"director",
+				"directory_exists"
+			],
+			[
+				"model",
+				"model_names"
+			],
+			[
+				"mess",
+				"messagebox"
+			],
+			[
+				"mater",
+				"material"
+			],
+			[
+				"entit",
+				"entities"
+			],
+			[
+				"SCH",
+				"SCHEMA_VALUE"
+			],
+			[
+				"pla",
+				"plates"
+			],
+			[
+				"steel",
+				"steel_member"
+			],
+			[
+				"find",
+				"find_support_file"
+			],
+			[
+				"style",
+				"style1_file"
+			],
+			[
+				"material",
+				"materials"
+			],
+			[
+				"depth",
+				"depth"
+			],
+			[
+				"materi",
+				"material_files"
+			],
+			[
+				"add",
+				"add_scenes"
+			],
+			[
+				"member",
+				"member_definition"
+			],
+			[
+				"steel_mem",
+				"steel_members"
+			],
+			[
+				"EA",
+				"EA_tools_menu"
+			],
+			[
+				"mod2",
+				"mod2_ents"
+			],
+			[
+				"Ent",
+				"entity"
+			],
+			[
+				"sel",
+				"selection"
+			],
+			[
+				"clear",
+				"clear_model"
+			],
+			[
+				"BEA",
+				"BEAM_COLOR"
+			],
+			[
+				"Comp",
+				"ComponentInstance"
+			],
+			[
+				"transfo",
+				"transform_entities"
+			],
+			[
+				"outsi",
+				"outside_part_count"
+			],
+			[
+				"flange",
+				"flange_holes"
+			],
+			[
+				"spread",
+				"spread_angle"
+			],
+			[
+				"flan",
+				"flange_hole_stagger"
+			],
+			[
+				"stagger",
+				"flange_hole_stagger"
+			],
+			[
+				"insid",
+				"inside_part_count"
+			],
+			[
+				"out",
+				"outside_part_count"
+			],
+			[
+				"trans",
+				"transform"
+			],
+			[
+				"flage",
+				"flange_hole_stagger"
+			],
+			[
+				"inside",
+				"inside_holes_count"
+			],
+			[
+				"ins",
+				"inside_holes_count"
+			],
+			[
+				"outside",
+				"outside_holes_count"
+			],
+			[
+				"fla",
+				"flange_hole_stagger"
+			],
+			[
+				"bottom",
+				"bottom_row_web_holes"
+			],
+			[
+				"Bottom",
+				"bottom_row_web_holes"
+			],
+			[
+				"top",
+				"top_row_web_holes"
+			],
+			[
+				"sh",
+				"sh_plates"
+			],
+			[
+				"center",
+				"centergroup"
+			],
+			[
+				"other",
+				"other_center"
+			],
+			[
+				"shear",
+				"shear_pl_ww10"
+			],
+			[
+				"seg",
+				"segment_count"
+			],
+			[
+				"web",
+				"web_holes"
+			],
+			[
+				"he",
+				"height_class"
+			],
+			[
+				"stiff",
+				"stiff_color"
+			],
+			[
+				"flang",
+				"flange_holes_count"
+			],
+			[
+				"start",
+				"start_direction"
+			],
+			[
+				"end_lab",
+				"end_labels"
+			],
+			[
+				"end",
+				"end_labels"
+			],
+			[
+				"tr",
+				"transform"
+			],
+			[
+				"gua",
+				"guage_hole_rotation_angle"
+			],
+			[
+				"hol",
+				"hole_rotation_angle"
+			],
+			[
+				"guag",
+				"guage_hole_spread_angle"
+			],
+			[
+				"guage",
+				"guage_hole_spread_angle"
+			],
+			[
+				"number",
+				"number_of_copies"
+			],
+			[
+				"trams",
+				"transform"
+			],
+			[
+				"firs",
+				"first_edge"
+			],
+			[
+				"hole",
+				"hole_rotation_angle"
+			],
+			[
+				"all",
+				"all_studs"
+			],
+			[
+				"stud",
+				"stud4"
+			],
+			[
+				"shear_pl",
+				"shear_pl2"
+			],
+			[
+				"stiffen",
+				"stiffener2"
+			],
+			[
+				"shear_",
+				"shear_scale"
+			],
+			[
+				"palce",
+				"place1"
+			],
+			[
+				"co",
+				"color"
+			],
+			[
+				"X",
+				"X_AXIS"
+			],
+			[
+				"beam_la",
+				"beam_label2"
+			],
+			[
+				"beam_labe",
+				"beam_label"
+			],
+			[
+				"updi",
+				"up_direction_group"
+			],
+			[
+				"start_directi",
+				"start_direction_group"
+			],
+			[
+				"label",
+				"label_center"
+			],
+			[
+				"Y",
+				"Y_AXIS"
+			],
+			[
+				"label_inser",
+				"label_insertion_point1"
+			],
+			[
+				"st",
+				"start_label"
+			],
+			[
+				"tran",
+				"transform"
+			],
+			[
+				"place",
+				"placement"
+			],
+			[
+				"T",
+				"Transformation"
+			],
+			[
+				"add_",
+				"add_instance"
+			],
+			[
+				"vec",
+				"vec1"
+			],
+			[
+				"get",
+				"get_direction"
+			],
+			[
+				"direction",
+				"direction1"
+			],
+			[
+				"dir",
+				"direction"
+			],
+			[
+				"y_e",
+				"y_edge_pt"
+			],
+			[
+				"x_edge",
+				"x_edge_pt"
+			],
+			[
+				"arc",
+				"arc_midpoint"
+			],
+			[
+				"z",
+				"z"
+			],
+			[
+				"y",
+				"y"
+			],
+			[
+				"x",
+				"x"
+			],
+			[
+				"flangeholes",
+				"flange_holes"
+			],
+			[
+				"wor",
+				"working_group"
+			],
+			[
+				"working",
+				"working_group_ents"
+			],
+			[
+				"workin",
+				"working_group_ents"
+			],
+			[
+				"work",
+				"working_group_ents"
+			],
+			[
+				"worki",
+				"working_group"
+			],
+			[
+				"old",
+				"old_arc_group"
+			],
+			[
+				"new_ar",
+				"new_arc_group"
+			],
+			[
+				"sele",
+				"selected_arc"
+			],
+			[
+				"slide",
+				"slide_over"
+			],
+			[
+				"webho",
+				"webhole1"
+			],
+			[
+				"geo",
+				"geometry"
+			],
+			[
+				"acti",
+				"active_model"
+			],
+			[
+				"inner",
+				"inner_group"
+			],
+			[
+				"ce",
+				"centerpoint"
+			],
+			[
+				"we",
+				"webhole_stagger"
+			],
+			[
+				"move",
+				"move_down"
+			],
+			[
+				"tra",
+				"transform"
+			],
+			[
+				"sheahol",
+				"shearhole1"
+			],
+			[
+				"num",
+				"number_of_sheer_holes"
+			]
+		]
+	},
+	"buffers":
+	[
+	],
+	"build_system": "",
+	"build_system_choices":
+	[
+	],
+	"build_varint": "",
+	"command_palette":
+	{
+		"height": 392.0,
+		"last_filter": "",
+		"selected_items":
+		[
+		],
+		"width": 472.0
+	},
+	"console":
+	{
+		"height": 0.0,
+		"history":
+		[
+		]
+	},
+	"distraction_free":
+	{
+		"menu_visible": true,
+		"show_minimap": false,
+		"show_open_files": false,
+		"show_tabs": false,
+		"side_bar_visible": false,
+		"status_bar_visible": false
+	},
+	"file_history":
+	[
+		"/C/Users/EVANALLRED/AppData/Roaming/SketchUp/SketchUp 2017/SketchUp/Plugins/ea_steel_tools/wide_flange_rolled_data.rb",
+		"/C/Users/EVANALLRED/AppData/Roaming/SketchUp/SketchUp 2017/SketchUp/Plugins/ea_steel_tools/steel_tools_menus.rb",
+		"/C/Users/EVANALLRED/AppData/Roaming/SketchUp/SketchUp 2017/SketchUp/Plugins/ea_steel_tools/control.rb",
+		"/C/Users/EVANALLRED/AppData/Roaming/SketchUp/SketchUp 2017/SketchUp/Plugins/ea_steel_tools/Updater/updater.rb",
+		"/X/3DS SHARED(server)/Plugins/Steel Tools/Version 3.0.3/ea_steel_tools/wide_flange_rolled_data.rb",
+		"/X/3DS SHARED(server)/Plugins/Steel Tools/Version 3.0.3.temp/ea_steel_tools/wide_flange_rolled_data.rb",
+		"/C/Users/EVANALLRED/AppData/Roaming/SketchUp/SketchUp 2017/SketchUp/Plugins/ea_steel_tools/wide_flange_data.rb",
+		"/C/Users/EVANALLRED/AppData/Roaming/SketchUp/SketchUp 2017/SketchUp/Plugins/ea_steel_tools/dialog.rb",
+		"/C/Users/EVANALLRED/AppData/Roaming/SketchUp/SketchUp 2017/SketchUp/Plugins/ea_steel_tools_loader.rb",
+		"/X/3DS SHARED(server)/Plugins/Steel Tools/Version 3.0.3.temp/ea_steel_tools_loader.rb",
+		"/C/Users/EVANALLRED/AppData/Roaming/SketchUp/SketchUp 2017/SketchUp/Plugins/ea_steel_tools/breakout.rb",
+		"/C/Users/EVANALLRED/AppData/Roaming/SketchUp/SketchUp 2017/SketchUp/Plugins/ea_steel_tools/breakout_send.rb",
+		"/C/Users/EVANALLRED/AppData/Roaming/SketchUp/SketchUp 2017/SketchUp/Plugins/ea_steel_tools/dialog_rolled.rb",
+		"/C/Users/EVANALLRED/AppData/Roaming/SketchUp/SketchUp 2017/SketchUp/Plugins/ea_steel_tools/breakout_setup.rb",
+		"/C/Users/EVANALLRED/AppData/Roaming/SketchUp/SketchUp 2017/SketchUp/Plugins/ea_steel_tools/load_schemas.rb",
+		"/C/Users/EVANALLRED/AppData/Roaming/SketchUp/SketchUp 2017/SketchUp/Plugins/ea_steel_tools/Schemas/steel/Schemas/3Dsteel.xsd",
+		"/C/Users/EVANALLRED/AppData/Roaming/SketchUp/SketchUp 2017/SketchUp/Plugins/ea_steel_tools/Schemas/steel/Schemas/3Dsteel.xsd.filter",
+		"/C/Users/EVANALLRED/AppData/Roaming/SketchUp/SketchUp 2017/SketchUp/Plugins/ea_steel_tools/Schemas/steel.skc",
+		"/C/Users/EVANALLRED/AppData/Roaming/SketchUp/SketchUp 2017/SketchUp/Plugins/ea_steel_tools/Schemas/steel/documentProperties.xml",
+		"/C/Users/EVANALLRED/AppData/Roaming/SketchUp/SketchUp 2017/SketchUp/Plugins/ea_steel_tools/Models/Pages/Page Info.rb",
+		"/C/Users/EVANALLRED/AppData/Roaming/SketchUp/SketchUp 2017/SketchUp/Plugins/ea_steel_tools/Style Info.txt",
+		"/C/Users/EVANALLRED/Desktop/TestSchema.skc",
+		"/C/Users/EVANALLRED/AppData/Roaming/SketchUp/SketchUp 2017/SketchUp/Plugins/console_toggle.rb",
+		"/C/Users/EVANALLRED/AppData/Roaming/SketchUp/SketchUp 2017/SketchUp/Classifications/steel_schema.skc",
+		"/C/Users/EVANALLRED/AppData/Roaming/SketchUp/SketchUp 2017/SketchUp/Plugins/ea_steel_tools/beam_library.rb",
+		"/C/Users/EVANALLRED/AppData/Roaming/SketchUp/SketchUp 2017/SketchUp/Plugins/ea_steel_tools/test.html.erb",
+		"/C/Users/EVANALLRED/AppData/Roaming/SketchUp/SketchUp 2017/SketchUp/Plugins/ea_steel_tools/test.rb",
+		"/C/Users/EVANALLRED/Downloads/my_schema/Schemas/ifcXML4.xsd",
+		"/C/Users/EVANALLRED/Downloads/ifcXML4.skc",
+		"/X/3DS SHARED(server)/Plugins/Steel Tools/ea_steel_tools_loader.rb",
+		"/C/Users/EVANALLRED/AppData/Roaming/SketchUp/SketchUp 2017/SketchUp/Plugins/ea_steel_tools/.gitignore",
+		"/C/Users/EVANALLRED/AppData/Roaming/SketchUp/SketchUp 2017/SketchUp/Plugins/ea_steel_tools/material_library.rb",
+		"/C/Users/EVANALLRED/AppData/Roaming/SketchUp/SketchUp 2017/SketchUp/Plugins/ea_steel_tools/test.html",
+		"/C/Users/EVANALLRED/AppData/Roaming/SketchUp/SketchUp 2016/SketchUp/Plugins/PergolaBuilder/pergola_builder_menus.rb",
+		"/C/Users/EVANALLRED/AppData/Roaming/SketchUp/SketchUp 2016/SketchUp/Plugins/console_toggle.rb",
+		"/C/Users/EVANALLRED/AppData/Roaming/SketchUp/SketchUp 2016/SketchUp/Plugins/ea_steel_tools/wide_flange_rolled_data.rb",
+		"/C/Users/EVANALLRED/AppData/Roaming/SketchUp/SketchUp 2016/SketchUp/Plugins/ea_steel_tools/steel_tools_menus.rb",
+		"/C/Users/EVANALLRED/AppData/Roaming/SketchUp/SketchUp 2016/SketchUp/Plugins/ea_steel_tools_loader.rb",
+		"/C/Users/EVANALLRED/AppData/Roaming/SketchUp/SketchUp 2016/SketchUp/Plugins/Loader Stuff.rb",
+		"/C/Users/EVANALLRED/AppData/Roaming/SketchUp/SketchUp 2016/SketchUp/Plugins/ea_steel_tools/control.rb",
+		"/C/Users/EVANALLRED/AppData/Roaming/SketchUp/SketchUp 2016/SketchUp/Plugins/ea_steel_tools/wide_flange_data.rb",
+		"/C/Users/EVANALLRED/AppData/Roaming/SketchUp/SketchUp 2016/SketchUp/Plugins/ea_steel_tools/dialog.rb",
+		"/C/Users/EVANALLRED/AppData/Roaming/SketchUp/SketchUp 2016/SketchUp/Plugins/ea_steel_tools/.gitignore",
+		"/C/Users/EVANALLRED/AppData/Roaming/SketchUp/SketchUp 2016/SketchUp/Plugins/Test line.rb",
+		"/C/Users/EVANALLRED/Downloads/Test line.rb",
+		"/C/Users/EVANALLRED/AppData/Roaming/SketchUp/SketchUp 2016/SketchUp/Plugins/ea_steel_tools/test_code.Appraisals",
+		"/C/Users/EVANALLRED/AppData/Roaming/SketchUp/SketchUp 2016/SketchUp/Plugins/ea_steel_tools/dialog_rolled.rb",
+		"/C/Users/EVANALLRED/AppData/Roaming/SketchUp/SketchUp 2016/SketchUp/Plugins/Ghost.rb",
+		"/C/Users/EVANALLRED/AppData/Roaming/SketchUp/SketchUp 2016/SketchUp/Plugins/DM_ProfileBuilder2/fencebuilder.html",
+		"/C/Users/EVANALLRED/AppData/Roaming/SketchUp/SketchUp 2016/SketchUp/Plugins/as_pluginloader.rb",
+		"/C/Users/EVANALLRED/Desktop/Coding/Programs/test.rb",
+		"/C/Users/EVANALLRED/AppData/Roaming/SketchUp/SketchUp 2015/SketchUp/Plugins/location_finder_loader.rb",
+		"/C/Program Files/Git/ReleaseNotes.html",
+		"/C/Users/EVANALLRED/AppData/Roaming/SketchUp/SketchUp 2016/SketchUp/Plugins/su_extension_warehouse_template/extension_template_data.rb",
+		"/C/Users/EVANALLRED/AppData/Roaming/SketchUp/SketchUp 2016/SketchUp/Classifications/TimberFrame.xsd",
+		"/C/Users/EVANALLRED/AppData/Roaming/SketchUp/SketchUp 2016/SketchUp/Plugins/su_extension_warehouse_template.rb",
+		"/C/Users/EVANALLRED/Downloads/TestSchema/Schemas/testschema.xsd",
+		"/C/Users/EVANALLRED/AppData/Roaming/SketchUp/SketchUp 2016/SketchUp/Plugins/as_pluginloader/as_pluginloader.rb",
+		"/C/Users/EVANALLRED/AppData/Roaming/SketchUp/SketchUp 2016/SketchUp/Classifications/TestSchema.skc",
+		"/C/Users/EVANALLRED/Downloads/TestSchema.skc",
+		"/C/Users/EVANALLRED/AppData/Roaming/SketchUp/SketchUp 2016/SketchUp/Classifications/IFC 2x3.skc",
+		"/C/Users/EVANALLRED/AppData/Roaming/SketchUp/SketchUp 2016/SketchUp/Plugins/ea_steel_tools/beam_library.rb",
+		"/C/Users/EVANALLRED/AppData/Roaming/SketchUp/SketchUp 2016/SketchUp/Plugins/ea_point_tools_loader.rb",
+		"/C/Users/EVANALLRED/AppData/Roaming/SketchUp/SketchUp 2016/SketchUp/Plugins/ea_point_tools/ea_point_tools_menus.rb",
+		"/C/Users/EVANALLRED/AppData/Roaming/SketchUp/SketchUp 2016/SketchUp/Plugins/ea_point_tools/ea_point_tools_data.rb",
+		"/C/Users/EVANALLRED/AppData/Roaming/SketchUp/SketchUp 2016/SketchUp/Plugins/PergolaBuilder/extension_info.txt",
+		"/C/Users/EVANALLRED/AppData/Roaming/SketchUp/SketchUp 2016/SketchUp/Plugins/ea_steel_tools/fixes.rb",
+		"/F/Google Drive/3DS/3DS SHARED/Plugins/Steel Tools/ea_steel_tools/fixes.rb",
+		"/C/Users/EVANALLRED/AppData/Roaming/SketchUp/SketchUp 2015/SketchUp/Plugins/console_toggle.rb",
+		"/F/Google Drive/3DS/3DS SHARED/Plugins/Steel Tools/ea_steel_tools/beam_library.rb",
+		"/F/Google Drive/Western Timber Frame/Salesforce Field Code.rb",
+		"/F/Dropbox/3D Designs & Plans/Misc/Misc/Order Confirmation.html",
+		"/C/Users/EVANALLRED/AppData/Roaming/Sublime Text 3/Packages/User/Default (Windows).sublime-keymap",
+		"/C/Users/EVANALLRED/Desktop/2015-11-30.html",
+		"/C/Users/EVANALLRED/AppData/Roaming/SketchUp/SketchUp 2015/SketchUp/Plugins/segment_count_generator.rb",
+		"/C/Users/EVANALLRED/AppData/Roaming/SketchUp/SketchUp 2015/SketchUp/Plugins/location_finder/location_finder_menus.rb",
+		"/C/Users/EVANALLRED/AppData/Roaming/SketchUp/SketchUp 2015/SketchUp/Plugins/Clean_Arc_loader.rb",
+		"/C/Users/EVANALLRED/AppData/Roaming/SketchUp/SketchUp 2015/SketchUp/Plugins/Clean_Arc/Clean_Arc_data.rb",
+		"/C/Users/EVANALLRED/AppData/Roaming/SketchUp/SketchUp 2015/SketchUp/Plugins/Clean_Arc/Clean_Arc_menus.rb",
+		"/C/Users/EVANALLRED/AppData/Roaming/SketchUp/SketchUp 2015/SketchUp/Plugins/ea_steel_tools/wide_flange_rolled_data.rb",
+		"/C/Users/EVANALLRED/AppData/Roaming/SketchUp/SketchUp 2015/SketchUp/Plugins/clean_arc_tool.rb",
+		"/C/Users/EVANALLRED/AppData/Roaming/SketchUp/SketchUp 2015/SketchUp/Plugins/ea_steel_tools/wide_flange_data.rb",
+		"/C/Users/EVANALLRED/AppData/Roaming/SketchUp/SketchUp 2015/SketchUp/Plugins/point_tools/point_tools_data.rb",
+		"/C/Users/EVANALLRED/AppData/Roaming/SketchUp/SketchUp 2015/SketchUp/Plugins/point_tools/point_tools_menus.rb",
+		"/C/Users/EVANALLRED/AppData/Roaming/SketchUp/SketchUp 2015/SketchUp/Plugins/ea_steel_tools/beam_library.rb",
+		"/C/Users/EVANALLRED/AppData/Roaming/SketchUp/SketchUp 2015/SketchUp/Plugins/ea_steel_tools_loader.rb",
+		"/C/Users/EVANALLRED/AppData/Roaming/SketchUp/SketchUp 2015/SketchUp/Plugins/ea_steel_tools/dialog.rb",
+		"/C/Users/EVANALLRED/AppData/Roaming/SketchUp/SketchUp 2015/SketchUp/Plugins/ea_steel_tools/dialog_rolled.rb",
+		"/X/3DS SHARED(server)/Plugins/Round Corner/Fredo6_RoundCorner.rb",
+		"/X/3DS SHARED(server)/Plugins/Round Corner/Fredo6_RoundCorner/RoundCorner_Algo.rb",
+		"/X/3DS SHARED(server)/Plugins/Point Tools/point_tools/point_tools_data.rb",
+		"/C/Program Files (x86)/ActiveState Komodo IDE 8/lib/mozilla/chrome/komododoc/locale/en-US/shortcuts.html",
+		"/C/Users/EVANALLRED/AppData/Roaming/SketchUp/SketchUp 2015/SketchUp/Classifications/IFC 2x3.skc",
+		"/X/3X JOBS(server)/Colony 236/Colony 236 Steel List.txt",
+		"/C/Users/EVANALLRED/AppData/Roaming/SketchUp/SketchUp 2015/SketchUp/Plugins/ea_steel_tools/SKUI/css/core.css",
+		"/C/Users/EVANALLRED/AppData/Roaming/SketchUp/SketchUp 2015/SketchUp/Plugins/location_finder/location_finder_data.rb",
+		"/C/Users/EVANALLRED/AppData/Roaming/SketchUp/SketchUp 2015/SketchUp/Plugins/sphere_tool.rb",
+		"/C/Users/EVANALLRED/AppData/Roaming/SketchUp/SketchUp 2015/SketchUp/Plugins/ea_steel_tools/control.rb",
+		"/X/3DS SHARED(server)/Plugins/Steel Tools/ea_steel_tools/wide_flange_rolled_data.rb",
+		"/C/Users/EVANALLRED/AppData/Roaming/SketchUp/SketchUp 2015/SketchUp/Plugins/ea_steel_tools/hss_library.rb",
+		"/C/Users/EVANALLRED/AppData/Roaming/SketchUp/SketchUp 2015/SketchUp/Plugins/component_warning.rb",
+		"/C/Users/EVANALLRED/AppData/Roaming/SketchUp/SketchUp 2015/SketchUp/Plugins/Fredo6_RoundCorner/RoundCorner_AlgoSharp.rb",
+		"/C/Users/EVANALLRED/AppData/Roaming/SketchUp/SketchUp 2015/SketchUp/Plugins/Fredo6_!LibFredo6/__loader.rb",
+		"/C/Users/EVANALLRED/AppData/Roaming/SketchUp/SketchUp 2015/SketchUp/Plugins/Fredo6_RoundCorner.rb",
+		"/C/Users/EVANALLRED/AppData/Roaming/SketchUp/SketchUp 2015/SketchUp/Plugins/Fredo6_!LibFredo6.rb",
+		"/C/Users/EVANALLRED/AppData/Roaming/SketchUp/SketchUp 2015/SketchUp/Plugins/Fredo6_RoundCorner/RoundCorner_Algo.rb",
+		"/C/Users/EVANALLRED/AppData/Roaming/SketchUp/SketchUp 2015/SketchUp/Plugins/Fredo6_RoundCorner/RoundCorner_Tool.rb",
+		"/C/Users/EVANALLRED/AppData/Roaming/SketchUp/SketchUp 2015/SketchUp/Plugins/Fredo6_RoundCorner/bootstrap_RoundCorner.rb",
+		"/C/Users/EVANALLRED/AppData/Roaming/SketchUp/SketchUp 2015/SketchUp/Plugins/Fredo6_RoundCorner/__loader.rb",
+		"/C/Users/EVANALLRED/Desktop/Euler/1.rb",
+		"/C/Users/EVANALLRED/AppData/Roaming/SketchUp/SketchUp 2015/SketchUp/Plugins/point_tools/original",
+		"/C/Users/EVANALLRED/AppData/Roaming/SketchUp/SketchUp 2015/SketchUp/Plugins/plane_generator_loader.rb",
+		"/C/Users/EVANALLRED/AppData/Roaming/SketchUp/SketchUp 2015/SketchUp/Plugins/plane_generator/plane_generator_menus.rb",
+		"/C/Users/EVANALLRED/AppData/Roaming/SketchUp/SketchUp 2015/SketchUp/Plugins/plane_generator/plane_generator_data.rb",
+		"/C/Users/EVANALLRED/AppData/Roaming/SketchUp/SketchUp 2015/SketchUp/Plugins/clf_arc_centerpoint_finder.rb",
+		"/C/Users/EVANALLRED/AppData/Roaming/SketchUp/SketchUp 2015/SketchUp/Plugins/Blank Extension Files/Extension Folder/(your_extension_name)_menus.rb",
+		"/C/Users/EVANALLRED/AppData/Roaming/SketchUp/SketchUp 2015/SketchUp/Plugins/location_finder/location_finder.rb",
+		"/C/Users/EVANALLRED/AppData/Roaming/SketchUp/SketchUp 2015/SketchUp/Plugins/ea_steel_tools/wide_flange_steel.rb",
+		"/C/Users/EVANALLRED/AppData/Roaming/SketchUp/SketchUp 2015/SketchUp/Plugins/ea_steel_tools/rolled_steel.rb",
+		"/C/Users/EVANALLRED/AppData/Roaming/SketchUp/SketchUp 2015/SketchUp/Plugins/ea_steel_tools/component_loads.rb",
+		"/X/3DS SHARED(server)/Plugins for SketchUp/Development Steel Tool/ea_steel_tools/steel_tools_scripts.rb",
+		"/X/3DS SHARED(server)/Plugins for SketchUp/Development Steel Tool/ea_steel_tools_loader.rb",
+		"/X/3DS SHARED(server)/Plugins for SketchUp/Development Steel Tool/ea_steel_tools/wide_flange_steel.rb",
+		"/C/Users/EVANALLRED/AppData/Roaming/SketchUp/SketchUp 2015/SketchUp/Plugins/development_ea_steel_tools/wide_flange_steel.rb",
+		"/C/Users/EVANALLRED/AppData/Roaming/SketchUp/SketchUp 2015/SketchUp/Plugins/plane_generator/plane_generator.rb",
+		"/C/Users/EVANALLRED/AppData/Roaming/SketchUp/SketchUp 2015/SketchUp/Plugins/plane_builder_loader.rb",
+		"/C/Users/EVANALLRED/AppData/Roaming/SketchUp/SketchUp 2015/SketchUp/Plugins/development_ea_steel_tools_loader.rb",
+		"/C/Users/EVANALLRED/AppData/Roaming/SketchUp/SketchUp 2015/SketchUp/Plugins/clf_shape_bender/clf_shape_bender_data.rb"
+	],
+	"find":
+	{
+		"height": 26.0
+	},
+	"find_in_files":
+	{
+		"height": 90.0,
+		"where_history":
+		[
+			"C:\\Users\\EVANALLRED\\AppData\\Roaming\\SketchUp\\SketchUp 2016\\SketchUp\\Plugins\\ea_steel_tools",
+			"Fred,C:\\Users\\EVANALLRED\\AppData\\Roaming\\SketchUp\\SketchUp 2016\\SketchUp\\Plugins\\Fredo6_RoundCorner",
+			""
+		]
+	},
+	"find_state":
+	{
+		"case_sensitive": false,
+		"find_history":
+		[
+			"line_labeler",
+			"start",
+			"create_cursor",
+			"line_pointer",
+			"onSetCursor",
+			"set_cursor",
+			"onSetCursor",
+			"@status_text",
+			"cmd1",
+			"cmd",
+			"@half_inch_studs",
+			"@half_inch_stud",
+			"half_inch_stud",
+			"all_studs",
+			"@nine_sixteenths_holes",
+			"all_holes",
+			"@nine_sixteenths_holes",
+			"add_9_16_flange_holes",
+			"nine_sixteenths_holes",
+			"shpX",
+			"all_holes",
+			"add_9_16_flange_holes",
+			"nine_sixteenths_holes",
+			"nine_sixteenths_hole",
+			"has_holes",
+			"chk_holes",
+			"has_holes",
+			"chk_holes",
+			"materials",
+			"BEAM_COLOR",
+			"SchemaType",
+			"SCHEMA_VALUE",
+			"attribute_dictionary",
+			"CLASSIFICATION_SCHEMA",
+			"entity",
+			"@z_vec",
+			"flipped",
+			"slide",
+			"align_with_curve",
+			"add_stiffeners",
+			"WideFlangeBeam",
+			"Plate",
+			"complexType",
+			"server_path",
+			"JOBS_DIR",
+			"validate_selection",
+			"JOBS_DIR",
+			"paths",
+			"breakout_dir",
+			"find_breakout_location",
+			"get_assumed_name",
+			"SERVER_PATH",
+			"directory_exists",
+			"position_member",
+			"PLATE_COLOR",
+			"set_scenes",
+			"BeamLibrary",
+			"add_scenes",
+			"'Yellow'",
+			"@materials",
+			"95",
+			"@number_of_sheer_holes",
+			"reasonable_spacing",
+			"@@hole_spacing",
+			"path",
+			"(\"#{@",
+			"breakoutpath",
+			"Exception",
+			"rot4",
+			"mod2",
+			"sel",
+			"cmd",
+			"clear_groups",
+			"y",
+			"model2_ents",
+			"model2",
+			"sel",
+			"ents",
+			"model",
+			"ents",
+			"model",
+			"Perspective",
+			"member",
+			"@path",
+			"@new_file",
+			"new_file",
+			"@new_file",
+			"@selection",
+			"@entities",
+			"e",
+			"@entities",
+			"model_2",
+			"model",
+			"filename",
+			"@beam_name",
+			"BEAM_NAME",
+			"the",
+			"possibilities",
+			"@beam_regex",
+			"BEAM_REGEX",
+			"beam_regex",
+			"BEAM_REGEX",
+			"BEAM_NAME",
+			"sanitize_selection",
+			"scrape",
+			"check_arc_direction",
+			"c",
+			"outside_part_count",
+			"ssh",
+			"spread",
+			"align_hole",
+			"radisu",
+			"when",
+			"inlabel_offset",
+			"case",
+			"check_arc_direction",
+			"@flange_holes",
+			"flange_holes",
+			"hole",
+			"inside_holes_count",
+			"outside_holes_count",
+			"hole",
+			"spread",
+			"web_holes",
+			"r2",
+			"r",
+			"hole_rotation_angle",
+			"bottom_row_holes_count"
+		],
+		"highlight": true,
+		"in_selection": false,
+		"preserve_case": false,
+		"regex": false,
+		"replace_history":
+		[
+			""
+		],
+		"reverse": false,
+		"show_context": true,
+		"use_buffer2": true,
+		"whole_word": false,
+		"wrap": true
+	},
+	"groups":
+	[
+		{
+			"sheets":
+			[
+			]
+		}
+	],
+	"incremental_find":
+	{
+		"height": 26.0
+	},
+	"input":
+	{
+		"height": 31.0
+	},
+	"layout":
+	{
+		"cells":
+		[
+			[
+				0,
+				0,
+				1,
+				1
+			]
+		],
+		"cols":
+		[
+			0.0,
+			1.0
+		],
+		"rows":
+		[
+			0.0,
+			1.0
+		]
+	},
+	"menu_visible": true,
+	"output.find_results":
+	{
+		"height": 0.0
+	},
+	"pinned_build_system": "",
+	"project": "ea_steel_tools_loader.sublime-project",
+	"replace":
+	{
+		"height": 48.0
+	},
+	"save_all_on_build": true,
+	"select_file":
+	{
+		"height": 0.0,
+		"last_filter": "",
+		"selected_items":
+		[
+		],
+		"width": 0.0
+	},
+	"select_project":
+	{
+		"height": 0.0,
+		"last_filter": "",
+		"selected_items":
+		[
+		],
+		"width": 0.0
+	},
+	"select_symbol":
+	{
+		"height": 0.0,
+		"last_filter": "",
+		"selected_items":
+		[
+		],
+		"width": 0.0
+	},
+	"selected_group": 0,
+	"settings":
+	{
+	},
+	"show_minimap": true,
+	"show_open_files": false,
+	"show_tabs": true,
+	"side_bar_visible": true,
+	"side_bar_width": 249.0,
+	"status_bar_visible": true,
+	"template_settings":
+	{
+	}
+}

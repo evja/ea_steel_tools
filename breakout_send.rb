@@ -13,15 +13,15 @@ module EA_Extensions623
     module BreakoutSendMod
       def self.qualify_selection(sel)
         if sel[0].class == Sketchup::Group && sel[0].name.match(GROUP_REGEX)
-          p 'passed as a group'
+          # p 'passed as a group'
           return true
 
         elsif sel[0].class == Sketchup::ComponentInstance && sel[0].definition.name.match(GROUP_REGEX)
-          p 'passed as a Component'
+          # p 'passed as a Component'
           return true
 
         else
-          p 'not validated'
+          # p 'not validated'
           return false
         end
       end
@@ -129,17 +129,17 @@ module EA_Extensions623
             return
           elsif defined? @@breakout_dir #Check if you have saved the path
             @path = @@breakout_dir
-            puts 'Preset Path Found'
+            # puts 'Preset Path Found'
             return
           else #Check the server for job folder
             Dir.chdir("#{SERVER_PATH}") #This needs to find the DELL instead of the X: drive for those who have the drive on the network
             possible_names = get_assumed_names
-            p possible_names
+            # p possible_names
             possible_names.each do |name|
               path_to_job = Dir["**/*#{name}*/*Steel*/*Break*"]
               if !path_to_job.empty?
                 @path = File.expand_path(path_to_job.first)
-                p @path
+                # p @path
                 return
               end
             end

@@ -29,7 +29,7 @@ module EA_Extensions623
     cmd.small_icon = "icons/wfs_icon1.png"
     cmd.large_icon = "icons/wfs_icon1.png"
     cmd.tooltip = "Draw Wide Flange Steel"
-    cmd.status_bar_text = "Draw Flange"
+    cmd.status_bar_text = "Draw Steel Members"
     cmd.menu_text = "Wide Flange Steel"
     toolbar = toolbar.add_item cmd
 
@@ -40,10 +40,15 @@ module EA_Extensions623
     cmd1.small_icon = "icons/wfs_icon_rolled_easy.png"
     cmd1.large_icon = "icons/wfs_icon_rolled_easy.png"
     cmd1.tooltip = "Draw Rolled Wide Flange Steel"
-    cmd1.status_bar_text = "Draw Rolled Steel"
+    cmd1.status_bar_text = "Draw Rolled Steel Members"
     cmd1.menu_text = "Wide Rolled Flange Steel"
     toolbar = toolbar.add_item cmd1
     toolbar.show
+
+    cmd2 = UI::Command.new("Breakout") {
+      Sketchup.active_model.select_tool EASteelTools::Breakout.new if (EASteelTools::BreakoutMod.qualify_model(Sketchup.active_model))
+    }
+    @@EA_tools_menu.add_item cmd2
 
     # cmd3 = UI::Command.new("HSS") {
     #  Sketchup.active_model.select_tool EASteelTools::HssColumn.new
@@ -62,19 +67,19 @@ module EA_Extensions623
     # @@EA_tools_menu.add_item cmd4
 
     UI.add_context_menu_handler do |menu|
-      if not( EASteelTools::BreakoutMod.qualify_model(Sketchup.active_model) )
+      # if not( EASteelTools::BreakoutMod.qualify_model(Sketchup.active_model) )
         if( EASteelTools::BreakoutSendMod.qualify_selection(Sketchup.active_model.selection) )
           menu.add_separator
           menu.add_item("Send to Breakout") { EASteelTools::SendToBreakout.new }
           menu.add_separator
         end
-      end
+      # end
     end
 
     UI.add_context_menu_handler do |menu|
       if( EASteelTools::BreakoutMod.qualify_model(Sketchup.active_model) )
         menu.add_separator
-        menu.add_item("Breakout") { EASteelTools::Breakout.new }
+        menu.add_item("Breakout") {Sketchup.active_model.select_tool EASteelTools::Breakout.new }
         menu.add_separator
       end
     end
