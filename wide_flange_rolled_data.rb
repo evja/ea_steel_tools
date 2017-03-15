@@ -303,6 +303,9 @@ module EA_Extensions623
           @shear_holes.each(&@explode)
           @guage_holes.each(&@explode)
         end
+        @studs.each {|st| st.layer = @steel_layer} if !@studs.empty?
+        # @stiff_plates.each {|stp| st.layer = @steel_layer} if !@stiff_plates.empty?
+        # @sh_plates.each {|shp| st.layer = @steel_layer} if !@sh_plates.empty?
       end
 
       def set_groups
@@ -784,7 +787,7 @@ module EA_Extensions623
         @stiff_plates.each_with_index do |plate, i|
           plate.transform! resize1
         end
-        @stiff_plates.each {|plate| plate.material = color; plate.definition.add_classification("3DS Steel", "Plate") }
+        @stiff_plates.each {|plate| plate.material = color; plate.definition.add_classification("3DS Steel", "Plate"); plate.layer = @steel_layer }
       end
 
       def add_shearplates(scale, color)
@@ -836,7 +839,7 @@ module EA_Extensions623
           end
         end
 
-        all_shearplates.each {|plate| plate.material = color; plate.definition.add_classification("3DS Steel", "Plate")}
+        all_shearplates.each {|plate| plate.material = color; plate.definition.add_classification("3DS Steel", "Plate"); plate.layer = @steel_layer}
         return all_shearplates
       end
 
