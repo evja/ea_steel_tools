@@ -13,15 +13,15 @@ module EA_Extensions623
     module BreakoutSendMod
       def self.qualify_selection(sel)
         if sel[0].class == Sketchup::Group && sel[0].name.match(GROUP_REGEX)
-          p 'passed as a group'
+          # p 'passed as a group'
           return true
 
         elsif sel[0].class == Sketchup::ComponentInstance && sel[0].definition.name.match(GROUP_REGEX)
-          p 'passed as a Component'
+          # p 'passed as a Component'
           return true
 
         else
-          p 'not validated'
+          # p 'not validated'
           return false
         end
       end
@@ -81,15 +81,13 @@ module EA_Extensions623
             member_definition = temp_group.definition
             new_file = UI.savepanel("Save the Breakout", @path, "#{member.name}.skp" )
             if new_file
+              Sketchup.undo
               member_definition.save_as(new_file)
-              Sketchup.undo
               paths.push new_file
-              member.material = @materials[BEAM_COLOR]
+              member.material = @materials["#{BEAM_COLOR}"]
               set_breakout_directory(@path)
-            else
-              Sketchup.undo
             end
-
+            temp_group.explode if temp_group
           end
           paths.each {|path| UI.openURL(path)}
         else
@@ -100,11 +98,11 @@ module EA_Extensions623
           p @new_file_path
           if !@new_file_path.nil?
             defn.save_as(@new_file_path)
+            steel_member.material = @materials["#{BEAM_COLOR}"]
             UI.openURL(@new_file_path)
-            steel_member.material = @materials[BEAM_COLOR]
             set_breakout_directory(@path)
           end
-          Sketchup.undo
+        temp_group.explode if temp_group
         end
       end
 
@@ -131,17 +129,17 @@ module EA_Extensions623
             return
           elsif defined? @@breakout_dir #Check if you have saved the path
             @path = @@breakout_dir
-            puts 'Preset Path Found'
+            # puts 'Preset Path Found'
             return
           else #Check the server for job folder
             Dir.chdir("#{SERVER_PATH}") #This needs to find the DELL instead of the X: drive for those who have the drive on the network
             possible_names = get_assumed_names
-            p possible_names
+            # p possible_names
             possible_names.each do |name|
               path_to_job = Dir["**/*#{name}*/*Steel*/*Break*"]
               if !path_to_job.empty?
                 @path = File.expand_path(path_to_job.first)
-                p @path
+                # p @path
                 return
               end
             end
@@ -156,13 +154,9 @@ module EA_Extensions623
         end
       end
 
-
-    end
+    end #Class
   end
 end
-
-
-
 
 # Dir.chdir(@server_path) do
 #   a = Dir["picture_*@2x.*"]
