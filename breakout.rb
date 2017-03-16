@@ -1,5 +1,7 @@
 # This is the tool that takes a steel part and breaks it out
 
+#Bolts Layer needs to be turned off
+
 module EA_Extensions623
   module EASteelTools
     require 'sketchup.rb'
@@ -114,8 +116,10 @@ module EA_Extensions623
       end
 
       def restore_material(plates)
+        @individual_plates = []
         plates.each do |plate|
           plate[:object].material = plate[:orig_color]
+          @individual_plates.push plate[:object]
         end
         @state = 1 if @state == 0
       end
@@ -140,13 +144,33 @@ module EA_Extensions623
           @state = 1
           Sketchup.status_text = "Breaking out the paltes"
           p 'state is 1'
+          Sketchup.send_action "selectSelectionTool:"
+          # split_plates
         elsif @state == 0 && key == VK_LEFT
           p 'state was 1'
           restore_material(@plates)
           Sketchup.status_text = "Classify Plates Then Start Again"
           @state = 2
           p 'state is 2'
+          Sketchup.send_action "selectSelectionTool:"
         end
+      end
+
+      def split_plates()
+        # @selection.add @individual_plates
+        @unique_plates = []
+        @individual_plates.each_with_index do |plate, i|
+          @individual_plates.each_with_index do |pl, e|
+            if i != e && plate.equals?(pl)
+              @individual_plates.pop e
+              @entities.erase_entities pl
+            end
+          end
+        end
+      end
+
+      def name_plates()
+
       end
 
       def onMouseMove(flags, x, y, view)

@@ -154,13 +154,9 @@ module EA_Extensions623
         end
       end
 
-
-    end
+    end #Class
   end
 end
-
-
-
 
 # Dir.chdir(@server_path) do
 #   a = Dir["picture_*@2x.*"]

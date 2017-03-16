@@ -1,5 +1,7 @@
 #Initialize the console with some of these options to get working
 
+#As of 3/15/2017 this tool has over 7400 lines of code
+
 model = Sketchup.active_model
 ents = model.entities
 sel = model.selection
