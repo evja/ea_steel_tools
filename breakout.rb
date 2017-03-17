@@ -61,6 +61,7 @@ module EA_Extensions623
         components = scrape(@steel_member)
         UI.messagebox("The function could not find any classified plates") if @plates.empty?
         temp_color(@plates)
+        temp_label(@plates)
         #last method This resets the users template to what they had in the beginning
         # Sketchup.template = @users_template
 
@@ -115,7 +116,20 @@ module EA_Extensions623
         end
       end
 
+      def temp_label(plates)
+        @t_labels = []
+        v = Geom::Vector3d.new [0,0,1]
+        v.length = 20
+        plates.each do |pl|
+          t = 'PLATE'
+          pt = pl[:object].bounds.center
+          txt = @steel_member.entities.add_text t, pt, v
+          @t_labels.push txt
+        end
+      end
+
       def restore_material(plates)
+        @t_labels.each {|l| l.erase!} #Erase all the temp labels
         @individual_plates = []
         plates.each do |plate|
           plate[:object].material = plate[:orig_color]
@@ -145,7 +159,7 @@ module EA_Extensions623
           Sketchup.status_text = "Breaking out the paltes"
           p 'state is 1'
           Sketchup.send_action "selectSelectionTool:"
-          # split_plates
+          split_plates
         elsif @state == 0 && key == VK_LEFT
           p 'state was 1'
           restore_material(@plates)
@@ -157,14 +171,19 @@ module EA_Extensions623
       end
 
       def split_plates()
-        # @selection.add @individual_plates
-        @unique_plates = []
+        unique_plates = []
+        @holder = []
         @individual_plates.each_with_index do |plate, i|
-          @individual_plates.each_with_index do |pl, e|
-            if i != e && plate.equals?(pl)
-              @individual_plates.pop e
-              @entities.erase_entities pl
-            end
+          unique_plates.push plate.definition.instances
+        end
+        unique_plates.uniq!
+        return unique_plates
+      end
+
+      def sort_plates(plates)
+        plates.each do |pl|
+          if pl.class == Array
+
           end
         end
       end
