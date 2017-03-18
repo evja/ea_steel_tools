@@ -159,7 +159,7 @@ module EA_Extensions623
           Sketchup.status_text = "Breaking out the paltes"
           p 'state is 1'
           Sketchup.send_action "selectSelectionTool:"
-          split_plates
+          sort_plates(split_plates)
         elsif @state == 0 && key == VK_LEFT
           p 'state was 1'
           restore_material(@plates)
@@ -172,18 +172,35 @@ module EA_Extensions623
 
       def split_plates()
         unique_plates = []
-        @holder = []
         @individual_plates.each_with_index do |plate, i|
           unique_plates.push plate.definition.instances
         end
         unique_plates.uniq!
+        # unique_plates.each {|e| p e}
         return unique_plates
       end
 
       def sort_plates(plates)
         plates.each do |pl|
-          if pl.class == Array
+          if pl.class == Array && pl.count > 1
+            p 'multiple instances'
+            instance_materials = []
+            pl.each_with_index do |plate|
+              instance_materials.push plate.material
+            end
+            if instance_materials.uniq.count > 1
+              p 'multiple materials'
+              # pl.each_with_index do |el, i|
 
+              # end
+              #find the odd plate(s) and notify thge user of the error
+              #take the odd plate(s) and make it unique and add it to the @individual_plates
+            else
+              p 'single material'
+              next
+            end
+          else
+            p 'single'
           end
         end
       end
