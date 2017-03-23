@@ -52,6 +52,8 @@ module EA_Extensions623
         @plates = []
         @steel_member = @entities.first
         @member_name = @steel_member.name
+        @letters = [*"A".."Z"]
+        @unique_plates = []
         @labels = []
         @status_text = "Please Verify that all the plates are accounted for: RIGHT ARROW = 'Proceed' LEFT ARROW = 'Go Back'"
         @state = 0
@@ -85,9 +87,9 @@ module EA_Extensions623
         member.material = @materials[DONE_COLOR]
       end
 
-  		def scrape(part)
+      def scrape(part)
         if part.class == Sketchup::Group
-    			part.entities.each do |e|
+          part.entities.each do |e|
             if e.definition.attribute_dictionary("#{DICTIONARY_NAME}", "#{SCHEMA_KEY}").values.include?(SCHEMA_VALUE)
               a = {object: e, orig_color: e.material, vol: e.volume}
               @plates.push a
@@ -101,8 +103,8 @@ module EA_Extensions623
             end
           end
         end
-        p @plates.first
-  		end
+        # p @plates.first
+      end
 
       def temp_color(plates)
         if plates.nil?
@@ -129,7 +131,8 @@ module EA_Extensions623
       end
 
       def restore_material(plates)
-        @t_labels.each {|l| l.erase!} #Erase all the temp labels
+        @t_labels.each {|l| l.erase!} if !@t_labels.empty? #Erase all the temp labels
+        @t_labels.clear
         @individual_plates = []
         plates.each do |plate|
           plate[:object].material = plate[:orig_color]
@@ -160,6 +163,7 @@ module EA_Extensions623
           p 'state is 1'
           Sketchup.send_action "selectSelectionTool:"
           sort_plates(split_plates)
+          name_plates()
         elsif @state == 0 && key == VK_LEFT
           p 'state was 1'
           restore_material(@plates)
@@ -171,13 +175,10 @@ module EA_Extensions623
       end
 
       def split_plates()
-        unique_plates = []
         @individual_plates.each_with_index do |plate, i|
-          unique_plates.push plate.definition.instances
+          @unique_plates.push plate.definition.instances
         end
-        unique_plates.uniq!
-        # unique_plates.each {|e| p e}
-        return unique_plates
+        @unique_plates.uniq!
       end
 
       def sort_plates(plates)
@@ -185,16 +186,45 @@ module EA_Extensions623
           if pl.class == Array && pl.count > 1
             p 'multiple instances'
             instance_materials = []
-            pl.each_with_index do |plate|
+            test_bucket = []
+            pl.each_with_index do |plate, i|
               instance_materials.push plate.material
+              test_bucket.push item = {color: plate.material.name, object: plate, index: i}
             end
-            if instance_materials.uniq.count > 1
+            p test_bucket
+            if instance_materials.uniq.count == 2
               p 'multiple materials'
-              # pl.each_with_index do |el, i|
+              instance_materials.uniq!
+              p instance_materials
 
-              # end
-              #find the odd plate(s) and notify thge user of the error
-              #take the odd plate(s) and make it unique and add it to the @individual_plates
+              a = []
+              b = []
+              test_bucket.each do |obj|
+                if obj[:color] == instance_materials[0].name
+                  a.push obj[:object]
+                elsif obj[:color] == instance_materials[1].name
+                  b.push obj[:object]
+                end
+              end
+
+              # a.count > b.count ? found = b[0].make_unique : found = a[0].make_unique
+              a.count > b.count ? b  : b = a
+              # @individual_plates.push found
+
+              if b.count > 1
+                c = b[-1].make_unique
+                b.each_with_index do |dfn, i|
+                  return if i == b[-1]
+                  dfn.definition = c.definition
+                end
+              else
+                c = b[0].make_unique
+              end
+
+              @unique_plates.push c #This is a made unique plate
+
+            elsif instance_materials.uniq.count > 2
+              UI.messagebox("You have multiple components with the same definition but different thickness material. please check your plates to make different thickness plates are unique")
             else
               p 'single material'
               next
@@ -206,7 +236,27 @@ module EA_Extensions623
       end
 
       def name_plates()
+        #Assign each unique component a letter A-Z in it's definition
+        plates = @unique_plates.flatten!
+        p plates.uniq!
+        p plates.count
+        test_b = []
+        plates.each do |plt|
+          test_b.push plt.definition
+        end
+        test_b.uniq!
+        test_b.each_with_index do |plt, i|
+          plt.name = @letters[i]
+        end
+      end
 
+      def label_plates(plates)
+        #Add the text on the face of the plates
+      end
+
+      def deactivate(view)
+        p 'deactivated'
+        restore_material(@plates)
       end
 
       def onMouseMove(flags, x, y, view)
