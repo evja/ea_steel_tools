@@ -48,6 +48,7 @@ module EA_Extensions623
         @entities = @model.entities
         @materials = @model.materials
         @selection = @model.selection
+        @definition_list = @model.definitions
         @styles = @model.styles
         @plates = []
         @steel_member = @entities.first
@@ -108,7 +109,6 @@ module EA_Extensions623
 
       def temp_color(plates)
         if plates.nil?
-          p "no plates found"
           return
         else
           plates.each do |plate|
@@ -156,20 +156,18 @@ module EA_Extensions623
 
       def onKeyDown(key, repeat, flags, view)
         if @state == 0 && key == VK_RIGHT
-          p 'state was 0'
           restore_material(@plates)
           @state = 1
           Sketchup.status_text = "Breaking out the paltes"
-          p 'state is 1'
-          Sketchup.send_action "selectSelectionTool:"
           sort_plates(split_plates)
-          name_plates()
+          plates = name_plates()
+          # label_plates(plates)
+          spread_plates
+          Sketchup.send_action "selectSelectionTool:"
         elsif @state == 0 && key == VK_LEFT
-          p 'state was 1'
           restore_material(@plates)
           Sketchup.status_text = "Classify Plates Then Start Again"
           @state = 2
-          p 'state is 2'
           Sketchup.send_action "selectSelectionTool:"
         end
       end
@@ -184,18 +182,16 @@ module EA_Extensions623
       def sort_plates(plates)
         plates.each do |pl|
           if pl.class == Array && pl.count > 1
-            p 'multiple instances'
             instance_materials = []
             test_bucket = []
             pl.each_with_index do |plate, i|
               instance_materials.push plate.material
               test_bucket.push item = {color: plate.material.name, object: plate, index: i}
             end
-            p test_bucket
+            # p test_bucket
             if instance_materials.uniq.count == 2
-              p 'multiple materials'
               instance_materials.uniq!
-              p instance_materials
+              # p instance_materials
 
               a = []
               b = []
@@ -226,11 +222,9 @@ module EA_Extensions623
             elsif instance_materials.uniq.count > 2
               UI.messagebox("You have multiple components with the same definition but different thickness material. please check your plates to make different thickness plates are unique")
             else
-              p 'single material'
               next
             end
-          else
-            p 'single'
+
           end
         end
       end
@@ -238,24 +232,55 @@ module EA_Extensions623
       def name_plates()
         #Assign each unique component a letter A-Z in it's definition
         plates = @unique_plates.flatten!
-        p plates.uniq!
-        p plates.count
+        plates.uniq!
+
+        poss_labs = ["N", "S", "E", "W"]
+        poss_labs.each do |lab|
+          if @definition_list[lab]
+            p "Found a direction in the list"
+            @definition_list[lab].name = "Direction Label"
+          else
+            p "not FOUND"
+          end
+        end
+
         test_b = []
         plates.each do |plt|
           test_b.push plt.definition
         end
         test_b.uniq!
         test_b.each_with_index do |plt, i|
+          if @definition_list[@letters[i]]
+            @definition_list[@letters[i]].name = "Temp"
+          end
           plt.name = @letters[i]
         end
+
+        return test_b
       end
 
       def label_plates(plates)
-        #Add the text on the face of the plates
+        labels = []
+        mod_title = @model.title
+        plates.each_with_index do |pl, i|
+          plde = pl.entities
+          plname = pl.name
+          var = mod_title + ' - ' + plname
+          text = plde.add_3d_text(var, TextAlignLeft, '1CamBam_Stick_7', false, false, 0.5, 0.0, 0, false, 0.0)
+        end
+      end
+
+      def spread_plates
+        alph = ("A".."Z").to_a
+        plates = @definition_list.map{|pl| pl if alph.include? pl.name}.compact!
+        dist = 0
+        plates.each_with_index do |pl, i|
+          @entities.add_instance pl, [dist, 0, 0]
+          dist += 6
+        end
       end
 
       def deactivate(view)
-        p 'deactivated'
         restore_material(@plates)
       end
 
