@@ -136,6 +136,7 @@ module EA_Extensions623
         @individual_plates = []
         plates.each do |plate|
           plate[:object].material = plate[:orig_color]
+
           @individual_plates.push plate[:object]
         end
         @state = 1 if @state == 0
@@ -275,6 +276,7 @@ module EA_Extensions623
         plates = @definition_list.map{|pl| pl if alph.include? pl.name}.compact!
         dist = 0
         plates.each_with_index do |pl, i|
+          pl.entities.each {|f| f.material = pl.instances.first.material}
           @entities.add_instance pl, [dist, 0, 0]
           dist += 6
         end
