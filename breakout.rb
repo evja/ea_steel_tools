@@ -68,7 +68,6 @@ module EA_Extensions623
         #last method This resets the users template to what they had in the beginning
         # Sketchup.template = @users_template
 
-        @model.commit_operation
         # Sketchup.status_text =("Please Verify that all the plates are accounted for: Enter = 'Accept' Esc = 'No, need to classify some'")
       end
 
@@ -91,16 +90,20 @@ module EA_Extensions623
       def scrape(part)
         if part.class == Sketchup::Group
           part.entities.each do |e|
-            if e.definition.attribute_dictionary("#{DICTIONARY_NAME}", "#{SCHEMA_KEY}").values.include?(SCHEMA_VALUE)
-              a = {object: e, orig_color: e.material, vol: e.volume}
-              @plates.push a
+            if defined? e.definition
+              if e.definition.attribute_dictionary("#{DICTIONARY_NAME}", "#{SCHEMA_KEY}").values.include?(SCHEMA_VALUE)
+                a = {object: e, orig_color: e.material, vol: e.volume}
+                @plates.push a
+              end
             end
           end
         else
           part.definition.entities.each do |e|
-            if e.definition.attribute_dictionary("#{DICTIONARY_NAME}", "#{SCHEMA_KEY}").values.include?(SCHEMA_VALUE)
-              a = {object: e, orig_color: e.material, vol: e.volume}
-              @plates.push a
+            if defined? e.definition
+              if e.definition.attribute_dictionary("#{DICTIONARY_NAME}", "#{SCHEMA_KEY}").values.include?(SCHEMA_VALUE)
+                a = {object: e, orig_color: e.material, vol: e.volume}
+                @plates.push a
+              end
             end
           end
         end
@@ -171,6 +174,7 @@ module EA_Extensions623
           @state = 2
           Sketchup.send_action "selectSelectionTool:"
         end
+        @model.commit_operation
       end
 
       def split_plates()
@@ -251,6 +255,9 @@ module EA_Extensions623
         end
         test_b.uniq!
         test_b.each_with_index do |plt, i|
+          if plt.group?
+            plt.instances.each {|inst| inst.to_component}
+          end
           if @definition_list[@letters[i]]
             @definition_list[@letters[i]].name = "Temp"
           end
@@ -272,18 +279,23 @@ module EA_Extensions623
       end
 
       def spread_plates
+        # Width = bounding box X directin
+        # Height = bounding box Y direction
+        # Depth = bounding box Z diretion
         alph = ("A".."Z").to_a
         plates = @definition_list.map{|pl| pl if alph.include? pl.name}.compact!
         dist = 0
         plates.each_with_index do |pl, i|
           pl.entities.each {|f| f.material = pl.instances.first.material}
-          @entities.add_instance pl, [dist, 0, 0]
-          dist += 6
+          insertion_pt = [dist, -12, 0]
+          tp = @entities.add_instance pl, insertion_pt
+          tp.transform! Geom::Transformation.rotation insertion_pt, [0,0,1], 90.degrees
+          dist += (pl.bounds.height + 3)
         end
       end
 
       def deactivate(view)
-        restore_material(@plates)
+        restore_material(@plates) if @state != 0
       end
 
       def onMouseMove(flags, x, y, view)
