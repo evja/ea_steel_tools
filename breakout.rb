@@ -48,7 +48,7 @@ module EA_Extensions623
         @entities = @model.entities
         @materials = @model.materials
         @selection = @model.selection
-        @definition_list = @model.definitions
+        @d_list = @model.definitions
         @styles = @model.styles
         @plates = []
         @steel_member = @entities.first
@@ -62,13 +62,20 @@ module EA_Extensions623
         position_member(@steel_member)
         color_steel_member(@steel_member)
         components = scrape(@steel_member)
-        UI.messagebox("The function could not find any classified plates") if @plates.empty?
+        if @plates.empty?
+          UI.messagebox("The function could not find any classified plates")
+          reset
+        end
         temp_color(@plates)
         temp_label(@plates)
         #last method This resets the users template to what they had in the beginning
         # Sketchup.template = @users_template
 
         # Sketchup.status_text =("Please Verify that all the plates are accounted for: Enter = 'Accept' Esc = 'No, need to classify some'")
+      end
+
+      def reset
+        Sketchup.send_action "selectSelectionTool:"
       end
 
       def set_envoronment
@@ -165,14 +172,14 @@ module EA_Extensions623
           Sketchup.status_text = "Breaking out the paltes"
           sort_plates(split_plates)
           plates = name_plates()
-          # label_plates(plates)
+          label_plates(plates)
           spread_plates
-          Sketchup.send_action "selectSelectionTool:"
+          reset
         elsif @state == 0 && key == VK_LEFT
           restore_material(@plates)
           Sketchup.status_text = "Classify Plates Then Start Again"
           @state = 2
-          Sketchup.send_action "selectSelectionTool:"
+          reset
         end
         @model.commit_operation
       end
@@ -241,9 +248,9 @@ module EA_Extensions623
 
         poss_labs = ["N", "S", "E", "W"]
         poss_labs.each do |lab|
-          if @definition_list[lab]
+          if @d_list[lab]
             p "Found a direction in the list"
-            @definition_list[lab].name = "Direction Label"
+            @d_list[lab].name = "Direction Label"
           else
             p "not FOUND"
           end
@@ -258,8 +265,8 @@ module EA_Extensions623
           if plt.group?
             plt.instances.each {|inst| inst.to_component}
           end
-          if @definition_list[@letters[i]]
-            @definition_list[@letters[i]].name = "Temp"
+          if @d_list[@letters[i]]
+            @d_list[@letters[i]].name = "Temp"
           end
           plt.name = @letters[i]
         end
@@ -272,10 +279,18 @@ module EA_Extensions623
         mod_title = @model.title
         plates.each_with_index do |pl, i|
           plde = pl.entities
+          pl_ent_group = plde.add_group(plde)
           plname = pl.name
           var = mod_title + ' - ' + plname
-          text = plde.add_3d_text(var, TextAlignLeft, '1CamBam_Stick_7', false, false, 0.5, 0.0, 0, false, 0.0)
+          text = plde.add_3d_text(var, TextAlignLeft, '1CamBam_Stick_7', false, false, 0.5, 0.0, 0.1, false, 0.0)
+          text_group =
+          align = Geom::Transformation.axes(pl.bounds.max, X_AXIS, Z_AXIS, Y_AXIS )
+          # text.move! align
         end
+      end
+
+      def sort_plates_for_naming
+        # Sorth the paltes by thickness first (thinnest to thickest) then do a sub sort of the quantity (highest to lowest) then but volume (biggest to smallest)
       end
 
       def spread_plates
@@ -283,14 +298,26 @@ module EA_Extensions623
         # Height = bounding box Y direction
         # Depth = bounding box Z diretion
         alph = ("A".."Z").to_a
-        plates = @definition_list.map{|pl| pl if alph.include? pl.name}.compact!
+        plates = @d_list.map{|pl| pl if alph.include? pl.name}.compact!
+
         dist = 0
-        plates.each_with_index do |pl, i|
+        plates.each do |pl|
+          pb = pl.bounds
+          w = pb.width
+          h = pb.height
+          d = pb.depth
           pl.entities.each {|f| f.material = pl.instances.first.material}
+
           insertion_pt = [dist, -12, 0]
-          tp = @entities.add_instance pl, insertion_pt
-          tp.transform! Geom::Transformation.rotation insertion_pt, [0,0,1], 90.degrees
+          pl_cpy = @entities.add_instance pl, insertion_pt
+          grp = pl.definition.entities.add_group
+          pl_cpy.name = "x"+((pl_cpy.definition.count_instances) - 1).to_s
+          pl_cpy.transform! Geom::Transformation.rotation insertion_pt, [0,0,1], 90.degrees
           dist += (pl.bounds.height + 3)
+
+          # pl_cpy = pl.copy!
+          # place = Geom::Transformation.axes(ORIGIN, X_AXIS, Y_AXIS)
+          # pl_cpy.move! place
         end
       end
 

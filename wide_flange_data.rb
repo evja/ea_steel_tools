@@ -480,7 +480,7 @@ module EA_Extensions623
           nine_sixteenths_hole = @definition_list.load file_path1
 
           #load the 1/2" studs ready for placing
-          file_path_stud = Sketchup.find_support_file "#{ROOT_FILE_PATH}/Beam Components/2½ x½_ Studs.skp", "Plugins/"
+          file_path_stud = Sketchup.find_support_file "#{ROOT_FILE_PATH}/Beam Components/2 x½_ Studs.skp", "Plugins/"
           half_inch_stud = @definition_list.load file_path_stud
 
           @@force_studs ? element = half_inch_stud : element = nine_sixteenths_hole
@@ -558,7 +558,7 @@ module EA_Extensions623
           file_path1 = Sketchup.find_support_file "#{ROOT_FILE_PATH}/Beam Components/9_16 Hole Set.skp", "Plugins/"
           nine_sixteenths_hole = @definition_list.load file_path1
           #load the 1/2" studs ready for placing
-          file_path_stud = Sketchup.find_support_file "#{ROOT_FILE_PATH}/Beam Components/2½ x½_ Studs.skp", "Plugins/"
+          file_path_stud = Sketchup.find_support_file "#{ROOT_FILE_PATH}/Beam Components/2 x½_ Studs.skp", "Plugins/"
           half_inch_stud = @definition_list.load file_path_stud
 
 
