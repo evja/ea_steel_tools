@@ -172,8 +172,8 @@ module EA_Extensions623
           Sketchup.status_text = "Breaking out the paltes"
           sort_plates(split_plates)
           plates = name_plates()
-          label_plates(plates)
           spread_plates
+          # label_plates(plates)
           reset
         elsif @state == 0 && key == VK_LEFT
           restore_material(@plates)
@@ -236,16 +236,17 @@ module EA_Extensions623
             else
               next
             end
-
           end
         end
       end
 
       def name_plates()
         #Assign each unique component a letter A-Z in it's definition
-        plates = @unique_plates.flatten!
-        plates.uniq!
+        plates2 = @unique_plates.flatten!
+        plates2.uniq!
+        plates = sort_plates_for_naming(plates2.uniq)
 
+        # This code finds the direction labels in the component definition list and renames them so the letters of the alphabet are available for plates
         poss_labs = ["N", "S", "E", "W"]
         poss_labs.each do |lab|
           if @d_list[lab]
@@ -278,19 +279,94 @@ module EA_Extensions623
         labels = []
         mod_title = @model.title
         plates.each_with_index do |pl, i|
-          plde = pl.entities
-          pl_ent_group = plde.add_group(plde)
+          # plde = pl.entities
+          # pl_ent_group = plde.add_group(plde)
           plname = pl.name
           var = mod_title + ' - ' + plname
-          text = plde.add_3d_text(var, TextAlignLeft, '1CamBam_Stick_7', false, false, 0.5, 0.0, 0.1, false, 0.0)
-          text_group =
+          text = pl.entities.add_3d_text(var, TextAlignLeft, '1CamBam_Stick_7', false, false, 0.5, 0.0, 0.1, false, 0.0)
+          # text_group =
           align = Geom::Transformation.axes(pl.bounds.max, X_AXIS, Z_AXIS, Y_AXIS )
           # text.move! align
         end
       end
 
-      def sort_plates_for_naming
-        # Sorth the paltes by thickness first (thinnest to thickest) then do a sub sort of the quantity (highest to lowest) then but volume (biggest to smallest)
+      def sort_plates_for_naming(plates_array)
+        begin
+
+          thck1 = [] #H 1/4" Thickness
+          thck2 = [] #G 5/16" Thickness
+          thck3 = [] #F 3/8" Thickness
+          thck4 = [] #E 1/2" Thickness
+          thck5 = [] #D 5/8" Thickness
+          thck6 = [] #C 3/4" Thickness
+          thck7 = [] #special Thickness
+          thck8 = [] #special Thickness
+
+        plates_array.each_with_index do |plate|
+          case plate.material.name
+          when /¼"/
+            p plate.material.name
+            thck1.push plate
+          when /5_16"/
+            p plate.material.name
+            thck2.push plate
+          when /⅜"/
+            p plate.material.name
+            thck3.push plate
+          when /½"/
+            p plate.material.name
+            thck4.push plate
+          when /⅝"/
+            p plate.material.name
+            thck5.push plate
+          when /¾"/
+            p plate.material.name
+            thck6.push plate
+          when /Special Thick/
+            p plate.material.name
+            thck7.push plate
+          else
+            p plate.material.name
+            thck8.push plate
+          end
+        end
+
+        sorted = [thck1, thck2, thck3, thck4, thck5, thck6, thck7, thck8].flatten
+        return sorted
+        rescue
+          UI.messagebox('There was a problem sorting the plates by thickness, possibly a name change for the color thicknesses. this code uses the letters A(Charcoal) B(special thickness) C(3/4") ect')
+        end
+        # Sorth the paltes by thickness first (thinnest to thickest) then do a sub sort of the quantity (highest to lowest) then put volume (biggest to smallest)
+      end
+
+      def get_largest_face(entity)
+        faces = entity.definition.entities.select {|e| e.typename == 'Face'}
+        largest_face = [0, nil]
+        faces.each do |face|
+          if face.area >= largest_face[0]
+            largest_face[0] = face.area
+            largest_face[1] = face
+          else
+            next
+          end
+        end
+        return largest_face[1]
+      end
+
+      def sort_plates_for_spreading(plates)
+        sorted = []
+        alphabet = ("A".."Z").to_a
+        plates.each_with_index do |pl, i|
+          letter = pl.name
+          alphabet.each_with_index do |let, i2|
+            if letter == let
+              sorted[i2] = pl
+              break
+            end
+          end
+        end
+
+        return sorted
       end
 
       def spread_plates
@@ -298,31 +374,63 @@ module EA_Extensions623
         # Height = bounding box Y direction
         # Depth = bounding box Z diretion
         alph = ("A".."Z").to_a
-        plates = @d_list.map{|pl| pl if alph.include? pl.name}.compact!
+        plates2 = @d_list.map{|pl| pl if alph.include? pl.name}.compact!
+        plates = sort_plates_for_spreading(plates2)
 
+        next_distance = 0
+        last_plate_width = 0
         dist = 0
+
         plates.each do |pl|
-          pb = pl.bounds
+          pl.entities.each {|f| f.material = pl.instances.first.material}
+
+          insertion_pt = [dist, -24, 0]
+          pl_cpy = @entities.add_instance pl, insertion_pt
+
+          pl_cpy.name = "x"+((pl_cpy.definition.count_instances) - 1).to_s
+
+          face = get_largest_face(pl_cpy)
+
+          pl_norm = face.normal
+
+          if pl_norm.parallel? Z_AXIS
+            rotation = pl_norm.angle_between Y_AXIS
+            pl_cpy.transform! (Geom::Transformation.rotation insertion_pt, [0,1,0], rotation)
+          end
+
+          pl_norm = face.normal
+          rotation = pl_norm.angle_between Y_AXIS
+          pl_cpy.transform! (Geom::Transformation.rotation insertion_pt, [0,0,1], rotation)
+
+          pb = pl_cpy.bounds
           w = pb.width
           h = pb.height
           d = pb.depth
-          pl.entities.each {|f| f.material = pl.instances.first.material}
+          plc = pb.min
 
-          insertion_pt = [dist, -12, 0]
-          pl_cpy = @entities.add_instance pl, insertion_pt
-          grp = pl.definition.entities.add_group
-          pl_cpy.name = "x"+((pl_cpy.definition.count_instances) - 1).to_s
-          pl_cpy.transform! Geom::Transformation.rotation insertion_pt, [0,0,1], 90.degrees
-          dist += (pl.bounds.height + 3)
+          if plc[2] < 0
+            p 'Below'
+            vec = Geom::Vector3d.new(0,0,(plc[2]*1))
+            # p vec
+            # p vec.length
+            pl_cpy.transform! (Geom::Transformation.translation(vec.reverse))
+          end
 
-          # pl_cpy = pl.copy!
-          # place = Geom::Transformation.axes(ORIGIN, X_AXIS, Y_AXIS)
-          # pl_cpy.move! place
+          if plc[0] < 0
+            vec = Geom::Vector3d.new((plc[0]*1),0,0)
+            pl_cpy.transform! (Geom::Transformation.translation(vec.reverse))
+          end
+
+          pl_cpy.transform! (Geom::Transformation.translation([last_plate_width,0,0]))
+
+          last_plate_width += (w + 3)
+          # dist += (w + 3)
+
         end
       end
 
       def deactivate(view)
-        restore_material(@plates) if @state != 0
+        # restore_material(@plates) if @state != 0
       end
 
       def onMouseMove(flags, x, y, view)
