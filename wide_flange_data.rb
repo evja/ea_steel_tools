@@ -1163,7 +1163,8 @@ module EA_Extensions623
           end
 
           # Checks if the vec is vertical and applies a rotation to 90 degrees
-          if vec[0] == 0 && vec[1] == 0 && vec[2] != 0
+
+          if Z_AXIS.parallel? vec
             rot = Geom::Transformation.rotation pt1, [0,1,0], vt_angle
             rot2 = Geom::Transformation.rotation pt1, [0,0,1], vt_angle
             @entities.transform_entities rot, group
@@ -1180,7 +1181,6 @@ module EA_Extensions623
             if vec[1] < 0
               hz_angle += (hz_angle * -2)
             end
-
             #rotates the profile to align with the vec horizontally
             rotation1 = Geom::Transformation.rotation pt1, [0,0,1], hz_angle
             @entities.transform_entities rotation1, group
@@ -1242,7 +1242,7 @@ module EA_Extensions623
           add_9_16_web_holes(length) if @@has_holes
 
           #insert all labels in the beam and column, insert 13/16" if it is a beam
-          if vec[0] == 0 && vec[1] == 0
+          if vec.parallel? Z_AXIS
             column = true
             all_labels = add_labels_column(vec, length)
           else
@@ -1294,7 +1294,7 @@ module EA_Extensions623
           # it makes sure to do the appropriate rotation
           if vec[0] == 0 && vec[1] == 0 && vec[2] < 0
             center = @outer_group.bounds.center
-            p "#{center}"
+            # p "#{center}"
             new_rot = Geom::Transformation.rotation center, [0,1,0], 180.degrees
             @entities.transform_entities new_rot, @outer_group
           end

@@ -290,6 +290,22 @@ module EA_Extensions623
         end
       end
 
+      def label_plate(plate)
+        labels = []
+        mod_title = @model.title
+
+        container = @entities.add_group
+
+        plname = plate.definition.name
+        var = mod_title + ' - ' + plname
+        text = container.entities.add_3d_text(var, TextAlignCenter, '1CamBam_Stick_7', false, false, 0.5, 0.0, 0.1, false, 0.0)
+
+        p plate.bounds.height
+        align = Geom::Transformation.axes([plate.bounds.center[0], (plate.bounds.center[1] - plate.bounds.height), plate.bounds.center[2]], X_AXIS, Z_AXIS, Y_AXIS )
+        container.move! align
+        return container
+      end
+
       def sort_plates_for_naming(plates_array)
         begin
 
@@ -305,28 +321,28 @@ module EA_Extensions623
         plates_array.each_with_index do |plate|
           case plate.material.name
           when /¼"/
-            p plate.material.name
+            # p plate.material.name
             thck1.push plate
           when /5_16"/
-            p plate.material.name
+            # p plate.material.name
             thck2.push plate
           when /⅜"/
-            p plate.material.name
+            # p plate.material.name
             thck3.push plate
           when /½"/
-            p plate.material.name
+            # p plate.material.name
             thck4.push plate
           when /⅝"/
-            p plate.material.name
+            # p plate.material.name
             thck5.push plate
           when /¾"/
-            p plate.material.name
+            # p plate.material.name
             thck6.push plate
           when /Special Thick/
-            p plate.material.name
+            # p plate.material.name
             thck7.push plate
           else
-            p plate.material.name
+            # p plate.material.name
             thck8.push plate
           end
         end
@@ -381,6 +397,8 @@ module EA_Extensions623
         last_plate_width = 0
         dist = 0
 
+        label_locs = []
+
         plates.each do |pl|
           pl.entities.each {|f| f.material = pl.instances.first.material}
 
@@ -409,7 +427,7 @@ module EA_Extensions623
           plc = pb.min
 
           if plc[2] < 0
-            p 'Below'
+            # p 'Below'
             vec = Geom::Vector3d.new(0,0,(plc[2]*1))
             # p vec
             # p vec.length
@@ -422,6 +440,12 @@ module EA_Extensions623
           end
 
           pl_cpy.transform! (Geom::Transformation.translation([last_plate_width,0,0]))
+
+          pl_label = label_plate(pl_cpy)
+
+          label_locs.push pl_cpy.bounds.center
+          pull_out_dist = pl_cpy.bounds.height
+
 
           last_plate_width += (w + 3)
           # dist += (w + 3)
