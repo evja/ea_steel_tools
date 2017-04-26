@@ -480,7 +480,7 @@ module EA_Extensions623
           nine_sixteenths_hole = @definition_list.load file_path1
 
           #load the 1/2" studs ready for placing
-          file_path_stud = Sketchup.find_support_file "#{ROOT_FILE_PATH}/Beam Components/2½ x½_ Studs.skp", "Plugins/"
+          file_path_stud = Sketchup.find_support_file "#{ROOT_FILE_PATH}/Beam Components/2 x½_ Studs.skp", "Plugins/"
           half_inch_stud = @definition_list.load file_path_stud
 
           @@force_studs ? element = half_inch_stud : element = nine_sixteenths_hole
@@ -558,7 +558,7 @@ module EA_Extensions623
           file_path1 = Sketchup.find_support_file "#{ROOT_FILE_PATH}/Beam Components/9_16 Hole Set.skp", "Plugins/"
           nine_sixteenths_hole = @definition_list.load file_path1
           #load the 1/2" studs ready for placing
-          file_path_stud = Sketchup.find_support_file "#{ROOT_FILE_PATH}/Beam Components/2½ x½_ Studs.skp", "Plugins/"
+          file_path_stud = Sketchup.find_support_file "#{ROOT_FILE_PATH}/Beam Components/2 x½_ Studs.skp", "Plugins/"
           half_inch_stud = @definition_list.load file_path_stud
 
 
@@ -1163,7 +1163,8 @@ module EA_Extensions623
           end
 
           # Checks if the vec is vertical and applies a rotation to 90 degrees
-          if vec[0] == 0 && vec[1] == 0 && vec[2] != 0
+
+          if Z_AXIS.parallel? vec
             rot = Geom::Transformation.rotation pt1, [0,1,0], vt_angle
             rot2 = Geom::Transformation.rotation pt1, [0,0,1], vt_angle
             @entities.transform_entities rot, group
@@ -1180,7 +1181,6 @@ module EA_Extensions623
             if vec[1] < 0
               hz_angle += (hz_angle * -2)
             end
-
             #rotates the profile to align with the vec horizontally
             rotation1 = Geom::Transformation.rotation pt1, [0,0,1], hz_angle
             @entities.transform_entities rotation1, group
@@ -1242,7 +1242,7 @@ module EA_Extensions623
           add_9_16_web_holes(length) if @@has_holes
 
           #insert all labels in the beam and column, insert 13/16" if it is a beam
-          if vec[0] == 0 && vec[1] == 0
+          if vec.parallel? Z_AXIS
             column = true
             all_labels = add_labels_column(vec, length)
           else
@@ -1294,7 +1294,7 @@ module EA_Extensions623
           # it makes sure to do the appropriate rotation
           if vec[0] == 0 && vec[1] == 0 && vec[2] < 0
             center = @outer_group.bounds.center
-            p "#{center}"
+            # p "#{center}"
             new_rot = Geom::Transformation.rotation center, [0,1,0], 180.degrees
             @entities.transform_entities new_rot, @outer_group
           end

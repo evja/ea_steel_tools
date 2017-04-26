@@ -249,7 +249,7 @@ module EA_Extensions623
 
         file_path1 = Sketchup.find_support_file "ea_steel_tools/Beam Components/9_16 Hole Set.skp", "Plugins"
         file_path2 = Sketchup.find_support_file "ea_steel_tools/Beam Components/13_16 Hole Set.skp", "Plugins"
-        file_path3 = Sketchup.find_support_file "ea_steel_tools/Beam Components/2½ x½_ Studs.skp", "Plugins"
+        file_path3 = Sketchup.find_support_file "ea_steel_tools/Beam Components/2 x½_ Studs.skp", "Plugins"
         file_path4 = Sketchup.find_support_file "ea_steel_tools/Beam Components/UP.skp", "Plugins/"
         file_path5 = Sketchup.find_support_file "#{ROOT_FILE_PATH}/Beam Components/#{stiffener_plate}.skp", "Plugins/"
         if @hc < 10

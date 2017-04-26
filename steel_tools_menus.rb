@@ -45,8 +45,8 @@ module EA_Extensions623
     toolbar = toolbar.add_item cmd1
     toolbar.show
 
-    cmd2 = UI::Command.new("Breakout") {
-      Sketchup.active_model.select_tool EASteelTools::Breakout.new if (EASteelTools::BreakoutMod.qualify_model(Sketchup.active_model))
+    cmd2 = UI::Command.new("Steel Tool Settings") {
+      Sketchup.active_model.select_tool EASteelTools::BreakoutSettings.open
     }
     @@EA_tools_menu.add_item cmd2
 
