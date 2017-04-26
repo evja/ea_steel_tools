@@ -287,22 +287,26 @@ module EA_Extensions623
           # text_group =
           align = Geom::Transformation.axes(pl.bounds.max, X_AXIS, Z_AXIS, Y_AXIS )
           # text.move! align
-        end
+        end #Not currently being used
       end
 
-      def label_plate(plate)
+      def label_plate(plate, group)
         labels = []
         mod_title = @model.title
 
-        container = @entities.add_group
+        container = group.entities.add_group
 
         plname = plate.definition.name
         var = mod_title + ' - ' + plname
-        text = container.entities.add_3d_text(var, TextAlignCenter, '1CamBam_Stick_7', false, false, 0.5, 0.0, 0.1, false, 0.0)
+        text = container.entities.add_3d_text(var, TextAlignLeft, '1CamBam_Stick_7', false, false, 0.5, 0.0, -0.0675, false, 0.0)
 
         p plate.bounds.height
-        align = Geom::Transformation.axes([plate.bounds.center[0], (plate.bounds.center[1] - plate.bounds.height), plate.bounds.center[2]], X_AXIS, Z_AXIS, Y_AXIS )
+        align = Geom::Transformation.axes([plate.bounds.center[0], (plate.bounds.center[1] - (plate.bounds.height / 2)), plate.bounds.center[2]], X_AXIS, Z_AXIS, Y_AXIS )
+        vr = X_AXIS.reverse
+        vr.length = (container.bounds.width/2)
+        shift = Geom::Transformation.translation(vr)
         container.move! align
+        @entities.transform_entities shift, container
         return container
       end
 
@@ -386,9 +390,7 @@ module EA_Extensions623
       end
 
       def spread_plates
-        # Width = bounding box X directin
-        # Height = bounding box Y direction
-        # Depth = bounding box Z diretion
+
         alph = ("A".."Z").to_a
         plates2 = @d_list.map{|pl| pl if alph.include? pl.name}.compact!
         plates = sort_plates_for_spreading(plates2)
@@ -398,12 +400,13 @@ module EA_Extensions623
         dist = 0
 
         label_locs = []
+        @plate_group = @entities.add_group
 
         plates.each do |pl|
           pl.entities.each {|f| f.material = pl.instances.first.material}
 
           insertion_pt = [dist, -24, 0]
-          pl_cpy = @entities.add_instance pl, insertion_pt
+          pl_cpy = @plate_group.entities.add_instance pl, insertion_pt
 
           pl_cpy.name = "x"+((pl_cpy.definition.count_instances) - 1).to_s
 
@@ -440,8 +443,7 @@ module EA_Extensions623
           end
 
           pl_cpy.transform! (Geom::Transformation.translation([last_plate_width,0,0]))
-
-          pl_label = label_plate(pl_cpy)
+          pl_label = label_plate(pl_cpy, @plate_group)
 
           label_locs.push pl_cpy.bounds.center
           pull_out_dist = pl_cpy.bounds.height
