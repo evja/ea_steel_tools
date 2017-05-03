@@ -5,6 +5,8 @@
 model = Sketchup.active_model
 ents = model.entities
 sel = model.selection
+scenes = model.pages
+
 
 load 'ea_steel_tools/wide_flange_rolled_data.rb'
 load 'ea_steel_tools/wide_flange_data.rb'

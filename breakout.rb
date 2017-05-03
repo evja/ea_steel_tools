@@ -300,7 +300,6 @@ module EA_Extensions623
         var = mod_title + ' - ' + plname
         text = container.entities.add_3d_text(var, TextAlignLeft, '1CamBam_Stick_7', false, false, 0.5, 0.0, -0.0675, false, 0.0)
 
-        p plate.bounds.height
         align = Geom::Transformation.axes([plate.bounds.center[0], (plate.bounds.center[1] - (plate.bounds.height / 2)), plate.bounds.center[2]], X_AXIS, Z_AXIS, Y_AXIS )
         vr = X_AXIS.reverse
         vr.length = (container.bounds.width/2)
