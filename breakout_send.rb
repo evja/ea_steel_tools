@@ -150,7 +150,7 @@ module EA_Extensions623
           puts e.message
           puts e.backtrace.inspect
           Dir.chdir("#{SERVER_PATH}")
-          UI.messagebox("I could not find the 'Stee/SketchUp Break-Outs' for this job. manually locate it and i will save the path until you close SketchUp ")
+          UI.messagebox("I could not find the 'Steel/SketchUp Break-Outs' for this job. manually locate it and i will save the path until you close SketchUp ")
         end
       end
 
