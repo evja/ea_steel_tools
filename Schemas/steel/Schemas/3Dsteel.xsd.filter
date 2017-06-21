@@ -16,6 +16,15 @@ WideFlangeBeam
   PredefinedType
 }
 
+Column
+{
+  Name
+  Description
+  ObjectType
+  Tag
+  PredefinedType
+}
+
 // Blacklist Attributes
 {
   instanceAttributes

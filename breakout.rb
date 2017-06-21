@@ -64,18 +64,18 @@ module EA_Extensions623
         components = scrape(@steel_member)
         if @plates.empty?
           UI.messagebox("The function could not find any classified plates")
+          @plates = []
           reset
+        else
+          temp_color(@plates)
+          temp_label(@plates)
         end
-        temp_color(@plates)
-        temp_label(@plates)
         #last method This resets the users template to what they had in the beginning
-        # Sketchup.template = @users_template
-
-        # Sketchup.status_text =("Please Verify that all the plates are accounted for: Enter = 'Accept' Esc = 'No, need to classify some'")
       end
 
       def reset
         Sketchup.send_action "selectSelectionTool:"
+        @plates = [] if @state == 2
       end
 
       def set_envoronment
@@ -94,27 +94,19 @@ module EA_Extensions623
         member.material = @materials[DONE_COLOR]
       end
 
-      def scrape(part)
-        if part.class == Sketchup::Group
-          part.entities.each do |e|
-            if defined? e.definition
-              if e.definition.attribute_dictionary("#{DICTIONARY_NAME}", "#{SCHEMA_KEY}").values.include?(SCHEMA_VALUE)
-                a = {object: e, orig_color: e.material, vol: e.volume}
-                @plates.push a
-              end
-            end
-          end
-        else
-          part.definition.entities.each do |e|
-            if defined? e.definition
-              if e.definition.attribute_dictionary("#{DICTIONARY_NAME}", "#{SCHEMA_KEY}").values.include?(SCHEMA_VALUE)
-                a = {object: e, orig_color: e.material, vol: e.volume}
-                @plates.push a
+      def scrape(part) #part is the assumed steel part (beam or column with all respective sub components)
+        part.definition.entities.each do |e|
+          if defined? e.definition
+            if not e.definition.attribute_dictionaries == nil
+              if not e.definition.attribute_dictionaries[DICTIONARY_NAME] == nil
+                if e.definition.attribute_dictionaries[DICTIONARY_NAME].values.include?(SCHEMA_VALUE)
+                  a = {object: e, orig_color: e.material, vol: e.volume}
+                  @plates.push a
+                end
               end
             end
           end
         end
-        # p @plates.first
       end
 
       def temp_color(plates)
@@ -149,6 +141,7 @@ module EA_Extensions623
 
           @individual_plates.push plate[:object]
         end
+        p @individual_plates
         @state = 1 if @state == 0
       end
 
@@ -178,6 +171,7 @@ module EA_Extensions623
         elsif @state == 0 && key == VK_LEFT
           restore_material(@plates)
           Sketchup.status_text = "Classify Plates Then Start Again"
+          @plates = []
           @state = 2
           reset
         end
@@ -188,7 +182,9 @@ module EA_Extensions623
         @individual_plates.each_with_index do |plate, i|
           @unique_plates.push plate.definition.instances
         end
-        @unique_plates.uniq!
+        @unique_plates.uniq! if @individual_plates.count > 0
+        @unique_plates.compact! if @unique_plates.compact != nil
+        return @unique_plates
       end
 
       def sort_plates(plates)
