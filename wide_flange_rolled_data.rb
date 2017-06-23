@@ -536,11 +536,12 @@ module EA_Extensions623
         scale_web = @tw/2
 
         # Sets the spacing for the 13/16" Web holes to be spaced from each other vertically
-        if @hc >= 10
-          reasonable_spacing = 3
-        else
-          reasonable_spacing = 2.5
-        end
+        reasonable_spacing = 3
+        # if @hc >= 10
+        #   reasonable_spacing = 3
+        # else
+        #   reasonable_spacing = 2.5
+        # end
 
         @number_of_sheer_holes = (((((@h - ((2*@tf)+(@r * 2))) - (MIN_BIG_HOLE_DISTANCE_FROM_KZONE*2)) / 3).to_i) +1)
         @number_of_sheer_holes = 2  if @hc <= 6

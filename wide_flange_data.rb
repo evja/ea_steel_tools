@@ -688,12 +688,13 @@ module EA_Extensions623
               z = (0.5*@h)
 
               # Sets the spacing for the 13/16" Web holes to be spaced from each other vertically
-              if @hc >= 10
-                reasonable_spacing = 3
-              elsif @hc < 10
-                @number_of_sheer_holes = 2  if @hc <= 6
-                reasonable_spacing = 2.5
-              end
+              reasonable_spacing = 3
+              # if @hc >= 10
+              #   reasonable_spacing = 3
+              # elsif @hc < 10
+              #   @number_of_sheer_holes = 2  if @hc <= 6
+              #   reasonable_spacing = 2.5
+              # end
 
               #adds in the 13/16" Web/Connection holes
               @number_of_sheer_holes.even? ? z = (z-reasonable_spacing.to_f/2)-(((@number_of_sheer_holes-2)/2)*reasonable_spacing) : z = z-(((@number_of_sheer_holes-1)/2)*reasonable_spacing)
