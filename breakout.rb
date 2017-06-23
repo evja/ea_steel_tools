@@ -58,7 +58,6 @@ module EA_Extensions623
         @labels = []
         @status_text = "Please Verify that all the plates are accounted for: RIGHT ARROW = 'Proceed' LEFT ARROW = 'Go Back'"
         @state = 0
-        set_envoronment if @@environment_set == false
         position_member(@steel_member)
         color_steel_member(@steel_member)
         components = scrape(@steel_member)
@@ -80,8 +79,9 @@ module EA_Extensions623
 
       def set_envoronment
         BreakoutSetup.set_styles(@model)
-        BreakoutSetup.set_scenes(@model)
+        @pages = BreakoutSetup.set_scenes(@model)
         BreakoutSetup.set_materials(@model)
+        BreakoutSetup.set_layers(@model)
         @@environment_set = true
       end
 
@@ -166,6 +166,13 @@ module EA_Extensions623
           sort_plates(split_plates)
           plates = name_plates()
           spread_plates
+          set_envoronment if @@environment_set == false
+          @plate_group.visible = false
+          hide_parts(@plate_group, @pages[0], 16)
+          hide_parts(@steel_member, @pages[1], 16)
+          update_scene(@pages[1])
+
+
           # label_plates(plates)
           reset
         elsif @state == 0 && key == VK_LEFT
@@ -176,6 +183,30 @@ module EA_Extensions623
           reset
         end
         @model.commit_operation
+      end
+
+      def update_scene(page)
+        @pages.selected_page = page
+        vw = @model.active_view
+        vw.zoom_extents
+        page.update(1)
+        @pages.selected_page = @pages[0]
+      end
+
+      def hide_parts(part, page, code)
+        pg = @pages.selected_page
+        @pages.selected_page = page
+        part.visible = false
+        page.update(code)
+        @pages.selected_page = pg
+      end
+
+      def show_parts(part, page, code)
+        pg = @pages.selected_page
+        @pages.selected_page = page
+        part.visible = true
+        page.update(code)
+        @pages.selected_page = pg
       end
 
       def split_plates()
@@ -396,6 +427,7 @@ module EA_Extensions623
 
         label_locs = []
         @plate_group = @entities.add_group
+        # @plate_group.instance.name = 'Plates'
 
         plates.each do |pl|
           pl.entities.each {|f| f.material = pl.instances.first.material}
