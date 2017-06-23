@@ -8,38 +8,56 @@ module EA_Extensions623
 
       def self.set_styles(model)
         style1_file = Sketchup.find_support_file('Standard.style', "Plugins/#{FNAME}/Models/Styles/")
-        style2_file = Sketchup.find_support_file('X-Ray.style', "Plugins/#{FNAME}/Models/Styles/")
         model.styles.add_style style1_file, false
         model.styles.add_style style1_file, true
         model.styles.purge_unused
         style1 = model.styles.first
         style2 = model.styles[-1]
         style1.description = 'Standard'
-        style2.description = 'X-Ray'
         return model.styles
       end
 
       def self.set_scenes(model)
-        scenes = ["Perspective", "Front", "Plates", "X-Ray"]
-        pages = model.pages
-        scenes.each {|scene| pages.add scene}
+        scenes = ["Part", "Plates"]
+        @pages = model.pages
+        scenes.each {|scene| @pages.add scene}
         view = model.active_view
-        pages.selected_page = pages[0]
-        pages[-1].use_style = model.styles['X-Ray']
-        pages.selected_page = pages[-1]
         Sketchup.active_model.rendering_options["ModelTransparency"] = true
 
-        pg = pages[0]
-        pages.selected_page = pg
-        cam = pg.camera
-        eye = [182, -138, 45]
-        target = [0,0,0]
-        std_cam = Sketchup::Camera.new eye, target, Z_AXIS
+        pg = @pages[0]
+        @pages.selected_page = pg
+        eye1 = [102, -139, 50]
+        target1 = [0,0,0]
+        std_cam = Sketchup::Camera.new eye1, target1, Z_AXIS
         view.camera = std_cam
+
+        view.zoom_extents
         pg.update(1)
 
-        Sketchup.active_model.active_view.zoom_extents
-        return pages
+        pg2 = @pages[1]
+        @pages.selected_page = pg2
+        eye2 = [0,-1,0]
+        target2 = [0,0,0]
+        plt_cam = Sketchup::Camera.new eye2, target2, Z_AXIS
+        plt_cam.perspective = false
+        view.camera = plt_cam
+        pg2.use_camera = true
+        pg2.update(1)
+
+        @pages.selected_page = pg
+        view.camera = std_cam
+
+        return @pages
+      end
+
+      def self.set_layers(model)
+        layers = model.layers
+        bolt_layer = layers[' Bolts']
+        bolt_layer.visible = false
+        @pages[0].update(32)
+        @pages[1].update(32)
+        @plate_layer = layers.add 'Breakout_Plates'
+        @part_layer = layers.add 'Breakout_Part'
       end
 
       def set_up_scene(page)
