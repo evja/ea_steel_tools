@@ -59,7 +59,6 @@ module EA_Extensions623
         @status_text = "Please Verify that all the plates are accounted for: RIGHT ARROW = 'Proceed' LEFT ARROW = 'Go Back'"
         @state = 0
         position_member(@steel_member)
-        color_steel_member(@steel_member)
         components = scrape(@steel_member)
         if @plates.empty?
           UI.messagebox("The function could not find any classified plates")
@@ -91,7 +90,10 @@ module EA_Extensions623
       end
 
       def color_steel_member(member)
-        member.material = @materials[DONE_COLOR]
+        if @materials[DONE_COLOR]
+          p 'part colored'
+          member.material = @materials[DONE_COLOR]
+        end
       end
 
       def scrape(part) #part is the assumed steel part (beam or column with all respective sub components)
@@ -167,6 +169,7 @@ module EA_Extensions623
           plates = name_plates()
           spread_plates
           set_envoronment if @@environment_set == false
+          color_steel_member(@steel_member)
           @plate_group.visible = false
           hide_parts(@plate_group, @pages[0], 16)
           hide_parts(@steel_member, @pages[1], 16)

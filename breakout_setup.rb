@@ -52,10 +52,12 @@ module EA_Extensions623
 
       def self.set_layers(model)
         layers = model.layers
-        bolt_layer = layers[' Bolts']
-        bolt_layer.visible = false
-        @pages[0].update(32)
-        @pages[1].update(32)
+        if layers[' Bolts'] != nil
+          bolt_layer = layers[' Bolts']
+          bolt_layer.visible = false
+          @pages[0].update(32)
+          @pages[1].update(32)
+        end
         @plate_layer = layers.add 'Breakout_Plates'
         @part_layer = layers.add 'Breakout_Part'
       end
