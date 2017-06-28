@@ -125,13 +125,16 @@ module EA_Extensions623
           b = Dir.chdir(File.join(a))
           b1 = Dir["**/*Steel*/*Break*"]
           if !b1.empty? && File.expand_path(b1.first) #Check if you are in the master model
+            p 'you are in the master model'
             @path = File.expand_path(b1.first)
             return
           elsif defined? @@breakout_dir #Check if you have saved the path
+            p 'you have been here before'
             @path = @@breakout_dir
             # puts 'Preset Path Found'
             return
           else #Check the server for job folder
+            p 'I had to look on the server for the file path'
             Dir.chdir("#{SERVER_PATH}") #This needs to find the DELL instead of the X: drive for those who have the drive on the network
             possible_names = get_assumed_names
             # p possible_names

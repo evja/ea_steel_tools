@@ -277,7 +277,7 @@ module EA_Extensions623
         plates = sort_plates_for_naming(plates2.uniq)
 
         # This code finds the direction labels in the component definition list and renames them so the letters of the alphabet are available for plates
-        poss_labs = ["N", "S", "E", "W"]
+        poss_labs = ["N", "S", "E", "W", "X"]
         poss_labs.each do |lab|
           if @d_list[lab]
             p "Found a direction in the list"
@@ -431,6 +431,9 @@ module EA_Extensions623
         label_locs = []
         @plate_group = @entities.add_group
         # @plate_group.instance.name = 'Plates'
+        plates.compact!
+
+        p plates
 
         plates.each do |pl|
           pl.entities.each {|f| f.material = pl.instances.first.material}
@@ -441,8 +444,12 @@ module EA_Extensions623
           pl_cpy.name = "x"+((pl_cpy.definition.count_instances) - 1).to_s
 
           face = get_largest_face(pl_cpy)
-
-          pl_norm = face.normal
+          if face == nil
+            p 'found nil'
+            @selection.add pl
+          else
+            pl_norm = face.normal
+          end
 
           if pl_norm.parallel? Z_AXIS
             rotation = pl_norm.angle_between Y_AXIS
