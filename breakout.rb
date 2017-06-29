@@ -39,10 +39,12 @@ module EA_Extensions623
     class Breakout
       include BreakoutSetup
 
-      def activate
-        @@environment_set = false if not defined? @@environment_set
+      def initialize
+        # p 'hello'
         @model = Sketchup.active_model
         @model.start_operation("Breakout", true)
+        @@environment_set = false if not defined? @@environment_set
+        @pages = @model.pages
         # @users_template = Sketchup.template
         # Sketchup.template= Sketchup.find_support_file('Breakout.skp', "Plugins/#{FNAME}/Models/")
         @entities = @model.entities
@@ -58,15 +60,16 @@ module EA_Extensions623
         @labels = []
         @status_text = "Please Verify that all the plates are accounted for: RIGHT ARROW = 'Proceed' LEFT ARROW = 'Go Back'"
         @state = 0
-        position_member(@steel_member)
         components = scrape(@steel_member)
+        # p 'evaluating for empty plates'
         if @plates.empty?
           UI.messagebox("The function could not find any classified plates")
           @plates = []
           reset
         else
+          # p 'coloring'
           temp_color(@plates)
-          temp_label(@plates)
+          temp_label(@plates, @model.active_view)
         end
         #last method This resets the users template to what they had in the beginning
       end
@@ -78,7 +81,7 @@ module EA_Extensions623
 
       def set_envoronment
         BreakoutSetup.set_styles(@model)
-        @pages = BreakoutSetup.set_scenes(@model)
+        BreakoutSetup.set_scenes(@model)
         BreakoutSetup.set_materials(@model)
         BreakoutSetup.set_layers(@model)
         @@environment_set = true
@@ -91,17 +94,20 @@ module EA_Extensions623
 
       def color_steel_member(member)
         if @materials[DONE_COLOR]
-          p 'part colored'
           member.material = @materials[DONE_COLOR]
+        else
+          UI.messagebox("Paint the steel part the done color")
         end
       end
 
       def scrape(part) #part is the assumed steel part (beam or column with all respective sub components)
+        # p 'scraping'
         part.definition.entities.each do |e|
           if defined? e.definition
             if not e.definition.attribute_dictionaries == nil
               if not e.definition.attribute_dictionaries[DICTIONARY_NAME] == nil
                 if e.definition.attribute_dictionaries[DICTIONARY_NAME].values.include?(SCHEMA_VALUE)
+                  # p 'deep inside scraping'
                   a = {object: e, orig_color: e.material, vol: e.volume}
                   @plates.push a
                 end
@@ -115,23 +121,28 @@ module EA_Extensions623
         if plates.nil?
           return
         else
+          # p 'inside temp color'
           plates.each do |plate|
             plate[:object].material = PLATE_COLOR
+            # p 'gathering plates temp colors'
             # plates[plate].material = PLATE_COLOR
           end
         end
       end
 
-      def temp_label(plates)
+      def temp_label(plates, view)
+        # p 'inside labeling'
         @t_labels = []
         v = Geom::Vector3d.new [0,0,1]
         v.length = 20
         plates.each do |pl|
+          # p 'labeling each plate'
           t = 'PLATE'
           pt = pl[:object].bounds.center
           txt = @steel_member.entities.add_text t, pt, v
           @t_labels.push txt
         end
+        view.refresh
       end
 
       def restore_material(plates)
@@ -143,7 +154,7 @@ module EA_Extensions623
 
           @individual_plates.push plate[:object]
         end
-        p @individual_plates
+        # p @individual_plates
         @state = 1 if @state == 0
       end
 
@@ -162,6 +173,7 @@ module EA_Extensions623
 
       def onKeyDown(key, repeat, flags, view)
         if @state == 0 && key == VK_RIGHT
+          position_member(@steel_member)
           restore_material(@plates)
           @state = 1
           Sketchup.status_text = "Breaking out the paltes"
@@ -170,11 +182,13 @@ module EA_Extensions623
           spread_plates
           set_envoronment if @@environment_set == false
           color_steel_member(@steel_member)
+          @plate_group.layer = @model.layers["Breakout_Plates"]
+          @steel_member.layer = @model.layers["Breakout_Part"]
           @plate_group.visible = false
-          hide_parts(@plate_group, @pages[0], 16)
+          hide_parts(@plate_group, @pages.first, 16)
+          @steel_member.visible = false
           hide_parts(@steel_member, @pages[1], 16)
           update_scene(@pages[1])
-
 
           # label_plates(plates)
           reset
@@ -191,9 +205,13 @@ module EA_Extensions623
       def update_scene(page)
         @pages.selected_page = page
         vw = @model.active_view
+        lyr = @model.layers["Breakout_Part"]
+        page.set_visibility(lyr, false)
         vw.zoom_extents
+        page.update(32)
         page.update(1)
         @pages.selected_page = @pages[0]
+        page.set_visibility(lyr, true)
       end
 
       def hide_parts(part, page, code)
@@ -374,6 +392,8 @@ module EA_Extensions623
           when /Special Thick/
             # p plate.material.name
             thck7.push plate
+          when /⅞"/
+            thck7.push plate
           else
             # p plate.material.name
             thck8.push plate
@@ -389,6 +409,7 @@ module EA_Extensions623
       end
 
       def get_largest_face(entity)
+        entity.definition.entities
         faces = entity.definition.entities.select {|e| e.typename == 'Face'}
         largest_face = [0, nil]
         faces.each do |face|
@@ -433,7 +454,7 @@ module EA_Extensions623
         # @plate_group.instance.name = 'Plates'
         plates.compact!
 
-        p plates
+        # p plates
 
         plates.each do |pl|
           pl.entities.each {|f| f.material = pl.instances.first.material}
@@ -446,7 +467,7 @@ module EA_Extensions623
           face = get_largest_face(pl_cpy)
           if face == nil
             p 'found nil'
-            @selection.add pl
+            next
           else
             pl_norm = face.normal
           end

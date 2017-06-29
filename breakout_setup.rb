@@ -34,6 +34,7 @@ module EA_Extensions623
         view.zoom_extents
         pg.update(1)
 
+        #Page2 is the Plates View
         pg2 = @pages[1]
         @pages.selected_page = pg2
         eye2 = [0,-1,0]
@@ -43,9 +44,7 @@ module EA_Extensions623
         view.camera = plt_cam
         pg2.use_camera = true
         pg2.update(1)
-
-        @pages.selected_page = pg
-        view.camera = std_cam
+        p 'created the plates scene'
 
         return @pages
       end
