@@ -122,16 +122,30 @@ module EA_Extensions623
           a = @path.split("\\")
           a.pop
           a.pop
-          b = Dir.chdir(File.join(a))
+
+          #############################
+          #############################
+          #############################
+          if Dir.exist?(File.join(a))
+            b = File.join(a)
+            Dir.chdir(b)
+            p b.to_s + " is a directory"
+          else
+            p "could not find the directory #{}"
+          end
+          # b = Dir.chdir(File.join(a)) if Dir.chdir(File.join(a)) # This is the code that is throwing off the guys on the network
+          #############################
+          #############################
+          #############################
           b1 = Dir["**/*Steel*/*Break*"]
-          if !b1.empty? && File.expand_path(b1.first) #Check if you are in the master model
-            p 'you are in the master model'
-            @path = File.expand_path(b1.first)
-            return
-          elsif defined? @@breakout_dir #Check if you have saved the path
+          if defined? @@breakout_dir #Check if you have saved the path
             p 'you have been here before'
             @path = @@breakout_dir
             # puts 'Preset Path Found'
+            return
+          elsif !b1.empty? && File.expand_path(b1.first) #Check if you are in the master model
+            p 'you are in the master model'
+            @path = File.expand_path(b1.first)
             return
           else #Check the server for job folder
             p 'I had to look on the server for the file path'
