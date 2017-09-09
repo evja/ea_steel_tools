@@ -171,25 +171,29 @@ module EA_Extensions623
         member.move! slide
       end
 
+      def move_stuff
+         position_member(@steel_member)
+         restore_material(@plates)
+         Sketchup.status_text = "Breaking out the paltes"
+         sort_plates(split_plates)
+         plates = name_plates()
+         spread_plates
+         set_envoronment if @@environment_set == false
+         color_steel_member(@steel_member)
+         @plate_group.layer = @model.layers["Breakout_Plates"]
+         @steel_member.layer = @model.layers["Breakout_Part"]
+         @plate_group.visible = false
+         hide_parts(@plate_group, @pages.first, 16)
+         @steel_member.visible = false
+         hide_parts(@steel_member, @pages[1], 16)
+         update_scene(@pages[1])
+         @model.commit_operation
+      end
+
       def onKeyDown(key, repeat, flags, view)
         if @state == 0 && key == VK_RIGHT
-          position_member(@steel_member)
-          restore_material(@plates)
           @state = 1
-          Sketchup.status_text = "Breaking out the paltes"
-          sort_plates(split_plates)
-          plates = name_plates()
-          spread_plates
-          set_envoronment if @@environment_set == false
-          color_steel_member(@steel_member)
-          @plate_group.layer = @model.layers["Breakout_Plates"]
-          @steel_member.layer = @model.layers["Breakout_Part"]
-          @plate_group.visible = false
-          hide_parts(@plate_group, @pages.first, 16)
-          @steel_member.visible = false
-          hide_parts(@steel_member, @pages[1], 16)
-          update_scene(@pages[1])
-
+          move_stuff
           # label_plates(plates)
           reset
         elsif @state == 0 && key == VK_LEFT
@@ -199,7 +203,6 @@ module EA_Extensions623
           @state = 2
           reset
         end
-        @model.commit_operation
       end
 
       def update_scene(page)
@@ -323,20 +326,20 @@ module EA_Extensions623
         return test_b
       end
 
-      def label_plates(plates)
-        labels = []
-        mod_title = @model.title
-        plates.each_with_index do |pl, i|
-          # plde = pl.entities
-          # pl_ent_group = plde.add_group(plde)
-          plname = pl.name
-          var = mod_title + ' - ' + plname
-          text = pl.entities.add_3d_text(var, TextAlignLeft, '1CamBam_Stick_7', false, false, 0.5, 0.0, 0.1, false, 0.0)
-          # text_group =
-          align = Geom::Transformation.axes(pl.bounds.max, X_AXIS, Z_AXIS, Y_AXIS )
-          # text.move! align
-        end #Not currently being used
-      end
+      # def label_plates(plates)
+      #   labels = []
+      #   mod_title = @model.title
+      #   plates.each_with_index do |pl, i|
+      #     # plde = pl.entities
+      #     # pl_ent_group = plde.add_group(plde)
+      #     plname = pl.name
+      #     var = mod_title + '-' + plname
+      #     text = pl.entities.add_3d_text(var, TextAlignLeft, '1CamBam_Stick_7', false, false, 0.5, 0.0, 0.1, false, 0.0)
+      #     # text_group =
+      #     align = Geom::Transformation.axes(pl.bounds.max, X_AXIS, Z_AXIS, Y_AXIS )
+      #     # text.move! align
+      #   end #Not currently being used
+      # end
 
       def label_plate(plate, group)
         labels = []
@@ -345,8 +348,8 @@ module EA_Extensions623
         container = group.entities.add_group
 
         plname = plate.definition.name
-        var = mod_title + ' - ' + plname
-        text = container.entities.add_3d_text(var, TextAlignLeft, '1CamBam_Stick_7', false, false, 0.5, 0.0, -0.0675, false, 0.0)
+        var = mod_title + '-' + plname
+        text = container.entities.add_3d_text(var, TextAlignLeft, '1CamBam_Stick_7', false, false, 0.675, 0.0, -0.01, false, 0.0)
 
         align = Geom::Transformation.axes([plate.bounds.center[0], (plate.bounds.center[1] - (plate.bounds.height / 2)), plate.bounds.center[2]], X_AXIS, Z_AXIS, Y_AXIS )
         vr = X_AXIS.reverse

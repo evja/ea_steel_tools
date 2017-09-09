@@ -44,7 +44,6 @@ module EA_Extensions623
         view.camera = plt_cam
         pg2.use_camera = true
         pg2.update(1)
-        p 'created the plates scene'
 
         return @pages
       end
