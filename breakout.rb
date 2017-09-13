@@ -63,9 +63,21 @@ module EA_Extensions623
         components = scrape(@steel_member)
         # p 'evaluating for empty plates'
         if @plates.empty?
-          UI.messagebox("The function could not find any classified plates")
-          @plates = []
-          reset
+          result = UI.messagebox("Did not detect any plates, do you wish to continue?", MB_YESNO)
+          p result
+          if result == 6
+            @state = 1
+            position_member(@steel_member)
+            set_envoronment if @@environment_set == false
+            color_steel_member(@steel_member)
+            @steel_member.layer = @model.layers["Breakout_Part"]
+            hide_parts(@steel_member, @pages[1], 16)
+            update_scene(@pages[1])
+            reset
+          else
+            @plates = []
+            reset
+          end
         else
           # p 'coloring'
           temp_color(@plates)
