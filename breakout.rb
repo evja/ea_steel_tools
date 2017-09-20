@@ -494,7 +494,7 @@ module EA_Extensions623
 
           pl_norm = face.normal
           rotation = pl_norm.angle_between Y_AXIS
-          pl_cpy.transform! (Geom::Transformation.rotation insertion_pt, [0,0,1], rotation)
+          pl_cpy.transform! (Geom::Transformation.rotation insertion_pt, [0,0,1], (rotation * -1))
 
           pb = pl_cpy.bounds
           w = pb.width
