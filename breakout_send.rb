@@ -3,29 +3,13 @@
 module EA_Extensions623
   module EASteelTools
     require 'sketchup.rb'
+
     GROUP_REGEX = /([A-Z,a-z]{2})(\d{3})/
     BEAM_REGEX = /(([W,w])\d{1,2}([X,x])\d{1,3})/
     BEAM_COLOR = "3 Broken Out"
     SERVER_PATH = "//DELL/Data"
     JOBS_LOCATION = "3X Jobs(server)"
     # Function for getting the server is pushd //DELL/Data
-
-    module BreakoutSendMod
-      def self.qualify_selection(sel)
-        if sel[0].class == Sketchup::Group && sel[0].name.match(GROUP_REGEX)
-          # p 'passed as a group'
-          return true
-
-        elsif sel[0].class == Sketchup::ComponentInstance && sel[0].definition.name.match(GROUP_REGEX)
-          # p 'passed as a Component'
-          return true
-
-        else
-          # p 'not validated'
-          return false
-        end
-      end
-    end
 
     class SendToBreakout
 
@@ -40,6 +24,26 @@ module EA_Extensions623
         @multiple = ''
         @path = @model.path
         go
+      end
+
+      def qualify_selection(sel)
+        if sel[0].class == Sketchup::Group && sel[0].name.match(GROUP_REGEX)
+          # p 'passed as a group'
+          return true
+
+        elsif sel[0].class == Sketchup::ComponentInstance && sel[0].definition.name.match(GROUP_REGEX)
+          # p 'passed as a Component'
+          return true
+
+        else
+          # p 'not validated, give warning and allow user to decide'
+          result = UI.messagebox("You are trying to break out a part with an unconventional name '#{sel[0].name}', do you wish to continue?", MB_YESNO)
+          if result == 6
+            return true
+          else
+            return false
+          end
+        end
       end
 
       def set_breakout_directory(path)
@@ -60,7 +64,7 @@ module EA_Extensions623
       end
 
       def validate_selection(sel)
-        if sel.class == Sketchup::Group && sel.name.match(GROUP_REGEX)
+        if sel.class == Sketchup::Group
           return sel
         else
           p'no joy in validate selection'
@@ -68,9 +72,11 @@ module EA_Extensions623
       end
 
       def go
-        sanitize_selection(@selection)
-        find_breakout_location
-        create_new_file
+        if qualify_selection(@selection)
+          sanitize_selection(@selection)
+          find_breakout_location
+          create_new_file
+        end
       end
 
       def create_new_file()
@@ -91,6 +97,7 @@ module EA_Extensions623
           end
           paths.each {|path| UI.openURL(path)}
         else
+          p 'creating a new file'
           steel_member = @steel_members.first
           temp_group = @model.active_entities.add_group(steel_member)
           defn = temp_group.definition
@@ -119,54 +126,66 @@ module EA_Extensions623
 
       def find_breakout_location
         begin
-          a = @path.split("\\")
-          a.pop
-          a.pop
+          # a = @path.split("\\")
+          # a.pop
+          # a.pop
 
-          #############################
-          #############################
-          #############################
-          if Dir.exist?(File.join(a))
-            b = File.join(a)
-            Dir.chdir(b)
-            p b.to_s + " is a directory"
-          else
-            p "could not find the directory #{}"
-          end
+          # #############################
+          # #############################
+          # #############################
+          # if Dir.exist?(File.join(a))
+          #   b = File.join(a)
+          #   Dir.chdir(b)
+          #   p b.to_s + " is a directory"
+          # else
+          #   p "could not find the directory #{}"
+          # end
           # b = Dir.chdir(File.join(a)) if Dir.chdir(File.join(a)) # This is the code that is throwing off the guys on the network
           #############################
           #############################
           #############################
-          b1 = Dir["**/*Steel*/*Break*"]
+          # b1 = Dir["**/*Steel*/*Break*"]
           if defined? @@breakout_dir #Check if you have saved the path
             p 'you have been here before'
             @path = @@breakout_dir
             # puts 'Preset Path Found'
             return
-          elsif !b1.empty? && File.expand_path(b1.first) #Check if you are in the master model
-            p 'you are in the master model'
-            @path = File.expand_path(b1.first)
-            return
-          else #Check the server for job folder
-            p 'I had to look on the server for the file path'
-            Dir.chdir("#{SERVER_PATH}") #This needs to find the DELL instead of the X: drive for those who have the drive on the network
-            possible_names = get_assumed_names
-            # p possible_names
-            possible_names.each do |name|
-              path_to_job = Dir["**/*#{name}*/*Steel*/*Break*"]
-              if !path_to_job.empty?
-                @path = File.expand_path(path_to_job.first)
-                # p @path
-                return
-              end
-            end
+          # elsif !b1.empty? && File.expand_path(b1.first) #Check if you are in the master model
+          #   p 'you are in the master model'
+          #   @path = File.expand_path(b1.first)
+          #   return
+          # else #Check the server for job folder
+          #   p 'Checking fo the path in the server'
+          #   t1 = Thread.new {
+          #     p 'Started a new thread 1'
+          #     Dir.chdir("#{SERVER_PATH}") #This needs to find the DELL instead of the X: drive for those who have the drive on the network
+          #     possible_names = get_assumed_names
+          #     p 'got get_assumed_names'
+          #     possible_names.each do |name|
+          #       p name
+          #       path_to_job = Dir["**/*#{name}*/*Steel*/*Break*"]
+          #       if !path_to_job.empty?
+          #         @path = File.expand_path(path_to_job.first)
+          #         # p @path
+          #         return
+          #       end
+          #     end
+          #   }
+
+          #   t2 = Thread.new {
+          #     p 'started a new thread'
+          #     UI.start_timer(10) {t1.kill}
+          #     p ' Killed t1'
+          #   }
+          else
+            p 'setting the server path'
+            @path = @model.path
           end
-          @path = SERVER_PATH
-          UI.messagebox("Could not find the job folder in 3X Jobs(server), Perhaps it's in the ARCHIVE")
+          # UI.messagebox("Could not find the job folder in 3X Jobs(server), Perhaps it's in the ARCHIVE")
         rescue Exception => e
           puts e.message
           puts e.backtrace.inspect
-          Dir.chdir("#{SERVER_PATH}")
+          # Dir.chdir("#{SERVER_PATH}")
           UI.messagebox("I could not find the 'Steel/SketchUp Break-Outs' for this job. manually locate it and i will save the path until you close SketchUp ")
         end
       end

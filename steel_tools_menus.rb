@@ -67,13 +67,9 @@ module EA_Extensions623
     # @@EA_tools_menu.add_item cmd4
 
     UI.add_context_menu_handler do |menu|
-      # if not( EASteelTools::BreakoutMod.qualify_model(Sketchup.active_model) )
-        if( EASteelTools::BreakoutSendMod.qualify_selection(Sketchup.active_model.selection) )
-          menu.add_separator
-          menu.add_item("Send to Breakout") { EASteelTools::SendToBreakout.new }
-          menu.add_separator
-        end
-      # end
+      menu.add_separator
+      menu.add_item("Send to Breakout") { EASteelTools::SendToBreakout.new }
+      menu.add_separator
     end
 
     UI.add_context_menu_handler do |menu|
