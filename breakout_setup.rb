@@ -11,6 +11,7 @@ module EA_Extensions623
         model.styles.add_style style1_file, false
         model.styles.add_style style1_file, true
         model.styles.purge_unused
+        model.options["PageOptions"]["ShowTransition"]=true
         style1 = model.styles.first
         style2 = model.styles[-1]
         style1.description = 'Standard'
@@ -31,18 +32,20 @@ module EA_Extensions623
         std_cam = Sketchup::Camera.new eye1, target1, Z_AXIS
         view.camera = std_cam
 
+        @pages.each {|pg| pg.transition_time = 0.5}
         view.zoom_extents
         pg.update(1)
 
         #Page2 is the Plates View
         pg2 = @pages[1]
         @pages.selected_page = pg2
-        eye2 = [0,-1,0]
+        eye2 = [10,-10,10]
         target2 = [0,0,0]
         plt_cam = Sketchup::Camera.new eye2, target2, Z_AXIS
         plt_cam.perspective = false
         view.camera = plt_cam
         pg2.use_camera = true
+        view.zoom_extents
         pg2.update(1)
 
         return @pages

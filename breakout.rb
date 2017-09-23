@@ -254,6 +254,22 @@ module EA_Extensions623
         return @unique_plates
       end
 
+      # def check_for_locked_groups(group)
+      #   group.each do |plate|
+      #     gents = plate.definition.entities
+      #     if gents.count < 4
+      #       gents.each do |e|
+      #         if e.class == Sketchup::Group || e.class == Sketchup::ComponentInstance
+      #           if e.locked?
+      #             e.explode
+      #             return
+      #           end
+      #         end
+      #       end
+      #     end
+      #   end
+      # end
+
       def sort_plates(plates)
         plates.each do |pl|
           if pl.class == Array && pl.count > 1
