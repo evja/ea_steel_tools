@@ -52,13 +52,15 @@ module EA_Extensions623
 
       def sanitize_selection(sel)
         if sel.count > 1
-          @multiple = true
-          p 'multiple'
-          sel.each_with_index {|member, i| @steel_members.push validate_selection(member)}
+          UI.messagebox("You must only have one member selected to send to breakout")
+          return
+          # @multiple = true
+          # p 'multiple'
+          # sel.each_with_index {|member, i| @steel_members.push validate_selection(member)}
         else
           @multiple = false
           p 'single'
-          @steel_members.push validate_selection(sel[0])
+          @steel_members.push sel[0]
           @beam_name = @steel_members[0].name
         end
       end
@@ -85,7 +87,16 @@ module EA_Extensions623
           @steel_members.each do |member|
             temp_group = @model.active_entities.add_group(member)
             member_definition = temp_group.definition
-            new_file = UI.savepanel("Save the Breakout", @path, "#{member.name}.skp" )
+            if member.class == Sketchup::ComponentInstance
+              if member.name.empty?
+                part_name = member.definition.name
+              else
+                part_name = member.name
+              end
+            else
+              part_name = mamber.name
+            end
+            new_file = UI.savepanel("Save the Breakout", @path, "#{part_name}.skp" )
             if new_file
               Sketchup.undo
               member_definition.save_as(new_file)
