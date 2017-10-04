@@ -11,6 +11,7 @@ module EA_Extensions623
     require FNAME+'/'+'breakout.rb'
     require FNAME+'/'+'breakout_send.rb'
     require FNAME+'/'+'load_schemas.rb'
+    require FNAME+'/'+'update.rb'
     # require FNAME+'/'+'test.rb'
 
     # require 'hss_column_data.rb'         # Coming Soon
@@ -49,6 +50,10 @@ module EA_Extensions623
       Sketchup.active_model.select_tool EASteelTools::BreakoutSettings.open
     }
     @@EA_tools_menu.add_item cmd2
+
+    @@EA_tools_menu.add_separator
+    @@EA_tools_menu.add_item( 'Check for updates' ) { EASteelTools::ToolUpdater.update_tool }
+
 
     # cmd3 = UI::Command.new("HSS") {
     #  Sketchup.active_model.select_tool EASteelTools::HssColumn.new
