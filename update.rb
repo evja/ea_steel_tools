@@ -8,7 +8,6 @@ module EA_Extensions623
       def self.update_tool( rbz = true )
         extension = ( rbz ) ? '*.rbz' : '*.zip'
         file = UI.openpanel( "Look for version greater than #{VERSION_NUM}", nil, extension )
-        UI.messagebox(file)
         return if file.nil?
         begin
           Sketchup.install_from_archive( file )
