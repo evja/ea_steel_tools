@@ -177,10 +177,10 @@ module EA_Extensions623
         h = member.bounds.height
         w = member.bounds.width
 
-        x = X_AXIS.reverse
-        x.length = w/2
-        slide = Geom::Transformation.translation x
-        member.move! slide
+        c = member.bounds.center
+
+        tr2 = Geom::Transformation.axes c, X_AXIS, Y_AXIS, Z_AXIS
+        member.move! tr2.inverse
       end
 
       def move_stuff
