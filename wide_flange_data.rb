@@ -176,6 +176,12 @@ module EA_Extensions623
         self.reset(nil)
       end
 
+      def onSetCursor
+        cursor_path = Sketchup.find_support_file ROOT_FILE_PATH+"/icons/wfs_cursor(2).png", "Plugins/"
+        cursor_id = UI.create_cursor(cursor_path, 0, 0)
+        UI.set_cursor(cursor_id.to_i)
+      end
+
       # Draw the geometry
       def draw_ghost(pt1, pt2, view)
 
