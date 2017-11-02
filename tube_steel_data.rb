@@ -10,6 +10,7 @@ module EA_Extensions623
         @model = Sketchup.active_model
         # Activates the @model @entities for use
         @entities = @model.active_entities
+        @selection = @model.selection
         @state = 0
 
         # The Sketchup::InputPoint class is used to get 3D points from screen
@@ -19,6 +20,9 @@ module EA_Extensions623
         @ip2 = Sketchup::InputPoint.new
         @ip = Sketchup::InputPoint.new
         @drawn = false
+
+        @@pt1 = nil
+        @@pt2 = nil
 
         @left_lock = nil
         @right_lock = nil
@@ -107,17 +111,17 @@ module EA_Extensions623
       def onLButtonUp(flags, x, y, view)
         # If we are doing a drag, then create the Beam on the mouse up event
         if( @dragging && @ip2.valid? )
-          @entities.add_line @@pt1, @@pt2
+          @entities.add_line @pt1, @pt2
           self.reset(view)
         end
       end
 
       def draw_tube
-        values = data[:data]
-        @h     = values[:d].to_f #height of the tube
-        @w     = values[:bf].to_f #width of the tube
-        @tw    = values[:tw].to_f #wall thickness of the tube
-        @r     = values[:r].to_f #radius of the tube
+        # values = data[:data]
+        # @h     = values[:d].to_f #height of the tube
+        # @w     = values[:bf].to_f #width of the tube
+        # @tw    = values[:tw].to_f #wall thickness of the tube
+        # @r     = values[:r].to_f #radius of the tube
 
         w = 4
         h = 4
@@ -137,9 +141,17 @@ module EA_Extensions623
           pt1
         ]
 
-        edges = @entities.add_edges(@points)
+        inside_points = [
+          ip1 = [tw, tw, 0],
+          ip2 = [w-tw, tw, 0],
+          ip3 = [w-tw, h-tw, 0],
+          ip4 = [tw, h-tw, 0],
+          ip1
+        ]
 
-        edges.each_with_index do |e, i|
+        outer_edges = @entities.add_edges(@points)
+
+        outer_edges.each_with_index do |e, i|
           e.erase! if i.odd?
         end
 
@@ -150,16 +162,27 @@ module EA_Extensions623
           rc4 = [r,(h-r), 0]
         ]
 
+        g1 = @entities.add_group
+        inner_edges = g1.entities.add_edges(inside_points)
+
         d1 = 180
         d2 = 270
         radius_centers.each do |rc|
-          edges.push @entities.add_arc(rc, X_AXIS, Z_AXIS, r, d1.degrees, d2.degrees, 3)
+          outer_edges.push @entities.add_arc(rc, X_AXIS, Z_AXIS, r, d1.degrees, d2.degrees, 3)
           d1 += 90
           d2 += 90
         end
 
-        new_edges = edges.first.all_connected
-        @entities.add_face(new_edges)
+        new_edges = outer_edges.first.all_connected
+        g1.entities.add_face(inner_edges)
+        face = @entities.add_face(new_edges)
+
+        ents = g1.explode
+        UI.messagebox(ents)
+        face_to_delete = ents[0].common_face ents[1]
+        face_to_delete.erase!
+
+
 
       end
 
