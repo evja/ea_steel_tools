@@ -1,9 +1,9 @@
 module EA_Extensions623
   module EASteelTools
+    RADIUS_RULE = 2
 
     class TubeTool
 
-      RADIUS_RULE = 1.6
       # The activate method is called by SketchUp when the tool is first selected.
       # it is a good place to put most of your initialization
       def initialize
@@ -12,6 +12,17 @@ module EA_Extensions623
         @entities = @model.active_entities
         @selection = @model.selection
         @state = 0
+
+                # values = data[:data]
+        # @h     = values[:d].to_f #height of the tube
+        # @w     = values[:bf].to_f #width of the tube
+        # @tw    = values[:tw].to_f #wall thickness of the tube
+        # @r     = values[:r].to_f #radius of the tube
+
+        @w = 4
+        @h = 4
+        @tw = 0.25
+        @r = @tw#*RADIUS_RULE
 
         # The Sketchup::InputPoint class is used to get 3D points from screen
         # positions.  It uses the SketchUp inferencing code.
@@ -30,6 +41,10 @@ module EA_Extensions623
 
         @xdown = 0
         @ydown = 0
+
+        @x_red = Geom::Vector3d.new 1,0,0
+        @y_green = Geom::Vector3d.new 0,1,0
+        @z_blue = Geom::Vector3d.new 0,0,1
         # This sets the label for the VCB
         Sketchup::set_status_text ("Length"), SB_VCB_LABEL
       end
@@ -61,7 +76,7 @@ module EA_Extensions623
             # to use to draw a line based on its direction.  For example
             # red, green or blue.
             view.set_color_from_line(@ip1, @ip2)
-            # self.draw_ghost(@ip1.position, @ip2.position, view)
+            self.draw_ghost(@ip1.position, @ip2.position, view)
             self.draw_control_line([@ip1.position, @ip2.position], view)
             @drawn = true
           end
@@ -75,37 +90,6 @@ module EA_Extensions623
         view.draw(GL_LINES, pts)
       end
 
-      # The onLButtonDOwn method is called when the user presses the left mouse button.
-      def onLButtonDown(flags, x, y, view)
-        # When the user clicks the first time, we switch to getting the
-        # second point.  When they click a second time we create the Beam
-        if( @state == 0 )
-          @ip1.pick view, x, y
-          if @ip1.valid?
-            @state = 1
-
-
-            Sketchup::set_status_text ("Select second end"), SB_PROMPT
-            @xdown = x
-            @ydown = y
-            @@ip1 = @ip1
-
-          end
-        else
-          # create the line on the second click
-          if( @ip2.valid? )
-            @@vec = @ip2.position - @ip1.position
-            @@pt1 = @ip1.position
-            @@pt2 = @ip2.position
-            @entities.add_line @@pt1, @@pt2
-            self.create_geometry(@ip1.position, @ip2.position, view)
-            self.reset(view)
-          end
-        end
-
-        # Clear any inference lock
-        view.lock_inference if view.inference_locked?
-      end
 
       # The onLButtonUp method is called when the user releases the left mouse button.
       def onLButtonUp(flags, x, y, view)
@@ -116,74 +100,79 @@ module EA_Extensions623
         end
       end
 
-      def draw_tube
-        # values = data[:data]
-        # @h     = values[:d].to_f #height of the tube
-        # @w     = values[:bf].to_f #width of the tube
-        # @tw    = values[:tw].to_f #wall thickness of the tube
-        # @r     = values[:r].to_f #radius of the tube
-
-        w = 4
-        h = 4
-        tw = 0.25
-        r = tw*RADIUS_RULE
+      def draw_tube(vec)
 
         #points on tube, 8 of them
         @points = [
-          pt1 = [r,0,0],
-          pt2 = [w-r,0,0],
-          pt3 = [w,r,0],
-          pt4 = [w,h-r,0],
-          pt5 = [w-r,h,0],
-          pt6 = [r,h,0],
-          pt7 = [0,h-r,0],
-          pt8 = [0,r,0],
+          pt1 = [@r,0,0],
+          pt2 = [@w-@r,0,0],
+          pt3 = [@w, 0, @r],
+          pt4 = [@w, 0, @h-@r],
+          pt5 = [@w-@r, 0, @h],
+          pt6 = [@r, 0, @h],
+          pt7 = [0, 0, @h-@r],
+          pt8 = [0, 0, @r],
           pt1
         ]
 
         inside_points = [
-          ip1 = [tw, tw, 0],
-          ip2 = [w-tw, tw, 0],
-          ip3 = [w-tw, h-tw, 0],
-          ip4 = [tw, h-tw, 0],
+          ip1 = [@tw, 0, @tw],
+          ip2 = [@w-@tw, 0, @tw],
+          ip3 = [@w-@tw, 0, @h-@tw],
+          ip4 = [@tw, 0, @h-@tw],
           ip1
         ]
 
-        outer_edges = @entities.add_edges(@points)
-
-        outer_edges.each_with_index do |e, i|
-          e.erase! if i.odd?
-        end
-
         radius_centers = [
-          rc1 = [r,r,0],
-          rc2 = [(w-r), r, 0],
-          rc3 = [(w-r), (h-r), 0],
-          rc4 = [r,(h-r), 0]
+          rc1 = [@r, 0, @r],
+          rc2 = [(@w-@r), 0, @r],
+          rc3 = [(@w-@r), 0, (@h-@r)],
+          rc4 = [@r, 0, (@h-@r)]
         ]
 
-        g1 = @entities.add_group
+        @ts_group = @entities.add_group
+
+
+        outer_edges = @ts_group.entities.add_face(@points)
+
+        #Erases the chamfers before placing the rounded endges on the tube steel
+        # outer_edges.each_with_index do |e, i|
+        #   e.erase! if i.odd?
+        # end
+
+        #Rotates the rounded corners into place
+        # d1 = 180
+        # d2 = 270
+        # radius_centers.each do |rc|
+        #   outer_edges.push @entities.add_arc(rc, X_AXIS, Z_AXIS, r, d1.degrees, d2.degrees, 3)
+        #   d1 += 90
+        #   d2 += 90
+        # end
+
+        # new_edges = outer_edges.first.all_connected
+
+        g1 = @ts_group.entities.add_group #this group houses the inner offset of the tube steel
         inner_edges = g1.entities.add_edges(inside_points)
 
-        d1 = 180
-        d2 = 270
-        radius_centers.each do |rc|
-          outer_edges.push @entities.add_arc(rc, X_AXIS, Z_AXIS, r, d1.degrees, d2.degrees, 3)
-          d1 += 90
-          d2 += 90
-        end
+        ents = g1.explode.collect{|e| e if e.is_a? Sketchup::Edge}.compact
+        # UI.messagebox("#{ents}")
 
-        new_edges = outer_edges.first.all_connected
-        g1.entities.add_face(inner_edges)
-        face = @entities.add_face(new_edges)
-
-        ents = g1.explode
-        UI.messagebox(ents)
         face_to_delete = ents[0].common_face ents[1]
-        face_to_delete.erase!
+        face_to_delete.erase! if face_to_delete
 
+        main_face = @ts_group.entities.select{|e| e.is_a? Sketchup::Face}[0].reverse!
 
+        align_tube(vec, @ts_group)
+        extrude_tube(vec, main_face)
 
+      end
+
+      def align_tube(vec, group)
+        group.transform! @trans
+      end
+
+      def extrude_tube(vec, face)
+        face.pushpull(vec.length)
       end
 
       def create_geometry(pt1, pt2, view)
@@ -203,8 +192,7 @@ module EA_Extensions623
             column = false
           end
 
-          draw_tube
-          # align_steel(pt1, pt2, vec, @outer_group)
+          draw_tube(vec)
 
           # model.commit_operation
 
@@ -257,35 +245,137 @@ module EA_Extensions623
           end
         end
 
+
         if @ip1.valid? && @ip2.valid?
           @vy = @ip1.position.vector_to @ip2.position
-          @vx = @vy.axes[0]
-          @vz = @vy.axes[1]
+          not_a_zero_vec = @vy.length > 0
+          @vx = @vy.axes[0] if not_a_zero_vec
+          @vz = @vy.axes[1] if not_a_zero_vec
         end
-        @trans = Geom::Transformation.axes @ip1.position, @vx, @vy, @vz if @ip1.valid?
-        @trans2 = Geom::Transformation.axes @ip2.position, @vx, @vy, @vz if @ip1.valid?
+        @trans = Geom::Transformation.axes @ip1.position, @vx, @vy, @vz if @ip1.valid? && not_a_zero_vec
+        @trans2 = Geom::Transformation.axes @ip2.position, @vx, @vy, @vz if @ip1.valid? && not_a_zero_vec
       end
 
-      # Reset the tool back to its initial state
-      def reset(view)
-        # This variable keeps track of which point we are currently getting
-        @state = 0
+      # onUserText is called when the user enters something into the VCB
+      # In this implementation, we create a line of the entered length if
+      # the user types a length while selecting the second point
+      def onUserText(text, view)
+        # The user may type in something that we can't parse as a length
+        # so we set up some exception handling to trap that
+        begin
+          value = text.to_l
+        rescue
+          # Error parsing the text
+          UI.beep
+          puts "Cannot convert #{text} to a Length"
+          value = nil
+          Sketchup::set_status_text "", SB_VCB_VALUE
+        end
+        return if !value
 
-        # Display a prompt on the status bar
-        Sketchup::set_status_text(("Select first end"), SB_PROMPT)
+        if @state == 1
+          # Compute the direction and the second point
+          @@pt1 = @ip1.position
+          @@vec = @ip2.position - @@pt1
+          if( @@vec.length == 0.0 )
+            UI.beep
+            return
+          end
+          @@vec.length = value
+          @@pt2 = @@pt1 + @@vec
 
-        # clear the InputPoints
-        @ip1.clear if @ip1
-        @ip2.clear if @ip2
+          # Create the beam in Sketchup
+          self.create_geometry(@@pt1, @@pt2, view)
+          self.reset(view)
+        end
+      end
 
-        if( view )
-          view.tooltip = nil
-          view.invalidate if @drawn
+      # The onLButtonDOwn method is called when the user presses the left mouse button.
+      def onLButtonDown(flags, x, y, view)
+        # When the user clicks the first time, we switch to getting the
+        # second point.  When they click a second time we create the Beam
+        if( @state == 0 )
+          @ip1.pick view, x, y
+          if @ip1.valid?
+            @state = 1
+
+            @ip1points = [
+              a1 = Geom::Point3d.new(@r,0,0),
+              b1 = Geom::Point3d.new(@w-@r,0,0),
+              c1 = Geom::Point3d.new(@w, 0, @r),
+              d1 = Geom::Point3d.new(@w, 0, @h-@r),
+              e1 = Geom::Point3d.new(@w-@r, 0, @h),
+              f1 = Geom::Point3d.new(@r, 0, @h),
+              g1 = Geom::Point3d.new(0, 0, @h-@r),
+              h1 = Geom::Point3d.new(0, 0, @r)
+            ]
+
+            Sketchup::set_status_text ("Select second end"), SB_PROMPT
+            @xdown = x
+            @ydown = y
+            @@ip1 = @ip1
+
+          end
+        else
+          # create the line on the second click
+          if( @ip2.valid? )
+            @@vec = @ip2.position - @ip1.position
+            @@pt1 = @ip1.position
+            @@pt2 = @ip2.position
+            # @entities.add_line @@pt1, @@pt2
+            self.create_geometry(@ip1.position, @ip2.position, view)
+            self.reset(view)
+          end
         end
 
-        @drawn = false
-        @dragging = false
+        # Clear any inference lock
+        view.lock_inference if view.inference_locked?
+      end
 
+      # Draw the geometry
+      def draw_ghost(pt1, pt2, view)
+
+        vec = pt1 - pt2
+
+        if vec.parallel? @x_red
+          ghost_color = "Red"
+        elsif vec.parallel? @y_green
+          ghost_color = "Lime"
+        elsif vec.parallel? @z_blue
+          ghost_color = "Blue"
+        elsif pt1[0] == pt2[0] || pt1[1] == pt2[1] || pt1[2] == pt2[2]
+          ghost_color = "Yellow"
+        else
+          ghost_color = "Gray"
+        end
+
+        a = []
+        @ip1points.each {|p| a << p.transform(@trans)}
+        b = []
+        @ip1points.each {|p| b << p.transform(@trans2)}
+
+        pts = a.zip(b).flatten
+
+        fc1 = a.each_with_index do |p ,i|
+          if i < (a.count - 1)
+            pts.push a[i], a[i+1]
+          else
+            pts.push a[i], a[0]
+          end
+        end
+
+        fc2 = b.each_with_index do |p ,i|
+          if i < (b.count - 1)
+            pts.push b[i], b[i+1]
+          else
+            pts.push b[i], b[0]
+          end
+        end
+        # @ip1points.push pt1,pt2
+        # returns a view
+        view.line_width = 0.1
+        view.drawing_color = ghost_color
+        view.draw(GL_LINES, pts)
       end
 
       # onKeyDown is called when the user presses a key on the keyboard.
@@ -356,6 +446,43 @@ module EA_Extensions623
         end
       end
 
+      # onKeyUp is called when the user releases the key
+      # We use this to unlock the inference
+      # If the user holds down the shift key for more than 1/2 second, then we
+      # unlock the inference on the release.  Otherwise, the user presses shift
+      # once to lock and a second time to unlock.
+      def onKeyUp(key, repeat, flags, view)
+        if( key == CONSTRAIN_MODIFIER_KEY && view.inference_locked?)
+          view.lock_inference
+        end
+      end
+
+      # Reset the tool back to its initial state
+      def reset(view)
+        # This variable keeps track of which point we are currently getting
+        @state = 0
+
+        # Display a prompt on the status bar
+        Sketchup::set_status_text(("Select first end"), SB_PROMPT)
+
+        # clear the InputPoints
+        @ip1.clear if @ip1
+        @ip2.clear if @ip2
+
+        if( view )
+          view.tooltip = nil
+          view.invalidate if @drawn
+        end
+
+        @drawn = false
+        @dragging = false
+
+      end
+
+      def deactivate(view)
+        view.invalidate if @drawn
+        view.lock_inference if view.inference_locked?
+      end
 
     end
 

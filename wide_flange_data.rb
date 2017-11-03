@@ -167,6 +167,7 @@ module EA_Extensions623
           pt16= [0,0,@tf]
         ]
 
+
         @x_red = Geom::Vector3d.new 1,0,0
         @y_green = Geom::Vector3d.new 0,1,0
         @z_blue = Geom::Vector3d.new 0,0,1
@@ -278,22 +279,22 @@ module EA_Extensions623
             @state = 1
 
             @ip1points = [
-              a1 = Geom::Point3d.new((-0.5*@w)                      , 0,   0)            ,
-              b1 = Geom::Point3d.new((0.5*@w)                     , 0,   0 )           ,
-              c1 = Geom::Point3d.new((0.5*@w)                     , 0,   @tf)          ,
-              d1 = Geom::Point3d.new(((0.5*@tw)+@r), 0, @tf)          ,
-              e1 = Geom::Point3d.new(((0.5*@tw))   , 0, ((@tf+@r)))   ,
-              f1 = Geom::Point3d.new(((0.5*@tw))   , 0, ((@h-@tf)-@r)),
-              g1 = Geom::Point3d.new(((0.5*@tw)+@r), 0, (@h-@tf))     ,
-              h1 = Geom::Point3d.new((0.5*@w)             , 0,   (@h-@tf))     ,
-              i1 = Geom::Point3d.new((0.5*@w)             , 0,   @h)           ,
-              j1 = Geom::Point3d.new((-0.5*@w)              , 0,   @h)           ,
-              k1 = Geom::Point3d.new((-0.5*@w)              , 0,   (@h-@tf))     ,
-              l1 = Geom::Point3d.new(((-0.5*@tw)-@r), 0, (@h-@tf))     ,
-              m1 = Geom::Point3d.new(((-0.5*@tw))   , 0, ((@h-@tf)-@r)),
-              n1 = Geom::Point3d.new(((-0.5*@tw))   , 0, (@tf+@r))     ,
-              o1 = Geom::Point3d.new(((-0.5*@tw)-@r), 0, @tf )         ,
-              p1 = Geom::Point3d.new((-0.5*@w)                      , 0,   @tf)
+              a1 = Geom::Point3d.new((-0.5*@w), 0, 0),
+              b1 = Geom::Point3d.new((0.5*@w), 0, 0),
+              c1 = Geom::Point3d.new((0.5*@w), 0, @tf),
+              d1 = Geom::Point3d.new(((0.5*@tw)+@r), 0, @tf),
+              e1 = Geom::Point3d.new(((0.5*@tw)), 0, ((@tf+@r))),
+              f1 = Geom::Point3d.new(((0.5*@tw)), 0, ((@h-@tf)-@r)),
+              g1 = Geom::Point3d.new(((0.5*@tw)+@r), 0, (@h-@tf)),
+              h1 = Geom::Point3d.new((0.5*@w), 0,(@h-@tf)),
+              i1 = Geom::Point3d.new((0.5*@w), 0, @h),
+              j1 = Geom::Point3d.new((-0.5*@w), 0, @h),
+              k1 = Geom::Point3d.new((-0.5*@w), 0, (@h-@tf)),
+              l1 = Geom::Point3d.new(((-0.5*@tw)-@r), 0, (@h-@tf)),
+              m1 = Geom::Point3d.new(((-0.5*@tw)), 0, ((@h-@tf)-@r)),
+              n1 = Geom::Point3d.new(((-0.5*@tw)), 0, (@tf+@r)),
+              o1 = Geom::Point3d.new(((-0.5*@tw)-@r), 0, @tf ),
+              p1 = Geom::Point3d.new((-0.5*@w), 0, @tf)
             ]
 
             Sketchup::set_status_text ("Select second end"), SB_PROMPT

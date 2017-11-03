@@ -13,18 +13,9 @@ module EA_Extensions623
 
       def initialize
         if @@state == 0
-          @@beam_data         = {}             #Hash   {:d=>4.16, :bf=>4.06, :tf=>0.345, :tw=>0.28, :r=>0.2519685039370079, :width_class=>4}"
-          @@beam_name         = ''             #String 'W(height_class)X(weight_per_foot)'
-          @@height_class      = ''             #String 'W(number)'
-          @@placement         = 'BOTTOM'       #String 'TOP' or 'BOTTOM'
-          @@has_holes         = true           #Boolean
-          @@hole_spacing      = 16             #Integer 16 or 24
-          @@cuts_holes        = false          #Boolean
-          @@has_stiffeners    = true           #Boolean
-          @@has_shearplates   = true           #Boolean
-          @@stiff_thickness   = '1/4'          #String '1/4' or '3/8' or '1/2'
-          @@shearpl_thickness = '1/2'          #String '3/8' or '1/2' or '3/4'
-          @@force_studs       = false          #Boolean
+          @@tube_data         = {}             #Hash   {:d=>4.16, :bf=>4.06, :tf=>0.345, :tw=>0.28, :r=>0.2519685039370079, :width_class=>4}"
+          @@tube_name         = ''             #String 'W(height_class)X(weight_per_foot)'
+          @@stud_spacing      = 16             #Integer 16 or 24
           @@state = 1
         end
 
@@ -49,16 +40,16 @@ module EA_Extensions623
         }
 
         #Creates the top group box that holds the dropdown lists of the
-        group = SKUI::Groupbox.new( 'Select Beam' )
+        group = SKUI::Groupbox.new( 'Select Tube' )
         group.position( 5, 5 )
         group.right = 5
         group.height = 100
         window.add_control( group )
 
-        hc_list_label = SKUI::Label.new('Height Class')
+        hc_list_label = SKUI::Label.new('Size')
         hc_list_label.position(10,25)
 
-        beam_size_label = SKUI::Label.new('Beam Size')
+        beam_size_label = SKUI::Label.new('Wall Thickness')
         beam_size_label.position(10,55)
         group.add_control( hc_list_label )
         group.add_control( beam_size_label )

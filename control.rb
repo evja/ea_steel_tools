@@ -61,11 +61,12 @@ module EA_Extensions623
 
         if @ip1.valid? || @ip2.valid?
           @vy = @ip1.position.vector_to @ip2.position
-          @vx = @vy.axes[0]
-          @vz = @vy.axes[1]
+          not_a_zero_vec = @vy.length > 0
+          @vx = @vy.axes[0] if not_a_zero_vec
+          @vz = @vy.axes[1] if not_a_zero_vec
         end
-        @trans = Geom::Transformation.axes @ip1.position, @vx, @vy, @vz if @ip1.valid?
-        @trans2 = Geom::Transformation.axes @ip2.position, @vx, @vy, @vz if @ip1.valid?
+        @trans = Geom::Transformation.axes @ip1.position, @vx, @vy, @vz if @ip1.valid? && not_a_zero_vec
+        @trans2 = Geom::Transformation.axes @ip2.position, @vx, @vy, @vz if @ip1.valid? && not_a_zero_vec
       end
 
       # onKeyDown is called when the user presses a key on the keyboard.
