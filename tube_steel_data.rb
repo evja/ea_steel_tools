@@ -6,22 +6,18 @@ module EA_Extensions623
 
       # The activate method is called by SketchUp when the tool is first selected.
       # it is a good place to put most of your initialization
-      def initialize
+      def initialize(data)
         @model = Sketchup.active_model
         # Activates the @model @entities for use
         @entities = @model.active_entities
         @selection = @model.selection
         @state = 0
 
-                # values = data[:data]
-        # @h     = values[:d].to_f #height of the tube
-        # @w     = values[:bf].to_f #width of the tube
-        # @tw    = values[:tw].to_f #wall thickness of the tube
-        # @r     = values[:r].to_f #radius of the tube
+        values = data[:data]
+        @h     = values[:h].to_f #height of the tube
+        @w     = values[:b].to_f #width of the tube
 
-        @w = 4
-        @h = 4
-        @tw = 0.25
+        @tw = data[:wall_thickness]
         @r = @tw#*RADIUS_RULE
 
         # The Sketchup::InputPoint class is used to get 3D points from screen

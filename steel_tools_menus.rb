@@ -3,11 +3,14 @@ module EA_Extensions623
     require 'sketchup'
     require FNAME+'/'+'control.rb'
     require FNAME+'/'+'beam_library.rb'
+    require FNAME+'/'+'hss_library.rb'
     require FNAME+'/'+'dialog.rb'
-    require FNAME+'/'+'wide_flange_data.rb'
     require FNAME+'/'+'tube_steel_data.rb'
     require FNAME+'/'+'dialog_rolled.rb'
+    require FNAME+'/'+'dialog_tube_steel.rb'
+    require FNAME+'/'+'wide_flange_data.rb'
     require FNAME+'/'+'wide_flange_rolled_data.rb'
+    require FNAME+'/'+'tube_steel_data.rb'
     require FNAME+'/'+'breakout_setup.rb'
     require FNAME+'/'+'breakout.rb'
     require FNAME+'/'+'breakout_send.rb'
@@ -55,7 +58,7 @@ module EA_Extensions623
     @@EA_tools_menu.add_item( 'Check for updates' ) { EASteelTools::ToolUpdater.update_tool }
 
     cmd3 = UI::Command.new("Tube Steel") {
-     Sketchup.active_model.select_tool(EASteelTools::TubeTool.new)
+     Sketchup.active_model.select_tool(EASteelTools::HssDialog.new)
     }
     @@EA_tools_menu.add_item cmd3
     cmd3.small_icon = "icons/ts_icon1.png"
