@@ -17,7 +17,19 @@ module EA_Extensions623
         @h     = values[:h].to_f #height of the tube
         @w     = values[:b].to_f #width of the tube
 
-        @tw = data[:wall_thickness]
+        case data[:wall_thickness]
+        when '1/4"'
+          @tw = 0.25
+        when '3/8"'
+          @tw = 0.375
+        when '1/2"'
+          @tw = 0.5
+        when '3/4"'
+          @tw = 0.75
+        else
+          @tw = 1
+        end
+
         @r = @tw#*RADIUS_RULE
 
         # The Sketchup::InputPoint class is used to get 3D points from screen

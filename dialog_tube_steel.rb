@@ -16,7 +16,7 @@ module EA_Extensions623
           @@tube_data           = {}             #Hash   {:h=>4, :b=>4}"
           @@height_class        = '4'
           @@width_class         = '4'
-          @@wall_thickness      = 0.25
+          @@wall_thickness      = '1/4"'
           @@tube_name           = ''             #String 'W(height_class)X(weight_per_foot)'
           @@stud_spacing        = 16             #Integer 16 or 24
           @@state = 1
@@ -67,32 +67,45 @@ module EA_Extensions623
         height_class_dropdown.position( 50, 25 )
         height_class_dropdown.width = 50
 
-        list = all_tubes_in(@@height_class)
-        beam_size_dropdown = SKUI::Listbox.new( list )
+
+        list2 = all_tubes_in(@@height_class)
+        beam_size_dropdown = SKUI::Listbox.new( list2 )
         @@tube_name.empty? ? @@tube_name = (beam_size_dropdown.value = beam_size_dropdown.items.first) : @@tube_name = (beam_size_dropdown.value = beam_size_dropdown.items.grep(@@tube_name).first.to_s)
         beam_size_dropdown.position( 130, 25 )
         beam_size_dropdown.width = 50
 
         group.add_control( beam_size_dropdown )
 
+        # list3 = cuurent_selection_wall_thickness(@@tube_name)
+        list3 = ['1/4"','3/8"','1/2"','3/4"']
+        wall_thickness_dropdown = SKUI::Listbox.new( list3 )
+        # @@wall_thickness.empty? ? @@wall_thickness = (wall_thickness_dropdown.value = wall_thickness_dropdown.items.sample) : wall_thickness_dropdown.value = wall_thickness_dropdown.items.grep(@@wall_thickness).first.to_s
+        wall_thickness_dropdown.value = @@wall_thickness
+        wall_thickness_dropdown.position( 210, 25 )
+        wall_thickness_dropdown.width = 50
+        wall_thickness_dropdown.on(:change) { |control, value|
+          @@wall_thickness = control.value
+        }
+
+        group.add_control( wall_thickness_dropdown )
+
+
         height_class_dropdown.on( :change ) { |control, value|
           @@height_class = control.value
-          list = all_tubes_in(control.value)
-          beam_size_dropdown = SKUI::Listbox.new( list )
+          list2 = all_tubes_in(control.value)
+          beam_size_dropdown = SKUI::Listbox.new( list2 )
           @@tube_name = beam_size_dropdown.value = beam_size_dropdown.items.first
-          beam_size_dropdown.position( 115, 55 )
-          beam_size_dropdown.width = 170
+          beam_size_dropdown.position( 130, 25 )
+          beam_size_dropdown.width = 50
           group.add_control( beam_size_dropdown )
           beam_size_dropdown.on( :change ) { |control, value|
             @@tube_name = control.value
-            p @@tube_name
           }
         }
         group.add_control( height_class_dropdown )
 
         beam_size_dropdown.on( :change ) { |control, value|
           @@tube_name = control.value
-          p @@tube_name
         }
 
         # chk_force_studs = SKUI::Checkbox.new( 'Force Studs' )
