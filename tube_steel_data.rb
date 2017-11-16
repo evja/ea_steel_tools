@@ -18,14 +18,24 @@ module EA_Extensions623
         @w     = values[:b].to_f #width of the tube
 
         case data[:wall_thickness]
-        when '1/4"'
+        when '1/8'
+          @tw = 0.125
+        when '3/16'
+          @tw = 0.1875
+        when '1/4'
           @tw = 0.25
-        when '3/8"'
+        when '5/16'
+          @tw = 0.3125
+        when '3/8'
           @tw = 0.375
-        when '1/2"'
+        when '1/2'
           @tw = 0.5
-        when '3/4"'
+        when '5/8'
+          @tw = 0.625
+        when '3/4'
           @tw = 0.75
+        when '7/8'
+          @tw = 0.875
         else
           @tw = 1
         end
