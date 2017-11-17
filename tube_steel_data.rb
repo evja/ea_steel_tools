@@ -151,23 +151,34 @@ module EA_Extensions623
         @ts_group = @entities.add_group
 
 
-        outer_edges = @ts_group.entities.add_face(@points)
+        outer_edges = @ts_group.entities.add_face(@points).edges
 
-        #Erases the chamfers before placing the rounded endges on the tube steel
+#################################################################################################################
+##            COMMENT THIS OUT TO ONY DO CHAMFERS, UNCOMMENT TO DO RADIUS EDGES ON HSS                    #######
+#################################################################################################################
+        ### Erases the chamfers before placing the rounded endges on the tube steel ###
+
+
         # outer_edges.each_with_index do |e, i|
         #   e.erase! if i.odd?
         # end
 
-        #Rotates the rounded corners into place
+        ### Rotates the rounded corners into place ###
+
+
         # d1 = 180
         # d2 = 270
         # radius_centers.each do |rc|
-        #   outer_edges.push @entities.add_arc(rc, X_AXIS, Z_AXIS, r, d1.degrees, d2.degrees, 3)
+        #   outer_edges.push @ts_group.entities.add_arc(rc, X_AXIS, Y_AXIS.reverse, @r, d1.degrees, d2.degrees, 3)
         #   d1 += 90
         #   d2 += 90
         # end
 
         # new_edges = outer_edges.first.all_connected
+        # @ts_group.entities.add_face(new_edges)
+
+###################################################################################################################
+###################################################################################################################
 
         g1 = @ts_group.entities.add_group #this group houses the inner offset of the tube steel
         inner_edges = g1.entities.add_edges(inside_points)
@@ -182,6 +193,56 @@ module EA_Extensions623
 
         align_tube(vec, @ts_group)
         extrude_tube(vec, main_face)
+
+      end
+
+      def add_hss_directin_labels(vec, length)
+          beam_direction = vec
+          heading = Geom::Vector3d.new beam_direction
+          heading[2] = 0
+          angle = heading.angle_between NORTH
+
+          #Sets the direction labels according to the beam vec
+          #Single Directions
+          case angle
+          when (0.degrees)..(30.degrees)
+            direction1 = 'N'
+            direction2 = 'S'
+          when (60.degrees)..(120.degrees)
+            if vec[0] >= 0
+            direction1 = 'E'
+            direction2 = 'W'
+          else
+            direction1 = 'W'
+            direction2 = 'E'
+          end
+          when (150.degrees)..(180.degrees)
+            direction1 = 'S'
+            direction2 = 'N'
+          #Compound Directions
+          when (30.degrees)..(60.degrees)
+            if vec[0] >= 0
+              direction1 = 'NE'
+              direction2 = 'SW'
+            else
+              direction1 = 'NW'
+              direction2 = 'SE'
+            end
+          when (120.degrees)..(150.degrees)
+            if vec[0] >= 0
+              direction1 = 'SE'
+              direction2 = 'NW'
+            else
+              direction1 = 'SW'
+              direction2 = 'NE'
+            end
+          end
+
+          #Gets the file paths for the labels
+          file_path1 = Sketchup.find_support_file "#{ROOT_FILE_PATH}/Beam Components/#{direction1}.skp", "Plugins/"
+          end_direction = @definition_list.load file_path1
+          file_path2 = Sketchup.find_support_file "#{ROOT_FILE_PATH}/Beam Components/#{direction2}.skp", "Plugins/"
+          start_direction = @definition_list.load file_path2
 
       end
 

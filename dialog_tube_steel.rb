@@ -16,7 +16,7 @@ module EA_Extensions623
           @@tube_data           = {}             #Hash   {:h=>4, :b=>4}"
           @@height_class        = '4'
           @@width_class         = '4'
-          @@wall_thickness      = ''
+          @@wall_thickness      = '1/4'
           @@tube_name           = ''             #String 'W(height_class)X(weight_per_foot)'
           @@stud_spacing        = 16             #Integer 16 or 24
           @@state = 1
@@ -80,7 +80,7 @@ module EA_Extensions623
         list3 = all_guage_options_in(@@height_class, @@tube_name)
         p list3
         wall_thickness_dropdown = SKUI::Listbox.new( list3 )
-        @@wall_thickness.empty? ? (wall_thickness_dropdown.value = wall_thickness_dropdown.items.first) : (wall_thickness_dropdown.value = @@wall_thickness)
+        @@wall_thickness.empty? ? @wall_thickness = (wall_thickness_dropdown.value = wall_thickness_dropdown.items.first) : (wall_thickness_dropdown.value = @@wall_thickness)
         wall_thickness_dropdown.position( 210, 25 )
         wall_thickness_dropdown.width = 75
         wall_thickness_dropdown.on(:change) { |control, value|
