@@ -2,6 +2,8 @@ module EA_Extensions623
   module EASteelTools
 
     ROOT_FILE_PATH = "ea_steel_tools"
+    #Setc the north direction as the green axis
+    NORTH = Geom::Vector3d.new [0,1,0]
 
     #**********************************************************************#
 
@@ -18,8 +20,6 @@ module EA_Extensions623
       NO_HOLE_ZONE = 6
       #Sets the minimum beam length before the web holes do not stagger(Actual minimum is < 8)
       MINIMUM_BEAM_LENGTH = 16
-      #Setc the north direction as the green axis
-      NORTH = Geom::Vector3d.new [0,1,0]
       # This sets the stiffener location from each end of the beam
       STIFF_LOCATION = 2
       #Distance from the end of the beam the 13/14" holes are placed

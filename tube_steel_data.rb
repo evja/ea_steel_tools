@@ -11,11 +11,14 @@ module EA_Extensions623
         # Activates the @model @entities for use
         @entities = @model.active_entities
         @selection = @model.selection
+        @definition_list = @model.definitions
         @state = 0
 
-        values = data[:data]
-        @h     = values[:h].to_f #height of the tube
-        @w     = values[:b].to_f #width of the tube
+        values     = data[:data]
+
+        @h         = values[:h].to_f #height of the tube
+        @w         = values[:b].to_f #width of the tube
+
 
         case data[:wall_thickness]
         when '1/8'
@@ -37,10 +40,13 @@ module EA_Extensions623
         when '7/8'
           @tw = 0.875
         else
-          @tw = 1
+          @tw = 0.25
         end
 
+        @tube_name = "HSS #{data[:height_class]}x#{data[:width_class]} x#{data[:wall_thickness]}"
+        p @tube_name
         @r = @tw#*RADIUS_RULE
+        @label_height = @w - (@tw*3)
 
         # The Sketchup::InputPoint class is used to get 3D points from screen
         # positions.  It uses the SketchUp inferencing code.
@@ -124,28 +130,30 @@ module EA_Extensions623
         @points = [
           pt1 = [@r,0,0],
           pt2 = [@w-@r,0,0],
-          pt3 = [@w, 0, @r],
-          pt4 = [@w, 0, @h-@r],
-          pt5 = [@w-@r, 0, @h],
-          pt6 = [@r, 0, @h],
-          pt7 = [0, 0, @h-@r],
-          pt8 = [0, 0, @r],
+          pt3 = [@w, @r, 0],
+          pt4 = [@w, @h-@r, 0],
+          pt5 = [@w-@r, @h, 0],
+          pt6 = [@r, @h, 0],
+          pt7 = [0, @h-@r, 0],
+          pt8 = [0, @r, 0],
           pt1
         ]
 
+        print @points
+
         inside_points = [
-          ip1 = [@tw, 0, @tw],
-          ip2 = [@w-@tw, 0, @tw],
-          ip3 = [@w-@tw, 0, @h-@tw],
-          ip4 = [@tw, 0, @h-@tw],
+          ip1 = [@tw, @tw, 0],
+          ip2 = [@w-@tw, @tw, 0],
+          ip3 = [@w-@tw, @h-@tw, 0],
+          ip4 = [@tw, @h-@tw, 0],
           ip1
         ]
 
         radius_centers = [
-          rc1 = [@r, 0, @r],
-          rc2 = [(@w-@r), 0, @r],
-          rc3 = [(@w-@r), 0, (@h-@r)],
-          rc4 = [@r, 0, (@h-@r)]
+          rc1 = [@r, @r, 0],
+          rc2 = [(@w-@r), @r, 0],
+          rc3 = [(@w-@r), (@h-@r), 0],
+          rc4 = [@r, (@h-@r), 0]
         ]
 
         @ts_group = @entities.add_group
@@ -162,7 +170,7 @@ module EA_Extensions623
         # d1 = 180
         # d2 = 270
         # radius_centers.each do |rc|
-        #   outer_edges.push @entities.add_arc(rc, X_AXIS, Z_AXIS, r, d1.degrees, d2.degrees, 3)
+        #   outer_edges.push @entities.add_arc(rc, X_AXIS, Y_AXIS, r, d1.degrees, d2.degrees, 3)
         #   d1 += 90
         #   d2 += 90
         # end
@@ -178,11 +186,67 @@ module EA_Extensions623
         face_to_delete = ents[0].common_face ents[1]
         face_to_delete.erase! if face_to_delete
 
-        main_face = @ts_group.entities.select{|e| e.is_a? Sketchup::Face}[0].reverse!
+        main_face = @ts_group.entities.select{|e| e.is_a? Sketchup::Face}[0]
+
+        rot_face = Geom::Transformation.rotation(ORIGIN, X_AXIS, 90.degrees)
+        @entities.transform_entities rot_face, main_face
+
+        extrude_tube(vec, main_face)
+        add_name_label(vec)
 
         align_tube(vec, @ts_group)
-        extrude_tube(vec, main_face)
 
+      end
+
+       def add_name_label(vec)
+        begin
+          ####################
+          beam_direction = vec
+          heading = Geom::Vector3d.new beam_direction
+          heading[2] = 0
+          angle = heading.angle_between NORTH
+
+           #Adds in the label of the name of the beam at the center on both sides
+          component_names = []
+          @definition_list.map {|comp| component_names << comp.name}
+          if component_names.include? @tube_name
+            p 'includes name'
+            comp_def = @definition_list["#{@tube_name}"]
+          else
+            p 'created name'
+            comp_def = @definition_list.add "#{@tube_name}"
+            comp_def.description = "The #{@tube_name} label"
+            ents = comp_def.entities
+            _3d_text = ents.add_3d_text("#{@tube_name}", TextAlignCenter, "1CamBam_Stick_7", false, false, @label_height, 3.0, 0.0, false, 0.0)
+            # p "loaded CamBam_Stick_7: #{_3d_text}"
+            save_path = Sketchup.find_support_file "Components", ""
+            comp_def.save_as(save_path + "/#{@tube_name}.skp")
+          end
+
+          p 'label height ' + @label_height.to_s
+
+          hss_name_label = @ts_group.entities.add_instance comp_def, ORIGIN
+
+          rot_to_pos = Geom::Transformation.rotation(ORIGIN, Z_AXIS, 90.degrees)
+          tan_to_height = Geom::Transformation.translation(Geom::Vector3d.new(0,0,@h))
+          hss_name_label.transform! rot_to_pos*tan_to_height
+
+          p hss_name_label.bounds.width
+          p @w
+
+          dist_to_slide = @w - ((@w - hss_name_label.bounds.width)/2)
+          p dist_to_slide
+          x_copy = X_AXIS.clone
+          x_copy.length = dist_to_slide
+          slide_to_center = Geom::Transformation.translation(x_copy)
+          hss_name_label.transform! slide_to_center
+
+          ####################
+        rescue Exception => e
+          puts e.message
+          puts e.backtrace.inspect
+          UI.messagebox("There was a problem loading the labels")
+        end
       end
 
       def align_tube(vec, group)
@@ -325,7 +389,12 @@ module EA_Extensions623
               e1 = Geom::Point3d.new(@w-@r, 0, @h),
               f1 = Geom::Point3d.new(@r, 0, @h),
               g1 = Geom::Point3d.new(0, 0, @h-@r),
-              h1 = Geom::Point3d.new(0, 0, @r)
+              h1 = Geom::Point3d.new(0, 0, @r),
+              a1,
+              ip1 = Geom::Point3d.new(@tw, 0, @tw),
+              ip2 = Geom::Point3d.new(@w-@tw, 0, @tw),
+              ip3 = Geom::Point3d.new(@w-@tw, 0, @h-@tw),
+              ip4 = Geom::Point3d.new(@tw, 0, @h-@tw)
             ]
 
             Sketchup::set_status_text ("Select second end"), SB_PROMPT
