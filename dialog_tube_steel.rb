@@ -13,13 +13,14 @@ module EA_Extensions623
 
       def initialize
         if @@state == 0
-          @@tube_data           = {}             #Hash   {:h=>4, :b=>4}"
-          @@height_class        = '4'
-          @@width_class         = '4'
-          @@wall_thickness      = ''
-          @@tube_name           = ''             #String 'W(height_class)X(weight_per_foot)'
-          @@stud_spacing        = 16             #Integer 16 or 24
-          @@state = 1
+          @@tube_data             = {}   #Hash   {:h=>4, :b=>4}
+          @@height_class          = '4'
+          @@width_class           = '4'
+          @@wall_thickness        = ''
+          @@start_plate_thickness = ''
+          @@end_plate_thickness   = ''
+          @@stud_spacing          = 16  #Integer 16 or 24
+          @@state                 = 1   #Integer()
         end
 
         options = {
@@ -70,17 +71,17 @@ module EA_Extensions623
 
         list2 = all_tubes_in(@@height_class)
         width_size_dropdown = SKUI::Listbox.new( list2 )
-        @@tube_name.empty? ? @@tube_name = (width_size_dropdown.value = width_size_dropdown.items.first) : @@tube_name = (width_size_dropdown.value = width_size_dropdown.items.grep(@@tube_name).first.to_s)
+        @@width_class.empty? ? @@width_class = (width_size_dropdown.value = width_size_dropdown.items.first) : @@width_class = (width_size_dropdown.value = width_size_dropdown.items.grep(@@width_class).first.to_s)
         width_size_dropdown.position( 130, 25 )
         width_size_dropdown.width = 50
 
         group.add_control( width_size_dropdown )
 
-        # list3 = cuurent_selection_wall_thickness(@@tube_name)
-        list3 = all_guage_options_in(@@height_class, @@tube_name)
-        p list3
+        # list3 = cuurent_selection_wall_thickness(@@width_class)
+        list3 = all_guage_options_in(@@height_class, @@width_class)
+        # p list3
         wall_thickness_dropdown = SKUI::Listbox.new( list3 )
-        @@wall_thickness.empty? ? (wall_thickness_dropdown.value = wall_thickness_dropdown.items.first) : (wall_thickness_dropdown.value = @@wall_thickness)
+        wall_thickness_dropdown.value = @@wall_thickness
         wall_thickness_dropdown.position( 210, 25 )
         wall_thickness_dropdown.width = 75
         wall_thickness_dropdown.on(:change) { |control, value|
@@ -93,12 +94,12 @@ module EA_Extensions623
           @@height_class = control.value
           list2 = all_tubes_in(control.value)
           width_size_dropdown = SKUI::Listbox.new( list2 )
-          @@tube_name = width_size_dropdown.value = width_size_dropdown.items.first
+          @@width_class = width_size_dropdown.value = width_size_dropdown.items.first
           width_size_dropdown.position( 130, 25 )
           width_size_dropdown.width = 50
           group.add_control( width_size_dropdown )
 
-          list3 = all_guage_options_in(@@height_class, @@tube_name)
+          list3 = all_guage_options_in(@@height_class, @@width_class)
           p list3
           wall_thickness_dropdown = SKUI::Listbox.new( list3 )
           # @@wall_thickness = (wall_thickness_dropdown.value = wall_thickness_dropdown.items.first)
@@ -110,8 +111,8 @@ module EA_Extensions623
           group.add_control( wall_thickness_dropdown )
 
           width_size_dropdown.on( :change ) { |control, value|
-            @@tube_name = control.value
-            list3 = all_guage_options_in(@@height_class, @@tube_name)
+            @@width_class = control.value
+            list3 = all_guage_options_in(@@height_class, @@width_class)
             p list3
             wall_thickness_dropdown = SKUI::Listbox.new( list3 )
             # @@wall_thickness = (wall_thickness_dropdown.value = wall_thickness_dropdown.items.sample)
@@ -128,7 +129,7 @@ module EA_Extensions623
         group.add_control( wall_thickness_dropdown )
 
         width_size_dropdown.on( :change ) { |control, value|
-          @@tube_name = control.value
+          @@width_class = control.value
         }
 
         # chk_force_studs = SKUI::Checkbox.new( 'Force Studs' )
@@ -355,9 +356,8 @@ module EA_Extensions623
         ########################################################################
 
         btn_ok = SKUI::Button.new( 'OK' ) { |control|
-          @@beam_data = find_tube(@@height_class, @@tube_name)
+          @@beam_data = find_tube(@@height_class, @@width_class)
           data = {
-            name:              @@tube_name,
             height_class:      @@height_class,
             width_class:       @@width_class,
             wall_thickness:    @@wall_thickness,
