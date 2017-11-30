@@ -178,21 +178,40 @@ module EA_Extensions623
 
         outer_edges = @hss_inner_group.entities.add_face(@points)
 
-        #Erases the chamfers before placing the rounded endges on the tube steel
-        # outer_edges.each_with_index do |e, i|
-        #   e.erase! if i.odd?
+
+        ##################################################################
+        ### THIS CODE CHANGES THE CHAMFER TO A RADIUS WHEN UNCOMMENTED ###
+        ##################################################################
+
+        # ##Erases the chamfers before placing the rounded endges on the tube steel
+        # edges = outer_edges.edges
+        # edges_to_delete = []
+        # edges.each_with_index do |e, i|
+        #   if i.odd?
+        #     e.erase!
+        #     edges_to_delete << e
+        #   end
         # end
 
-        #Rotates the rounded corners into place
+        # edges_to_delete.each do |e|
+        #   edges.delete(e)
+        # end
+
+        # ## Rotates the rounded corners into place
         # d1 = 180
         # d2 = 270
         # radius_centers.each do |rc|
-        #   outer_edges.push @entities.add_arc(rc, X_AXIS, Y_AXIS, r, d1.degrees, d2.degrees, 3)
+        #   edges.push @hss_inner_group.entities.add_arc(rc, X_AXIS, Z_AXIS, @r, d1.degrees, d2.degrees, 3)
         #   d1 += 90
         #   d2 += 90
         # end
 
-        # new_edges = outer_edges.first.all_connected
+        # new_edges = @hss_inner_group.entities.add_face(edges.first.all_connected)
+
+
+        #####################################################################
+        #####################################################################
+        #####################################################################
 
         g1 = @hss_inner_group.entities.add_group #this group houses the inner offset of the tube steel
         inner_edges = g1.entities.add_edges(inside_points)
