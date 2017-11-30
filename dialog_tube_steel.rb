@@ -81,6 +81,7 @@ module EA_Extensions623
         list3 = all_guage_options_in(@@height_class, @@width_class)
         # p list3
         wall_thickness_dropdown = SKUI::Listbox.new( list3 )
+        @@wall_thickness.empty? ? @@wall_thickness = (@@wall_thickness = wall_thickness_dropdown.items[1]) : (@@wall_thickness)
         wall_thickness_dropdown.value = @@wall_thickness
         wall_thickness_dropdown.position( 210, 25 )
         wall_thickness_dropdown.width = 75
