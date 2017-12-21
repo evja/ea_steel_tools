@@ -249,10 +249,10 @@ module EA_Extensions623
           component_names = []
           @definition_list.map {|comp| component_names << comp.name}
           if component_names.include? @tube_name
-            p 'includes name'
+            # p 'includes name'
             comp_def = @definition_list["#{@tube_name}"]
           else
-            p 'created name'
+            # p 'created name'
             comp_def = @definition_list.add "#{@tube_name}"
             comp_def.description = "The #{@tube_name} label"
             ents = comp_def.entities
@@ -262,21 +262,21 @@ module EA_Extensions623
             comp_def.save_as(save_path + "/#{@tube_name}.skp")
           end
 
-          p 'label height ' + LABEL_HEIGHT.to_s
+          # p 'label height ' + LABEL_HEIGHT.to_s
 
           hss_name_label = @name_label_group.entities.add_instance comp_def, ORIGIN
 
           rot_to_pos = Geom::Transformation.rotation(ORIGIN, Y_AXIS, 270.degrees)
           hss_name_label.transform! rot_to_pos
-          p 'here'
-          p hss_name_label.bounds.height
-          p @h - hss_name_label.bounds.height
-          p (@h - hss_name_label.bounds.height) /2
-          p @h - ((@h - hss_name_label.bounds.height) /2)
-          p 'to here'
+          # p 'here'
+          # p hss_name_label.bounds.height
+          # p @h - hss_name_label.bounds.height
+          # p (@h - hss_name_label.bounds.height) /2
+          # p @h - ((@h - hss_name_label.bounds.height) /2)
+          # p 'to here'
 
           dist_to_slide = ((@h - hss_name_label.bounds.height)/2)
-          p dist_to_slide
+          # p dist_to_slide
           y_copy = Y_AXIS.clone
           y_copy.length = dist_to_slide
           slide_to_center = Geom::Transformation.translation(y_copy)
@@ -297,8 +297,24 @@ module EA_Extensions623
 
           @name_label_group.transform! slide_to_mid
 
-          # p "tube height is #{@h}"
-          # p "tube width is #{@w}"
+          if @w >= LABEL_HEIGHT
+            label3 = label2.copy
+            rotlab3 = Geom::Transformation.rotation(label3.bounds.center, Z_AXIS, 270.degrees)
+            movup3 = Geom::Transformation.translation(Geom::Vector3d.new(0,-(@h/2),0))
+            label3.transform! rotlab3
+            label3.transform! movup3
+
+            movover3 = Geom::Transformation.translation(Geom::Vector3d.new(-@w/2,0,0))
+            label3.transform! movover3
+
+            label4 = label3.copy
+            rot4 = Geom::Transformation.rotation(label4.bounds.center, Z_AXIS, 180.degrees)
+            movedown4 = Geom::Transformation.translation(Geom::Vector3d.new(0,@h,0))
+            label4.transform! rot4
+            label4.transform! movedown4
+          end
+          p "tube height is #{@h}"
+          p "tube width is #{@w}"
 
           ####################
         rescue Exception => e
