@@ -15,12 +15,10 @@ module EA_Extensions623
         @selection = @model.selection
         @definition_list = @model.definitions
         @state = 0
-
         values     = data[:data]
 
         @h         = values[:h].to_f #height of the tube
         @w         = values[:b].to_f #width of the tube
-
 
         case data[:wall_thickness]
         when '1/8'
@@ -173,8 +171,6 @@ module EA_Extensions623
           rc3 = [(@w-@r), (@h-@r), 0],
           rc4 = [@r, (@h-@r), 0]
         ]
-
-
 
         outer_edges = @hss_inner_group.entities.add_face(@points)
 
@@ -334,7 +330,7 @@ module EA_Extensions623
 
       def create_geometry(pt1, pt2, view)
           model = view.model
-          # model.start_operation("Draw TS", true)
+          model.start_operation("Draw TS", true)
 
           vec = pt2 - pt1
           if( vec.length < 2 )
@@ -351,7 +347,7 @@ module EA_Extensions623
 
           draw_tube(vec)
 
-          # model.commit_operation
+          model.commit_operation
 
         end
 
