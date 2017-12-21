@@ -2,6 +2,8 @@ module EA_Extensions623
   module EASteelTools
 
     ROOT_FILE_PATH = "ea_steel_tools"
+    #Setc the north direction as the green axis
+    NORTH = Geom::Vector3d.new [0,1,0]
 
     #**********************************************************************#
 
@@ -18,8 +20,6 @@ module EA_Extensions623
       NO_HOLE_ZONE = 6
       #Sets the minimum beam length before the web holes do not stagger(Actual minimum is < 8)
       MINIMUM_BEAM_LENGTH = 16
-      #Setc the north direction as the green axis
-      NORTH = Geom::Vector3d.new [0,1,0]
       # This sets the stiffener location from each end of the beam
       STIFF_LOCATION = 2
       #Distance from the end of the beam the 13/14" holes are placed
@@ -167,6 +167,7 @@ module EA_Extensions623
           pt16= [0,0,@tf]
         ]
 
+
         @x_red = Geom::Vector3d.new 1,0,0
         @y_green = Geom::Vector3d.new 0,1,0
         @z_blue = Geom::Vector3d.new 0,0,1
@@ -174,6 +175,12 @@ module EA_Extensions623
         @nine_sixteenths_holes = []
 
         self.reset(nil)
+      end
+
+      def onSetCursor
+        cursor_path = Sketchup.find_support_file ROOT_FILE_PATH+"/icons/wfs_cursor(2).png", "Plugins/"
+        cursor_id = UI.create_cursor(cursor_path, 0, 0)
+        UI.set_cursor(cursor_id.to_i)
       end
 
       # Draw the geometry
@@ -272,22 +279,22 @@ module EA_Extensions623
             @state = 1
 
             @ip1points = [
-              a1 = Geom::Point3d.new((-0.5*@w)                      , 0,   0)            ,
-              b1 = Geom::Point3d.new((0.5*@w)                     , 0,   0 )           ,
-              c1 = Geom::Point3d.new((0.5*@w)                     , 0,   @tf)          ,
-              d1 = Geom::Point3d.new(((0.5*@tw)+@r), 0, @tf)          ,
-              e1 = Geom::Point3d.new(((0.5*@tw))   , 0, ((@tf+@r)))   ,
-              f1 = Geom::Point3d.new(((0.5*@tw))   , 0, ((@h-@tf)-@r)),
-              g1 = Geom::Point3d.new(((0.5*@tw)+@r), 0, (@h-@tf))     ,
-              h1 = Geom::Point3d.new((0.5*@w)             , 0,   (@h-@tf))     ,
-              i1 = Geom::Point3d.new((0.5*@w)             , 0,   @h)           ,
-              j1 = Geom::Point3d.new((-0.5*@w)              , 0,   @h)           ,
-              k1 = Geom::Point3d.new((-0.5*@w)              , 0,   (@h-@tf))     ,
-              l1 = Geom::Point3d.new(((-0.5*@tw)-@r), 0, (@h-@tf))     ,
-              m1 = Geom::Point3d.new(((-0.5*@tw))   , 0, ((@h-@tf)-@r)),
-              n1 = Geom::Point3d.new(((-0.5*@tw))   , 0, (@tf+@r))     ,
-              o1 = Geom::Point3d.new(((-0.5*@tw)-@r), 0, @tf )         ,
-              p1 = Geom::Point3d.new((-0.5*@w)                      , 0,   @tf)
+              a1 = Geom::Point3d.new((-0.5*@w), 0, 0),
+              b1 = Geom::Point3d.new((0.5*@w), 0, 0),
+              c1 = Geom::Point3d.new((0.5*@w), 0, @tf),
+              d1 = Geom::Point3d.new(((0.5*@tw)+@r), 0, @tf),
+              e1 = Geom::Point3d.new(((0.5*@tw)), 0, ((@tf+@r))),
+              f1 = Geom::Point3d.new(((0.5*@tw)), 0, ((@h-@tf)-@r)),
+              g1 = Geom::Point3d.new(((0.5*@tw)+@r), 0, (@h-@tf)),
+              h1 = Geom::Point3d.new((0.5*@w), 0,(@h-@tf)),
+              i1 = Geom::Point3d.new((0.5*@w), 0, @h),
+              j1 = Geom::Point3d.new((-0.5*@w), 0, @h),
+              k1 = Geom::Point3d.new((-0.5*@w), 0, (@h-@tf)),
+              l1 = Geom::Point3d.new(((-0.5*@tw)-@r), 0, (@h-@tf)),
+              m1 = Geom::Point3d.new(((-0.5*@tw)), 0, ((@h-@tf)-@r)),
+              n1 = Geom::Point3d.new(((-0.5*@tw)), 0, (@tf+@r)),
+              o1 = Geom::Point3d.new(((-0.5*@tw)-@r), 0, @tf ),
+              p1 = Geom::Point3d.new((-0.5*@w), 0, @tf)
             ]
 
             Sketchup::set_status_text ("Select second end"), SB_PROMPT

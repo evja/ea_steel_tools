@@ -2,12 +2,6 @@ module EA_Extensions623
   module EASteelTools
 
     class Control
-      def onSetCursor
-        cursor_path = Sketchup.find_support_file ROOT_FILE_PATH+"/icons/wfs_cursor(2).png", "Plugins/"
-        cursor_id = UI.create_cursor(cursor_path, 0, 0)
-        UI.set_cursor(cursor_id.to_i)
-      end
-
       # deactivate is called when the tool is deactivated because
       # a different tool was selected
       def deactivate(view)
@@ -67,11 +61,12 @@ module EA_Extensions623
 
         if @ip1.valid? || @ip2.valid?
           @vy = @ip1.position.vector_to @ip2.position
-          @vx = @vy.axes[0]
-          @vz = @vy.axes[1]
+          not_a_zero_vec = @vy.length > 0
+          @vx = @vy.axes[0] if not_a_zero_vec
+          @vz = @vy.axes[1] if not_a_zero_vec
         end
-        @trans = Geom::Transformation.axes @ip1.position, @vx, @vy, @vz if @ip1.valid?
-        @trans2 = Geom::Transformation.axes @ip2.position, @vx, @vy, @vz if @ip1.valid?
+        @trans = Geom::Transformation.axes @ip1.position, @vx, @vy, @vz if @ip1.valid? && not_a_zero_vec
+        @trans2 = Geom::Transformation.axes @ip2.position, @vx, @vy, @vz if @ip1.valid? && not_a_zero_vec
       end
 
       # onKeyDown is called when the user presses a key on the keyboard.
