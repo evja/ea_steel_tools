@@ -8,6 +8,7 @@ module EA_Extensions623
 
     class HssDialog
       include HSSLibrary
+      BASEPLATES = ["SQ","OC","IL","IC","EX","DR","DL","DI"]
 
       @@state = 0
 
@@ -17,6 +18,7 @@ module EA_Extensions623
           @@height_class          = '4'
           @@width_class           = '4'
           @@wall_thickness        = ''
+          @@basetype             = ''
           @@start_plate_thickness = ''
           @@end_plate_thickness   = ''
           @@stud_spacing          = 16  #Integer 16 or 24
@@ -143,18 +145,27 @@ module EA_Extensions623
         ##################################################################################
         ##################################################################################
 
-        # group2 = SKUI::Groupbox.new( 'Path Selection' )
-        # group2.position( 58, 103 )
-        # group2.right = 20
-        # group2.width = 300
-        # group2.height = 200
-        # window.add_control( group2 )
+        group2 = SKUI::Groupbox.new( 'Baseplate Selection' )
+        group2.position( 20, 95 )
+        group2.right = 20
+        group2.width = 360
+        group2.height = 200
+        window.add_control( group2 )
 
         # path = File.join( SKUI::PATH, '..', 'icons' )
         # file = File.join( path, 'profile2.png' )
 
-        # label_font = SKUI::Font.new( 'Comic Sans MS', 8, true )
+        label_font = SKUI::Font.new( 'Comic Sans MS', 8, true )
 
+        baseselect = SKUI::Listbox.new(BASEPLATES)
+        baseselect.position(30,30)
+        baseselect.width = 75
+        @@basetype.empty? ? @@basetype = (baseselect.value = BASEPLATES.first) : baseselect.value = @@basetype
+        baseselect.on(:change) { |control, value|
+          @@basetype = control.value
+        }
+
+        group2.add_control(baseselect)
         # img_profile = SKUI::Image.new( file )
         # img_profile.position( 28, 32 )
         # img_profile.width = 200
@@ -362,7 +373,8 @@ module EA_Extensions623
             height_class:      @@height_class,
             width_class:       @@width_class,
             wall_thickness:    @@wall_thickness,
-            data:              @@beam_data
+            data:              @@beam_data,
+            base_type:         @@basetype
             # placement:         @@placement,
             # has_holes:         @@has_holes,
             # stagger:           @@hole_spacing,

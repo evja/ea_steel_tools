@@ -16,6 +16,10 @@ module EA_Extensions623
         @definition_list = @model.definitions
         @state = 0
         values     = data[:data]
+        @base_type = data[:base_type]
+        p 'test'
+        p @base_type
+        p 'test'
 
         @h         = values[:h].to_f #height of the tube
         @w         = values[:b].to_f #width of the tube
