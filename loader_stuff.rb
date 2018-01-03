@@ -10,9 +10,13 @@ scenes = model.pages
 
 load 'ea_steel_tools/wide_flange_rolled_data.rb'
 load 'ea_steel_tools/wide_flange_data.rb'
+
 load 'ea_steel_tools/dialog_rolled.rb'
+
 load 'ea_steel_tools/tube_steel_data.rb'
 load 'ea_steel_tools/dialog_tube_steel.rb'
+
+
 load 'ea_steel_tools/breakout_setup.rb'
 load 'ea_steel_tools/breakout.rb'
 load 'ea_steel_tools/breakout_send.rb'

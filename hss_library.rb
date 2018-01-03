@@ -1,11 +1,6 @@
 module EA_Extensions623
   module HSSLibrary
 
-    STANDARD_OFFSET = 3
-    HOLE_OFFSET = 1.5
-    BASEPLATE_RADIUS = 0.5
-    RADIUS_SEGMENT = 6
-
     #this is the generic data for a beam, copy it to where you need it and input the values
     # "(size)" => { h: , b: , t: , c: ().mm, width_class: },
 
@@ -34,25 +29,6 @@ module EA_Extensions623
     def all_guage_options_in(height_class, width_class)
       wall_thickness_list = HSSLibrary::HSS["#{height_class}"]["#{width_class}"][:tw]
       return wall_thickness_list
-    end
-
-    # BASEPLATES = ["SQ","OC","IL","IC","EX","DR","DL","DI"]
-    # DI = Door Inline
-    # DL = Door Left
-    # DR = Door Right
-    # EX = Exterior
-    # IC = Inside Corner
-    # IL = Inline
-    # OC = Outside Corner
-    # SQ = Square
-
-    def sq_plate(w, h, t, c)
-      points = [
-        p1 = [(w/2)+STANDARD_OFFSET, ((h/2)+STANDARD_OFFSET), 0],
-        p2 = [(-(w/2)-STANDARD_OFFSET), ((h/2)+STANDARD_OFFSET), 0],
-        p3 = [(-(w/2)-STANDARD_OFFSET), (-(h/2)-STANDARD_OFFSET), 0],
-        p4 = [((w/2)+STANDARD_OFFSET), (-(h/2)-STANDARD_OFFSET), 0],
-      ]
     end
 
     HSS = {

@@ -6,6 +6,11 @@ module EA_Extensions623
 
       LABEL_HEIGHT = 2
 
+      STANDARD_OFFSET = 3
+      HOLE_OFFSET = 1.5
+      BASEPLATE_RADIUS = 0.5
+      RADIUS_SEGMENT = 6
+
       # The activate method is called by SketchUp when the tool is first selected.
       # it is a good place to put most of your initialization
       def initialize(data)
@@ -17,9 +22,7 @@ module EA_Extensions623
         @state = 0
         values     = data[:data]
         @base_type = data[:base_type]
-        p 'test'
-        p @base_type
-        p 'test'
+        @base_thickness = data[:base_thick].to_f
 
         @h         = values[:h].to_f #height of the tube
         @w         = values[:b].to_f #width of the tube
@@ -223,100 +226,158 @@ module EA_Extensions623
         face_to_delete.erase! if face_to_delete
 
         main_face = @hss_inner_group.entities.select{|e| e.is_a? Sketchup::Face}[0].reverse!
+        center_of_column = @hss_outer_group.entities.add_cpoint(@hss_outer_group.bounds.center)
 
         slide_face = Geom::Transformation.translation(Geom::Vector3d.new(0,-@h, 0))
 
+
         rot_face = Geom::Transformation.rotation(ORIGIN, X_AXIS, 270.degrees)
         @entities.transform_entities rot_face*slide_face, @hss_outer_group
-        extrude_tube(vec, main_face)
+
+        extrude_length = vec.clone
+        extrude_length.length = (vec.length - (@base_thickness*2)) #This thickness is accouting for bot top and bottom plate. if the top plates thickness is controlled it will need to be accounted for if it varies from the base thickness
+        extrude_tube(extrude_length, main_face)
         add_name_label(vec)
 
+        draw_base_plates(@base_type, center_of_column.position)
+        draw_top_plate(center_of_column.position, extrude_length)
         align_tube(vec, @hss_outer_group)
 
       end
 
-       def add_name_label(vec)
-        begin
-          @name_label_group = @hss_outer_group.entities.add_group
-          @name_label_group.name = @tube_name
-          ####################
-          beam_direction = vec
-          heading = Geom::Vector3d.new beam_direction
-          heading[2] = 0
-          angle = heading.angle_between NORTH
-
-           #Adds in the label of the name of the beam at the center on both sides
-          component_names = []
-          @definition_list.map {|comp| component_names << comp.name}
-          if component_names.include? @tube_name
-            # p 'includes name'
-            comp_def = @definition_list["#{@tube_name}"]
-          else
-            # p 'created name'
-            comp_def = @definition_list.add "#{@tube_name}"
-            comp_def.description = "The #{@tube_name} label"
-            ents = comp_def.entities
-            _3d_text = ents.add_3d_text("#{@tube_name}", TextAlignCenter, "1CamBam_Stick_7", false, false, LABEL_HEIGHT, 3.0, 0.0, false, 0.0)
-            # p "loaded CamBam_Stick_7: #{_3d_text}"
-            save_path = Sketchup.find_support_file "Components", ""
-            comp_def.save_as(save_path + "/#{@tube_name}.skp")
-          end
-
-          # p 'label height ' + LABEL_HEIGHT.to_s
-
-          hss_name_label = @name_label_group.entities.add_instance comp_def, ORIGIN
-
-          rot_to_pos = Geom::Transformation.rotation(ORIGIN, Y_AXIS, 270.degrees)
-          hss_name_label.transform! rot_to_pos
-          # p 'here'
-          # p hss_name_label.bounds.height
-          # p @h - hss_name_label.bounds.height
-          # p (@h - hss_name_label.bounds.height) /2
-          # p @h - ((@h - hss_name_label.bounds.height) /2)
-          # p 'to here'
-
-          dist_to_slide = ((@h - hss_name_label.bounds.height)/2)
-          # p dist_to_slide
-          y_copy = Y_AXIS.clone
-          y_copy.length = dist_to_slide
-          slide_to_center = Geom::Transformation.translation(y_copy)
-          hss_name_label.transform! slide_to_center
+      def draw_base_plates(type, center)
+        bpl_grp = @hss_outer_group.entities.add_group
+        case type
+        when 'SQ'
+          base_points = sq_plate(@w, @h, center)
+          slide_vec = Geom::Vector3d.new(@w/2, @h/2, 0)
+        end
 
 
-          label2 = hss_name_label.copy
-          place_2nd_copy = Geom::Transformation.translation(Geom::Vector3d.new(@w,0,0))
-          label2.transform! place_2nd_copy
 
-          rot_to_face = Geom::Transformation.rotation(hss_name_label.bounds.center, Z_AXIS, 180.degrees)
-          hss_name_label.transform! rot_to_face
+        bs_plt_face = bpl_grp.entities.add_face(base_points)
+        bs_plt_face.pushpull(@base_thickness)
 
-          dist_to_slide2 = (vec.length - @name_label_group.bounds.depth) / 2
-          z_copy = Z_AXIS.clone
-          z_copy.length = dist_to_slide2
-          slide_to_mid = Geom::Transformation.translation(z_copy)
+        slide_base = Geom::Transformation.translation(slide_vec)
+        @hss_outer_group.entities.transform_entities slide_base, bpl_grp
 
-          @name_label_group.transform! slide_to_mid
+      end
 
-          if @w >= LABEL_HEIGHT
-            label3 = label2.copy
-            rotlab3 = Geom::Transformation.rotation(label3.bounds.center, Z_AXIS, 270.degrees)
-            movup3 = Geom::Transformation.translation(Geom::Vector3d.new(0,-(@h/2),0))
-            label3.transform! rotlab3
-            label3.transform! movup3
+      def draw_top_plate(center, vec)
+        tpl_grp = @hss_outer_group.entities.add_group
+        tpl_points = sq_plate(@w,@h,center)
+        tpl_face = tpl_grp.entities.add_face(tpl_points)
+        tpl_face.pushpull(@base_thickness)
 
-            movover3 = Geom::Transformation.translation(Geom::Vector3d.new(-@w/2,0,0))
-            label3.transform! movover3
+        trans_vec = Geom::Vector3d.new(@w/2, @h/2, 0)
+        position_top_plate = Geom::Transformation.translation(trans_vec)
+        slide_tpl_up = Geom::Transformation.translation(Geom::Vector3d.new(0,0,vec.length+@base_thickness))
+        @hss_outer_group.entities.transform_entities position_top_plate, tpl_grp
+        @hss_outer_group.entities.transform_entities slide_tpl_up, tpl_grp
+      end
 
-            label4 = label3.copy
-            rot4 = Geom::Transformation.rotation(label4.bounds.center, Z_AXIS, 180.degrees)
-            movedown4 = Geom::Transformation.translation(Geom::Vector3d.new(0,@h,0))
-            label4.transform! rot4
-            label4.transform! movedown4
-          end
-          p "tube height is #{@h}"
-          p "tube width is #{@w}"
+      # BASEPLATES = ["SQ","OC","IL","IC","EX","DR","DL","DI"]
+      # DI = Door Inline
+      # DL = Door Left
+      # DR = Door Right
+      # EX = Exterior
+      # IC = Inside Corner
+      # IL = Inline
+      # OC = Outside Corner
+      # SQ = Square
 
-          ####################
+      def sq_plate(w, h, c)
+        points = [
+          p1 = [(w/2)+STANDARD_OFFSET, ((h/2)+STANDARD_OFFSET), 0],
+          p2 = [(-(w/2)-STANDARD_OFFSET), ((h/2)+STANDARD_OFFSET), 0],
+          p3 = [(-(w/2)-STANDARD_OFFSET), (-(h/2)-STANDARD_OFFSET), 0],
+          p4 = [((w/2)+STANDARD_OFFSET), (-(h/2)-STANDARD_OFFSET), 0],
+        ]
+        return points
+      end
+
+     def add_name_label(vec)
+       begin
+        @name_label_group = @hss_outer_group.entities.add_group
+        @name_label_group.name = @tube_name
+        ####################
+        beam_direction = vec
+        heading = Geom::Vector3d.new beam_direction
+        heading[2] = 0
+        angle = heading.angle_between NORTH
+
+         #Adds in the label of the name of the beam at the center on both sides
+        component_names = []
+        @definition_list.map {|comp| component_names << comp.name}
+        if component_names.include? @tube_name
+          # p 'includes name'
+          comp_def = @definition_list["#{@tube_name}"]
+        else
+          # p 'created name'
+          comp_def = @definition_list.add "#{@tube_name}"
+          comp_def.description = "The #{@tube_name} label"
+          ents = comp_def.entities
+          _3d_text = ents.add_3d_text("#{@tube_name}", TextAlignCenter, "1CamBam_Stick_7", false, false, LABEL_HEIGHT, 3.0, 0.0, false, 0.0)
+          # p "loaded CamBam_Stick_7: #{_3d_text}"
+          save_path = Sketchup.find_support_file "Components", ""
+          comp_def.save_as(save_path + "/#{@tube_name}.skp")
+        end
+
+        # p 'label height ' + LABEL_HEIGHT.to_s
+
+        hss_name_label = @name_label_group.entities.add_instance comp_def, ORIGIN
+
+        rot_to_pos = Geom::Transformation.rotation(ORIGIN, Y_AXIS, 270.degrees)
+        hss_name_label.transform! rot_to_pos
+        # p 'here'
+        # p hss_name_label.bounds.height
+        # p @h - hss_name_label.bounds.height
+        # p (@h - hss_name_label.bounds.height) /2
+        # p @h - ((@h - hss_name_label.bounds.height) /2)
+        # p 'to here'
+
+        dist_to_slide = ((@h - hss_name_label.bounds.height)/2)
+        # p dist_to_slide
+        y_copy = Y_AXIS.clone
+        y_copy.length = dist_to_slide
+        slide_to_center = Geom::Transformation.translation(y_copy)
+        hss_name_label.transform! slide_to_center
+
+
+        label2 = hss_name_label.copy
+        place_2nd_copy = Geom::Transformation.translation(Geom::Vector3d.new(@w,0,0))
+        label2.transform! place_2nd_copy
+
+        rot_to_face = Geom::Transformation.rotation(hss_name_label.bounds.center, Z_AXIS, 180.degrees)
+        hss_name_label.transform! rot_to_face
+
+        dist_to_slide2 = (vec.length - @name_label_group.bounds.depth) / 2
+        z_copy = Z_AXIS.clone
+        z_copy.length = dist_to_slide2
+        slide_to_mid = Geom::Transformation.translation(z_copy)
+
+        @name_label_group.transform! slide_to_mid
+
+        if @w >= LABEL_HEIGHT
+          label3 = label2.copy
+          rotlab3 = Geom::Transformation.rotation(label3.bounds.center, Z_AXIS, 270.degrees)
+          movup3 = Geom::Transformation.translation(Geom::Vector3d.new(0,-(@h/2),0))
+          label3.transform! rotlab3
+          label3.transform! movup3
+
+          movover3 = Geom::Transformation.translation(Geom::Vector3d.new(-@w/2,0,0))
+          label3.transform! movover3
+
+          label4 = label3.copy
+          rot4 = Geom::Transformation.rotation(label4.bounds.center, Z_AXIS, 180.degrees)
+          movedown4 = Geom::Transformation.translation(Geom::Vector3d.new(0,@h,0))
+          label4.transform! rot4
+          label4.transform! movedown4
+        end
+        p "tube height is #{@h}"
+        p "tube width is #{@w}"
+
+        ####################
         rescue Exception => e
           puts e.message
           puts e.backtrace.inspect
@@ -326,6 +387,10 @@ module EA_Extensions623
 
       def align_tube(vec, group)
         group.transform! @trans
+        adjustment_vec = vec.clone
+        adjustment_vec.length = @base_thickness #this ,ight also need to account for the height from slab (1 1/2")
+        slide_up = Geom::Transformation.translation(adjustment_vec)
+        @entities.transform_entities(slide_up, group)
       end
 
       def extrude_tube(vec, face)
@@ -334,7 +399,7 @@ module EA_Extensions623
 
       def create_geometry(pt1, pt2, view)
           model = view.model
-          model.start_operation("Draw TS", true)
+          # model.start_operation("Draw TS", true)
 
           vec = pt2 - pt1
           if( vec.length < 2 )
