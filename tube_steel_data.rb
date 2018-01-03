@@ -6,7 +6,9 @@ module EA_Extensions623
 
       LABEL_HEIGHT = 2
 
-      STANDARD_OFFSET = 3
+      STANDARD_BASE_MARGIN = 3
+      BASEPLATE_MINIMUM_WELD_OVERHANG = 0.25
+      BASEPLATE_WELD_OVERHANG = 0.75
       HOLE_OFFSET = 1.5
       BASEPLATE_RADIUS = 0.5
       RADIUS_SEGMENT = 6
@@ -250,14 +252,16 @@ module EA_Extensions623
         case type
         when 'SQ'
           base_points = sq_plate(@w, @h, center)
-          slide_vec = Geom::Vector3d.new(@w/2, @h/2, 0)
+        when 'OC'
+          base_points = oc_plate(@w, @h, center)
+        when 'IL'
+          base_points = il_plate(@w, @h, center)
         end
-
-
 
         bs_plt_face = bpl_grp.entities.add_face(base_points)
         bs_plt_face.pushpull(@base_thickness)
 
+        slide_vec = Geom::Vector3d.new(@w/2, @h/2, 0)
         slide_base = Geom::Transformation.translation(slide_vec)
         @hss_outer_group.entities.transform_entities slide_base, bpl_grp
 
@@ -288,15 +292,36 @@ module EA_Extensions623
 
       def sq_plate(w, h, c)
         points = [
-          p1 = [(w/2)+STANDARD_OFFSET, ((h/2)+STANDARD_OFFSET), 0],
-          p2 = [(-(w/2)-STANDARD_OFFSET), ((h/2)+STANDARD_OFFSET), 0],
-          p3 = [(-(w/2)-STANDARD_OFFSET), (-(h/2)-STANDARD_OFFSET), 0],
-          p4 = [((w/2)+STANDARD_OFFSET), (-(h/2)-STANDARD_OFFSET), 0],
+          p1 = [(-(w/2)-STANDARD_BASE_MARGIN), (-(h/2)-STANDARD_BASE_MARGIN), 0],
+          p2 = [((w/2)+STANDARD_BASE_MARGIN), (-(h/2)-STANDARD_BASE_MARGIN), 0],
+          p3 = [(w/2)+STANDARD_BASE_MARGIN, ((h/2)+STANDARD_BASE_MARGIN), 0],
+          p4 = [(-(w/2)-STANDARD_BASE_MARGIN), ((h/2)+STANDARD_BASE_MARGIN), 0]
         ]
         return points
       end
 
-     def add_name_label(vec)
+      def oc_plate(w,h,c)
+        points = [
+          pt1 = [-(w/2)-BASEPLATE_MINIMUM_WELD_OVERHANG, -(h/2)-BASEPLATE_MINIMUM_WELD_OVERHANG, 0],
+          pt2 = [(w/2)+ STANDARD_BASE_MARGIN, -(h/2)-BASEPLATE_MINIMUM_WELD_OVERHANG,0],
+          pt3 = [(w/2)+ STANDARD_BASE_MARGIN, (h/2)+BASEPLATE_WELD_OVERHANG, 0],
+          pt4 = [(w/2)+ BASEPLATE_WELD_OVERHANG, (h/2)+BASEPLATE_WELD_OVERHANG, 0 ],
+          pt5 = [(w/2)+ BASEPLATE_WELD_OVERHANG, (h/2)+STANDARD_BASE_MARGIN, 0],
+          pt6 = [-(w/2)-BASEPLATE_MINIMUM_WELD_OVERHANG, (h/2)+STANDARD_BASE_MARGIN, 0]
+        ]
+        return points
+      end
+
+      def il_plate(w,h,c)
+        points = [
+          p1 = [-(w/2)-STANDARD_BASE_MARGIN, -(h/2)-BASEPLATE_MINIMUM_WELD_OVERHANG, 0],
+          p2 = [(w/2)+ STANDARD_BASE_MARGIN, -(h/2)-BASEPLATE_MINIMUM_WELD_OVERHANG, 0],
+          p3 = [(w/2)+ STANDARD_BASE_MARGIN,  (h/2)+BASEPLATE_MINIMUM_WELD_OVERHANG, 0],
+          p4 = [-(w/2)-STANDARD_BASE_MARGIN,  (h/2)+BASEPLATE_MINIMUM_WELD_OVERHANG, 0]
+        ]
+      end
+
+      def add_name_label(vec)
        begin
         @name_label_group = @hss_outer_group.entities.add_group
         @name_label_group.name = @tube_name
