@@ -8,7 +8,7 @@ module EA_Extensions623
 
       STANDARD_BASE_MARGIN = 3
       BASEPLATE_MINIMUM_WELD_OVERHANG = 0.25
-      BASEPLATE_WELD_OVERHANG = 0.75
+      STANDARD_WELD_OVERHANG = 0.75
       HOLE_OFFSET = 1.5
       BASEPLATE_RADIUS = 0.5
       RADIUS_SEGMENT = 6
@@ -256,6 +256,16 @@ module EA_Extensions623
           base_points = oc_plate(@w, @h, center)
         when 'IL'
           base_points = il_plate(@w, @h, center)
+        when 'IC'
+          base_points = ic_plate(@w, @h, center)
+        when 'EX'
+          base_points = ex_plate(@w, @h, center)
+        when 'DR'
+          base_points = dr_plate(@w, @h, center)
+        when 'DL'
+          base_points = dl_plate(@w, @h, center)
+        when 'DI'
+          base_points = di_plate(@w, @h, center)
         end
 
         bs_plt_face = bpl_grp.entities.add_face(base_points)
@@ -264,6 +274,15 @@ module EA_Extensions623
         slide_vec = Geom::Vector3d.new(@w/2, @h/2, 0)
         slide_base = Geom::Transformation.translation(slide_vec)
         @hss_outer_group.entities.transform_entities slide_base, bpl_grp
+
+        #NEEDS#
+
+        #Layer the base group
+        #name the base group
+        bpl_grp.name = @h.to_i.to_s + '" ' + type
+        #add holes to the base plates
+        #radius the corners
+        #conditions for plates above concrete or steel
 
       end
 
@@ -304,9 +323,9 @@ module EA_Extensions623
         points = [
           pt1 = [-(w/2)-BASEPLATE_MINIMUM_WELD_OVERHANG, -(h/2)-BASEPLATE_MINIMUM_WELD_OVERHANG, 0],
           pt2 = [(w/2)+ STANDARD_BASE_MARGIN, -(h/2)-BASEPLATE_MINIMUM_WELD_OVERHANG,0],
-          pt3 = [(w/2)+ STANDARD_BASE_MARGIN, (h/2)+BASEPLATE_WELD_OVERHANG, 0],
-          pt4 = [(w/2)+ BASEPLATE_WELD_OVERHANG, (h/2)+BASEPLATE_WELD_OVERHANG, 0 ],
-          pt5 = [(w/2)+ BASEPLATE_WELD_OVERHANG, (h/2)+STANDARD_BASE_MARGIN, 0],
+          pt3 = [(w/2)+ STANDARD_BASE_MARGIN, (h/2)+STANDARD_WELD_OVERHANG, 0],
+          pt4 = [(w/2)+ STANDARD_WELD_OVERHANG, (h/2)+STANDARD_WELD_OVERHANG, 0 ],
+          pt5 = [(w/2)+ STANDARD_WELD_OVERHANG, (h/2)+STANDARD_BASE_MARGIN, 0],
           pt6 = [-(w/2)-BASEPLATE_MINIMUM_WELD_OVERHANG, (h/2)+STANDARD_BASE_MARGIN, 0]
         ]
         return points
@@ -318,6 +337,54 @@ module EA_Extensions623
           p2 = [(w/2)+ STANDARD_BASE_MARGIN, -(h/2)-BASEPLATE_MINIMUM_WELD_OVERHANG, 0],
           p3 = [(w/2)+ STANDARD_BASE_MARGIN,  (h/2)+BASEPLATE_MINIMUM_WELD_OVERHANG, 0],
           p4 = [-(w/2)-STANDARD_BASE_MARGIN,  (h/2)+BASEPLATE_MINIMUM_WELD_OVERHANG, 0]
+        ]
+      end
+
+      def ic_plate(w,h,c)
+        points = [
+          pt1 = [-(w/2)-STANDARD_WELD_OVERHANG, -(h/2)-STANDARD_WELD_OVERHANG, 0],
+          pt2 = [(w/2)+ STANDARD_BASE_MARGIN, -(h/2)-STANDARD_WELD_OVERHANG,0],
+          pt3 = [(w/2)+ STANDARD_BASE_MARGIN, (h/2)+BASEPLATE_MINIMUM_WELD_OVERHANG, 0],
+          pt4 = [(w/2)+ BASEPLATE_MINIMUM_WELD_OVERHANG, (h/2)+BASEPLATE_MINIMUM_WELD_OVERHANG, 0 ],
+          pt5 = [(w/2)+ BASEPLATE_MINIMUM_WELD_OVERHANG, (h/2)+STANDARD_BASE_MARGIN, 0],
+          pt6 = [-(w/2)-STANDARD_WELD_OVERHANG, (h/2)+STANDARD_BASE_MARGIN, 0]
+        ]
+        return points
+      end
+
+      def ex_plate(w,h,c)
+        points = [
+          p1 = [-(w/2)-STANDARD_BASE_MARGIN, -(h/2)-STANDARD_WELD_OVERHANG, 0],
+          p2 = [(w/2)+ STANDARD_BASE_MARGIN, -(h/2)-STANDARD_WELD_OVERHANG, 0],
+          p3 = [(w/2)+ STANDARD_BASE_MARGIN,  (h/2)+BASEPLATE_MINIMUM_WELD_OVERHANG, 0],
+          p4 = [-(w/2)-STANDARD_BASE_MARGIN,  (h/2)+BASEPLATE_MINIMUM_WELD_OVERHANG, 0]
+        ]
+      end
+
+      def dr_plate(w,h,c)
+        points = [
+          p1 = [-(w/2)-BASEPLATE_MINIMUM_WELD_OVERHANG, -(h/2)-STANDARD_WELD_OVERHANG,0],
+          p2 = [(w/2)+(STANDARD_BASE_MARGIN*2), -(h/2)-STANDARD_WELD_OVERHANG,0 ],
+          p3 = [(w/2)+(STANDARD_BASE_MARGIN*2), (h/2)+BASEPLATE_MINIMUM_WELD_OVERHANG,0 ],
+          p4 = [-(w/2)-BASEPLATE_MINIMUM_WELD_OVERHANG, (h/2)+BASEPLATE_MINIMUM_WELD_OVERHANG,0]
+        ]
+      end
+
+      def dl_plate(w,h,c)
+        points = [
+          p1 = [-(w/2)-(STANDARD_BASE_MARGIN*2), -(h/2)-STANDARD_WELD_OVERHANG,0],
+          p2 = [(w/2)+BASEPLATE_MINIMUM_WELD_OVERHANG, -(h/2)-STANDARD_WELD_OVERHANG,0 ],
+          p3 = [(w/2)+BASEPLATE_MINIMUM_WELD_OVERHANG, (h/2)+BASEPLATE_MINIMUM_WELD_OVERHANG,0 ],
+          p4 = [-(w/2)-(STANDARD_BASE_MARGIN*2), (h/2)+BASEPLATE_MINIMUM_WELD_OVERHANG,0]
+        ]
+      end
+
+      def di_plate(w,h,c)
+        points = [
+          p1 = [-(w/2)-BASEPLATE_MINIMUM_WELD_OVERHANG, -(h/2)-BASEPLATE_MINIMUM_WELD_OVERHANG,0],
+          p2 = [(w/2)+(STANDARD_BASE_MARGIN*2), -(h/2)-BASEPLATE_MINIMUM_WELD_OVERHANG,0 ],
+          p3 = [(w/2)+(STANDARD_BASE_MARGIN*2), (h/2)+BASEPLATE_MINIMUM_WELD_OVERHANG,0 ],
+          p4 = [-(w/2)-BASEPLATE_MINIMUM_WELD_OVERHANG, (h/2)+BASEPLATE_MINIMUM_WELD_OVERHANG,0]
         ]
       end
 
