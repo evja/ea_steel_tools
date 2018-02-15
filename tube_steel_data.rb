@@ -26,8 +26,8 @@ module EA_Extensions623
         @base_type = data[:base_type]
         @base_thickness = data[:base_thick].to_f
 
-        @h         = values[:h].to_f #height of the tube
-        @w         = values[:b].to_f #width of the tube
+        @h = values[:h].to_f #height of the tube
+        @w = values[:b].to_f #width of the tube
 
         case data[:wall_thickness]
         when '1/8'
@@ -81,10 +81,10 @@ module EA_Extensions623
         Sketchup::set_status_text ("Length"), SB_VCB_LABEL
       end
 
-      def get_cham(a, b)
-        c = Math.sqrt(a**2 + b**2)
-        return c
-      end
+      # def get_cham(a, b)
+      #   c = Math.sqrt(a**2 + b**2)
+      #   return c
+      # end
 
       def onSetCursor
         cursor_path = Sketchup.find_support_file ROOT_FILE_PATH+"/icons/ts_cursor1.png", "Plugins/"
@@ -653,7 +653,6 @@ module EA_Extensions623
 
       # Draw the geometry
       def draw_ghost(pt1, pt2, view)
-
         vec = pt1 - pt2
 
         if vec.parallel? @x_red
