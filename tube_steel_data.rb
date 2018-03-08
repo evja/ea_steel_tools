@@ -241,45 +241,50 @@ module EA_Extensions623
         extrude_tube(extrude_length, main_face)
         add_name_label(vec)
 
+        align_tube(vec, @hss_outer_group)
+
         draw_base_plates(@base_type, center_of_column.position)
         draw_top_plate(center_of_column.position, extrude_length)
-        align_tube(vec, @hss_outer_group)
 
       end
 
       def draw_base_plates(type, center)
-        bpl_grp = @hss_outer_group.entities.add_group
         case type
         when 'SQ'
-          base_points = sq_plate(@w, @h, center)
+          base_type = '_ SQ'
         when 'OC'
-          base_points = oc_plate(@w, @h, center)
+          base_type = '_ OC'
         when 'IL'
-          base_points = il_plate(@w, @h, center)
+          base_type = '_ IL'
         when 'IC'
-          base_points = ic_plate(@w, @h, center)
+          base_type = '4_ IC'
         when 'EX'
-          base_points = ex_plate(@w, @h, center)
+          base_type = '_ EX'
         when 'DR'
-          base_points = dr_plate(@w, @h, center)
+          base_type = '_ DR'
         when 'DL'
-          base_points = dl_plate(@w, @h, center)
+          base_type = '_ DL'
         when 'DI'
-          base_points = di_plate(@w, @h, center)
+          base_type = '_ DI'
         end
+        p base_type
 
-        bs_plt_face = bpl_grp.entities.add_face(base_points)
-        bs_plt_face.pushpull(@base_thickness)
+        file_path1 = Sketchup.find_support_file "ea_steel_tools/Beam Components/#{base_type}.skp", "Plugins"
+        p file_path1
+
+        @base_plate = @definition_list.load file_path1
+
+        # webhole1 = @inner_group.entities.add_instance @nine_sixteenths_hole, ORIGIN
 
         slide_vec = Geom::Vector3d.new(@w/2, @h/2, 0)
         slide_base = Geom::Transformation.translation(slide_vec)
-        @hss_outer_group.entities.transform_entities slide_base, bpl_grp
+
+        @bp = @hss_outer_group.entities.add_instance @base_plate, center
 
         #NEEDS#
 
         #Layer the base group
         #name the base group
-        bpl_grp.name = @h.to_i.to_s + '" ' + type
         #add holes to the base plates
         #radius the corners
         #conditions for plates above concrete or steel
@@ -478,7 +483,8 @@ module EA_Extensions623
       end
 
       def align_tube(vec, group)
-        group.transform! @trans
+        p group.entities
+        group.entities.transform_entities @trans, group.entities
         adjustment_vec = vec.clone
         adjustment_vec.length = @base_thickness #this ,ight also need to account for the height from slab (1 1/2")
         slide_up = Geom::Transformation.translation(adjustment_vec)
