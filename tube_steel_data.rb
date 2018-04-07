@@ -483,8 +483,9 @@ module EA_Extensions623
       end
 
       def align_tube(vec, group)
-        p group.entities
-        group.entities.transform_entities @trans, group.entities
+        group.transform! @trans
+        # p group.entities
+        # group.entities.transform_entities @trans, group.entities
         adjustment_vec = vec.clone
         adjustment_vec.length = @base_thickness #this ,ight also need to account for the height from slab (1 1/2")
         slide_up = Geom::Transformation.translation(adjustment_vec)
