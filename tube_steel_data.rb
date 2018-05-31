@@ -228,7 +228,7 @@ module EA_Extensions623
         face_to_delete.erase! if face_to_delete
 
         main_face = @hss_inner_group.entities.select{|e| e.is_a? Sketchup::Face}[0].reverse!
-        center_of_column = @hss_outer_group.entities.add_cpoint(@hss_outer_group.bounds.center)
+        @center_of_column = @hss_outer_group.entities.add_cpoint(@hss_outer_group.bounds.center)
 
         slide_face = Geom::Transformation.translation(Geom::Vector3d.new(0,-@h, 0))
 
@@ -243,34 +243,49 @@ module EA_Extensions623
 
         align_tube(vec, @hss_outer_group)
 
-        draw_base_plates(@base_type, center_of_column.position)
-        draw_top_plate(center_of_column.position, extrude_length)
+        insert_base_plates(@base_type, @center_of_column.position)
+        insert_top_plate(@center_of_column.position, extrude_length)
 
       end
 
-      def draw_base_plates(type, center)
+      def insert_top_plate(center, vec)
+        @top_plate_group = @hss_outer_group.entities.add_group
+
+        file_path2 = Sketchup.find_support_file "ea_steel_tools/Beam Components/Top Plate.skp", "Plugins"
+
+        @top_plate = @definition_list.load file_path2
+
+        @tp = @top_plate_group.entities.add_instance @top_plate, center
+
+        slide_tpl_up = Geom::Transformation.translation(Geom::Vector3d.new(0,0,vec.length))
+        @top_plate_group.entities.transform_entities slide_tpl_up, @tp
+
+        @tp.explode
+      end
+
+      def insert_base_plates(type, center)
         case type
         when 'SQ'
-          base_type = '_ SQ'
+          base_type = "#{@h.to_i}_ SQ"
         when 'OC'
-          base_type = '_ OC'
+          base_type = "#{@h.to_i}_ OC"
         when 'IL'
-          base_type = '_ IL'
+          base_type = "#{@h.to_i}_ IL"
         when 'IC'
-          base_type = '4_ IC'
+          base_type = "#{@h.to_i}_ IC"
         when 'EX'
-          base_type = '_ EX'
+          base_type = "#{@h.to_i}_ EX"
         when 'DR'
-          base_type = '_ DR'
+          base_type = "#{@h.to_i}_ DR"
         when 'DL'
-          base_type = '_ DL'
+          base_type = "#{@h.to_i}_ DL"
         when 'DI'
-          base_type = '_ DI'
+          base_type = "#{@h.to_i}_ DI"
         end
-        p base_type
+        # p base_type
 
         file_path1 = Sketchup.find_support_file "ea_steel_tools/Beam Components/#{base_type}.skp", "Plugins"
-        p file_path1
+        # p file_path1
 
         @base_plate = @definition_list.load file_path1
 
@@ -283,25 +298,9 @@ module EA_Extensions623
 
         #NEEDS#
 
-        #Layer the base group
-        #name the base group
-        #add holes to the base plates
-        #radius the corners
-        #conditions for plates above concrete or steel
-
-      end
-
-      def draw_top_plate(center, vec)
-        tpl_grp = @hss_outer_group.entities.add_group
-        tpl_points = sq_plate(@w,@h,center)
-        tpl_face = tpl_grp.entities.add_face(tpl_points)
-        tpl_face.pushpull(@base_thickness)
-
-        trans_vec = Geom::Vector3d.new(@w/2, @h/2, 0)
-        position_top_plate = Geom::Transformation.translation(trans_vec)
-        slide_tpl_up = Geom::Transformation.translation(Geom::Vector3d.new(0,0,vec.length+@base_thickness))
-        @hss_outer_group.entities.transform_entities position_top_plate, tpl_grp
-        @hss_outer_group.entities.transform_entities slide_tpl_up, tpl_grp
+        #Conditions if the hss is different sizes
+        #conditions if the hss is rectangular (probs build from scratch, or use defualt and make group for editing)
+        #add Etch marks that fir appropriate size
       end
 
       # BASEPLATES = ["SQ","OC","IL","IC","EX","DR","DL","DI"]
@@ -313,6 +312,7 @@ module EA_Extensions623
       # IL = Inline
       # OC = Outside Corner
       # SQ = Square
+
 
       def sq_plate(w, h, c)
         points = [
@@ -420,18 +420,10 @@ module EA_Extensions623
           comp_def.save_as(save_path + "/#{@tube_name}.skp")
         end
 
-        # p 'label height ' + LABEL_HEIGHT.to_s
-
         hss_name_label = @name_label_group.entities.add_instance comp_def, ORIGIN
 
         rot_to_pos = Geom::Transformation.rotation(ORIGIN, Y_AXIS, 270.degrees)
         hss_name_label.transform! rot_to_pos
-        # p 'here'
-        # p hss_name_label.bounds.height
-        # p @h - hss_name_label.bounds.height
-        # p (@h - hss_name_label.bounds.height) /2
-        # p @h - ((@h - hss_name_label.bounds.height) /2)
-        # p 'to here'
 
         dist_to_slide = ((@h - hss_name_label.bounds.height)/2)
         # p dist_to_slide
@@ -440,13 +432,24 @@ module EA_Extensions623
         slide_to_center = Geom::Transformation.translation(y_copy)
         hss_name_label.transform! slide_to_center
 
+        labels = []
+        if @w >= LABEL_HEIGHT
+          # p "four labels"
+          for n in 1..3
+            labels.push hss_name_label.copy
+            rotation_incrememnts = 90.degrees
+          end
+        else
+          # p 'two labels'
+          labels.push hss_name_label.copy
+          rotation_incrememnts = 180.degrees
+        end
 
-        label2 = hss_name_label.copy
-        place_2nd_copy = Geom::Transformation.translation(Geom::Vector3d.new(@w,0,0))
-        label2.transform! place_2nd_copy
-
-        rot_to_face = Geom::Transformation.rotation(hss_name_label.bounds.center, Z_AXIS, 180.degrees)
-        hss_name_label.transform! rot_to_face
+        labels.each_with_index do |l,i|
+          # p rotation_incrememnts.radians
+          rot = Geom::Transformation.rotation(@center_of_column.position, Z_AXIS, (rotation_incrememnts*(i+1)))
+          l.transform! rot
+        end
 
         dist_to_slide2 = (vec.length - @name_label_group.bounds.depth) / 2
         z_copy = Z_AXIS.clone
@@ -454,25 +457,6 @@ module EA_Extensions623
         slide_to_mid = Geom::Transformation.translation(z_copy)
 
         @name_label_group.transform! slide_to_mid
-
-        if @w >= LABEL_HEIGHT
-          label3 = label2.copy
-          rotlab3 = Geom::Transformation.rotation(label3.bounds.center, Z_AXIS, 270.degrees)
-          movup3 = Geom::Transformation.translation(Geom::Vector3d.new(0,-(@h/2),0))
-          label3.transform! rotlab3
-          label3.transform! movup3
-
-          movover3 = Geom::Transformation.translation(Geom::Vector3d.new(-@w/2,0,0))
-          label3.transform! movover3
-
-          label4 = label3.copy
-          rot4 = Geom::Transformation.rotation(label4.bounds.center, Z_AXIS, 180.degrees)
-          movedown4 = Geom::Transformation.translation(Geom::Vector3d.new(0,@h,0))
-          label4.transform! rot4
-          label4.transform! movedown4
-        end
-        p "tube height is #{@h}"
-        p "tube width is #{@w}"
 
         ####################
         rescue Exception => e
@@ -483,9 +467,7 @@ module EA_Extensions623
       end
 
       def align_tube(vec, group)
-        group.transform! @trans
-        # p group.entities
-        # group.entities.transform_entities @trans, group.entities
+        group.transform! @trans #Fixed this so the column is not scaled
         adjustment_vec = vec.clone
         adjustment_vec.length = @base_thickness #this ,ight also need to account for the height from slab (1 1/2")
         slide_up = Geom::Transformation.translation(adjustment_vec)
@@ -573,8 +555,8 @@ module EA_Extensions623
           @vx = @vy.axes[0] if not_a_zero_vec
           @vz = @vy.axes[1] if not_a_zero_vec
         end
-        @trans = Geom::Transformation.axes @ip1.position, @vx, @vy, @vz if @ip1.valid? && not_a_zero_vec
-        @trans2 = Geom::Transformation.axes @ip2.position, @vx, @vy, @vz if @ip1.valid? && not_a_zero_vec
+        @trans = Geom::Transformation.axes @ip1.position, @vx, @vy, @vz.reverse if @ip1.valid? && not_a_zero_vec
+        @trans2 = Geom::Transformation.axes @ip2.position, @vx, @vy, @vz.reverse if @ip1.valid? && not_a_zero_vec
       end
 
       # onUserText is called when the user enters something into the VCB
