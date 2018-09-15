@@ -12,6 +12,7 @@ module EA_Extensions623
       HOLE_OFFSET = 1.5
       BASEPLATE_RADIUS = 0.5
       RADIUS_SEGMENT = 6
+      STANDARD_TOP_PLATE_SIZE = 7
 
       # The activate method is called by SketchUp when the tool is first selected.
       # it is a good place to put most of your initialization
@@ -28,6 +29,10 @@ module EA_Extensions623
 
         @h = values[:h].to_f #height of the tube
         @w = values[:b].to_f #width of the tube
+
+        if @h == @w
+          @square_tube = true
+        end
 
         case data[:wall_thickness]
         when '1/8'
@@ -53,7 +58,7 @@ module EA_Extensions623
         end
 
         @tube_name = "HSS #{data[:height_class]}x#{data[:width_class]} x#{data[:wall_thickness]}"
-        p @tube_name
+        # p @tube_name
         @r = @tw#*RADIUS_RULE
 
         # The Sketchup::InputPoint class is used to get 3D points from screen
@@ -164,7 +169,7 @@ module EA_Extensions623
           pt1
         ]
 
-        print @points
+        # print @points
 
         inside_points = [
           ip1 = [@tw, @tw, 0],
@@ -232,7 +237,6 @@ module EA_Extensions623
 
         slide_face = Geom::Transformation.translation(Geom::Vector3d.new(0,-@h, 0))
 
-
         rot_face = Geom::Transformation.rotation(ORIGIN, X_AXIS, 270.degrees)
         @entities.transform_entities rot_face*slide_face, @hss_outer_group
 
@@ -251,56 +255,71 @@ module EA_Extensions623
       def insert_top_plate(center, vec)
         @top_plate_group = @hss_outer_group.entities.add_group
 
-        file_path2 = Sketchup.find_support_file "ea_steel_tools/Beam Components/Top Plate.skp", "Plugins"
+        if @w <= STANDARD_TOP_PLATE_SIZE
+          file_path2 = Sketchup.find_support_file "ea_steel_tools/Beam Components/Top Plate.skp", "Plugins"
 
-        @top_plate = @definition_list.load file_path2
+          @top_plate = @definition_list.load file_path2
 
-        @tp = @top_plate_group.entities.add_instance @top_plate, center
+          @tp = @top_plate_group.entities.add_instance @top_plate, center
 
-        slide_tpl_up = Geom::Transformation.translation(Geom::Vector3d.new(0,0,vec.length))
-        @top_plate_group.entities.transform_entities slide_tpl_up, @tp
+          slide_tpl_up = Geom::Transformation.translation(Geom::Vector3d.new(0,0,vec.length))
+          @top_plate_group.entities.transform_entities slide_tpl_up, @tp
 
-        @tp.explode
+          @tp.explode
+        else
+          #Need to insert a dynamic top plate that grows to the size of the tube.
+        end
+
       end
 
       def insert_base_plates(type, center)
-        case type
-        when 'SQ'
-          base_type = "#{@h.to_i}_ SQ"
-        when 'OC'
-          base_type = "#{@h.to_i}_ OC"
-        when 'IL'
-          base_type = "#{@h.to_i}_ IL"
-        when 'IC'
-          base_type = "#{@h.to_i}_ IC"
-        when 'EX'
-          base_type = "#{@h.to_i}_ EX"
-        when 'DR'
-          base_type = "#{@h.to_i}_ DR"
-        when 'DL'
-          base_type = "#{@h.to_i}_ DL"
-        when 'DI'
-          base_type = "#{@h.to_i}_ DI"
+        begin
+
+          # UI.messagebox("@h is #{@h}, @w is #{@w}")
+
+          case type
+          when 'SQ'
+            base_type = "#{@h.to_i}_ SQ"
+          when 'OC'
+            base_type = "#{@h.to_i}_ OC"
+          when 'IL'
+            base_type = "#{@h.to_i}_ IL"
+          when 'IC'
+            base_type = "#{@h.to_i}_ IC"
+          when 'EX'
+            base_type = "#{@h.to_i}_ EX"
+          when 'DR'
+            base_type = "#{@h.to_i}_ DR"
+          when 'DL'
+            base_type = "#{@h.to_i}_ DL"
+          when 'DI'
+            base_type = "#{@h.to_i}_ DI"
+          end
+          # p base_type
+
+          file_path1 = Sketchup.find_support_file "ea_steel_tools/Beam Components/#{base_type}.skp", "Plugins"
+          # p file_path1
+
+          unless file_path1.nil?
+            @base_plate = @definition_list.load file_path1
+
+            slide_vec = Geom::Vector3d.new(@w/2, @h/2, 0)
+            slide_base = Geom::Transformation.translation(slide_vec)
+
+            @bp = @hss_outer_group.entities.add_instance @base_plate, center
+          end
+
+
+          #NEEDS#
+
+          #Conditions if the hss is different sizes
+          #conditions if the hss is rectangular (probs build from scratch, or use defualt and make group for editing)
+          #add Etch marks that fit appropriate size
+        rescue Exception => e
+          puts e.message
+          puts e.backtrace.inspect
+          UI.messagebox("There was a problem inserting the baseplates")
         end
-        # p base_type
-
-        file_path1 = Sketchup.find_support_file "ea_steel_tools/Beam Components/#{base_type}.skp", "Plugins"
-        # p file_path1
-
-        @base_plate = @definition_list.load file_path1
-
-        # webhole1 = @inner_group.entities.add_instance @nine_sixteenths_hole, ORIGIN
-
-        slide_vec = Geom::Vector3d.new(@w/2, @h/2, 0)
-        slide_base = Geom::Transformation.translation(slide_vec)
-
-        @bp = @hss_outer_group.entities.add_instance @base_plate, center
-
-        #NEEDS#
-
-        #Conditions if the hss is different sizes
-        #conditions if the hss is rectangular (probs build from scratch, or use defualt and make group for editing)
-        #add Etch marks that fir appropriate size
       end
 
       # BASEPLATES = ["SQ","OC","IL","IC","EX","DR","DL","DI"]
@@ -433,7 +452,7 @@ module EA_Extensions623
         hss_name_label.transform! slide_to_center
 
         labels = []
-        if @w >= LABEL_HEIGHT
+        if @h == @w
           # p "four labels"
           for n in 1..3
             labels.push hss_name_label.copy
@@ -485,14 +504,14 @@ module EA_Extensions623
           vec = pt2 - pt1
           if( vec.length < 2 )
               UI.beep
-              UI.messagebox("Please draw a beam longer than 2")
+              UI.messagebox("Please draw a HSS longer than 2")
               return
           end
 
           if vec.parallel? Z_AXIS
-            column = true
+            @is_column = true
           else
-            column = false
+            @is_column = false
           end
 
           draw_tube(vec)
@@ -701,7 +720,7 @@ module EA_Extensions623
           end
 
         elsif (key == VK_LEFT && repeat == 1)
-          p 'left'
+          # p 'left'
           if( @state == 1 && @ip1.valid? )
             if @left_lock == true
               view.lock_inference
@@ -718,7 +737,7 @@ module EA_Extensions623
           end
 
         elsif (key == VK_RIGHT && repeat == 1)
-          p 'right'
+          # p 'right'
           if( @state == 1 && @ip1.valid? )
             if @right_lock == true
               view.lock_inference
@@ -735,7 +754,7 @@ module EA_Extensions623
           end
 
         elsif (key == VK_UP && repeat == 1)
-          p 'up'
+          # p 'up'
           if( @state == 1 && @ip1.valid? )
             if @up_lock == true
               view.lock_inference

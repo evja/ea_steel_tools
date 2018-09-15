@@ -175,7 +175,7 @@ module EA_Extensions623
           @@basethick = control.value
         }
 
-        group2.add_control(basethckselect)
+        # group2.add_control(basethckselect)
 
 
         ########################################################################
