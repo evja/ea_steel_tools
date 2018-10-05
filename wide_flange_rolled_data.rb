@@ -68,12 +68,12 @@ module EA_Extensions623
         # @@segment_length    = date[:seg_length] #Update the dialog to allow for 4" 8" & 16" Segements on the rolled tool
 
         colors = {
-          orange:  {name: ' C ¾" Thick',    rgb: [225,135,50]},
-          yellow:  {name: ' D ⅝" Thick',    rgb: [225,225,50]},
-          green:   {name: ' E ½" Thick',    rgb: [50,225,50 ]},
-          blue:    {name: ' F ⅜" Thick',    rgb: [50,118,225]},
-          indigo:  {name: ' G 5/16" Thick', rgb: [118,50,225]},
-          purple:  {name: ' H ¼" Thick',    rgb: [186,50,225]}
+          orange:  {name: ' C ¾" Thick',    rgb: [255,135,50]},
+          yellow:  {name: ' D ⅝" Thick',    rgb: [255,255,50]},
+          green:   {name: ' E ½" Thick',    rgb: [50,255,50 ]},
+          blue:    {name: ' F ⅜" Thick',    rgb: [50,118,255]},
+          indigo:  {name: ' G 5/16" Thick', rgb: [118,50,255]},
+          purple:  {name: ' H ¼" Thick',    rgb: [186,50,255]}
         }
 
 
@@ -249,7 +249,7 @@ module EA_Extensions623
 
         file_path1 = Sketchup.find_support_file "ea_steel_tools/Beam Components/9_16 Hole Set.skp", "Plugins"
         file_path2 = Sketchup.find_support_file "ea_steel_tools/Beam Components/13_16 Hole Set.skp", "Plugins"
-        file_path3 = Sketchup.find_support_file "ea_steel_tools/Beam Components/2 x½_ Studs.skp", "Plugins"
+        file_path3 = Sketchup.find_support_file "ea_steel_tools/Beam Components/2_Studs.skp", "Plugins"
         file_path4 = Sketchup.find_support_file "ea_steel_tools/Beam Components/UP.skp", "Plugins/"
         file_path5 = Sketchup.find_support_file "#{ROOT_FILE_PATH}/Beam Components/#{stiffener_plate}.skp", "Plugins/"
         if @hc < 10
