@@ -21,11 +21,9 @@ module EA_Extensions623
           if ents[0].class == Sketchup::Group && ents[0].name.match(GROUP_REGEX)
             # p 'passed as a group'
             return true
-
-          elsif ents[0].class == Sketchup::ComponentInstance && ents[0].definition.name.match(GROUP_REGEX)
+          elsif ents[0].class == Sketchup::ComponentInstance #&& ents[0].definition.name.match(GROUP_REGEX)
             # p 'passed as a Component'
             return true
-
           else
             # p 'not validated'
             return false
@@ -359,7 +357,7 @@ module EA_Extensions623
       #   mod_title = @model.title
       #   plates.each_with_index do |pl, i|
       #     # plde = pl.entities
-      #     # pl_ent_group = plde.add_group(plde)
+      #     # pl_ent_grou = plde.add_group(plde)
       #     plname = pl.name
       #     var = mod_title + '-' + plname
       #     text = pl.entities.add_3d_text(var, TextAlignLeft, '1CamBam_Stick_7', false, false, 0.5, 0.0, 0.1, false, 0.0)

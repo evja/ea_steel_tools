@@ -6,6 +6,14 @@ module EA_Extensions623
 
       LABEL_HEIGHT = 2
 
+      STANDARD_BASE_MARGIN = 3
+      BASEPLATE_MINIMUM_WELD_OVERHANG = 0.25
+      STANDARD_WELD_OVERHANG = 0.75
+      HOLE_OFFSET = 1.5
+      BASEPLATE_RADIUS = 0.5
+      RADIUS_SEGMENT = 6
+      STANDARD_TOP_PLATE_SIZE = 7
+
       # The activate method is called by SketchUp when the tool is first selected.
       # it is a good place to put most of your initialization
       def initialize(data)
@@ -16,9 +24,15 @@ module EA_Extensions623
         @definition_list = @model.definitions
         @state = 0
         values     = data[:data]
+        @base_type = data[:base_type]
+        @base_thickness = data[:base_thick].to_f
 
-        @h         = values[:h].to_f #height of the tube
-        @w         = values[:b].to_f #width of the tube
+        @h = values[:h].to_f #height of the tube
+        @w = values[:b].to_f #width of the tube
+
+        if @h == @w
+          @square_tube = true
+        end
 
         case data[:wall_thickness]
         when '1/8'
@@ -44,7 +58,7 @@ module EA_Extensions623
         end
 
         @tube_name = "HSS #{data[:height_class]}x#{data[:width_class]} x#{data[:wall_thickness]}"
-        p @tube_name
+        # p @tube_name
         @r = @tw#*RADIUS_RULE
 
         # The Sketchup::InputPoint class is used to get 3D points from screen
@@ -72,10 +86,10 @@ module EA_Extensions623
         Sketchup::set_status_text ("Length"), SB_VCB_LABEL
       end
 
-      def get_cham(a, b)
-        c = Math.sqrt(a**2 + b**2)
-        return c
-      end
+      # def get_cham(a, b)
+      #   c = Math.sqrt(a**2 + b**2)
+      #   return c
+      # end
 
       def onSetCursor
         cursor_path = Sketchup.find_support_file ROOT_FILE_PATH+"/icons/ts_cursor1.png", "Plugins/"
@@ -155,7 +169,7 @@ module EA_Extensions623
           pt1
         ]
 
-        print @points
+        # print @points
 
         inside_points = [
           ip1 = [@tw, @tw, 0],
@@ -219,100 +233,251 @@ module EA_Extensions623
         face_to_delete.erase! if face_to_delete
 
         main_face = @hss_inner_group.entities.select{|e| e.is_a? Sketchup::Face}[0].reverse!
+        @center_of_column = @hss_outer_group.entities.add_cpoint(@hss_outer_group.bounds.center)
 
         slide_face = Geom::Transformation.translation(Geom::Vector3d.new(0,-@h, 0))
 
         rot_face = Geom::Transformation.rotation(ORIGIN, X_AXIS, 270.degrees)
         @entities.transform_entities rot_face*slide_face, @hss_outer_group
-        extrude_tube(vec, main_face)
+
+        extrude_length = vec.clone
+        extrude_length.length = (vec.length - (@base_thickness*2)) #This thickness is accouting for bot top and bottom plate. if the top plates thickness is controlled it will need to be accounted for if it varies from the base thickness
+        extrude_tube(extrude_length, main_face)
         add_name_label(vec)
 
         align_tube(vec, @hss_outer_group)
 
+        insert_base_plates(@base_type, @center_of_column.position)
+        insert_top_plate(@center_of_column.position, extrude_length)
+
       end
 
-       def add_name_label(vec)
+      def insert_top_plate(center, vec)
+        @top_plate_group = @hss_outer_group.entities.add_group
+
+        if @w <= STANDARD_TOP_PLATE_SIZE
+          file_path2 = Sketchup.find_support_file "ea_steel_tools/Beam Components/Top Plate.skp", "Plugins"
+
+          @top_plate = @definition_list.load file_path2
+
+          @tp = @top_plate_group.entities.add_instance @top_plate, center
+
+          slide_tpl_up = Geom::Transformation.translation(Geom::Vector3d.new(0,0,vec.length))
+          @top_plate_group.entities.transform_entities slide_tpl_up, @tp
+
+          @tp.explode
+        else
+          #Need to insert a dynamic top plate that grows to the size of the tube.
+        end
+
+      end
+
+      def insert_base_plates(type, center)
         begin
-          @name_label_group = @hss_outer_group.entities.add_group
-          @name_label_group.name = @tube_name
-          ####################
-          beam_direction = vec
-          heading = Geom::Vector3d.new beam_direction
-          heading[2] = 0
-          angle = heading.angle_between NORTH
 
-           #Adds in the label of the name of the beam at the center on both sides
-          component_names = []
-          @definition_list.map {|comp| component_names << comp.name}
-          if component_names.include? @tube_name
-            # p 'includes name'
-            comp_def = @definition_list["#{@tube_name}"]
-          else
-            # p 'created name'
-            comp_def = @definition_list.add "#{@tube_name}"
-            comp_def.description = "The #{@tube_name} label"
-            ents = comp_def.entities
-            _3d_text = ents.add_3d_text("#{@tube_name}", TextAlignCenter, "1CamBam_Stick_7", false, false, LABEL_HEIGHT, 3.0, 0.0, false, 0.0)
-            # p "loaded CamBam_Stick_7: #{_3d_text}"
-            save_path = Sketchup.find_support_file "Components", ""
-            comp_def.save_as(save_path + "/#{@tube_name}.skp")
+          # UI.messagebox("@h is #{@h}, @w is #{@w}")
+
+          case type
+          when 'SQ'
+            base_type = "#{@h.to_i}_ SQ"
+          when 'OC'
+            base_type = "#{@h.to_i}_ OC"
+          when 'IL'
+            base_type = "#{@h.to_i}_ IL"
+          when 'IC'
+            base_type = "#{@h.to_i}_ IC"
+          when 'EX'
+            base_type = "#{@h.to_i}_ EX"
+          when 'DR'
+            base_type = "#{@h.to_i}_ DR"
+          when 'DL'
+            base_type = "#{@h.to_i}_ DL"
+          when 'DI'
+            base_type = "#{@h.to_i}_ DI"
+          end
+          # p base_type
+
+          file_path1 = Sketchup.find_support_file "ea_steel_tools/Beam Components/#{base_type}.skp", "Plugins"
+          # p file_path1
+
+          unless file_path1.nil?
+            @base_plate = @definition_list.load file_path1
+
+            slide_vec = Geom::Vector3d.new(@w/2, @h/2, 0)
+            slide_base = Geom::Transformation.translation(slide_vec)
+
+            @bp = @hss_outer_group.entities.add_instance @base_plate, center
           end
 
-          # p 'label height ' + LABEL_HEIGHT.to_s
 
-          hss_name_label = @name_label_group.entities.add_instance comp_def, ORIGIN
+          #NEEDS#
 
-          rot_to_pos = Geom::Transformation.rotation(ORIGIN, Y_AXIS, 270.degrees)
-          hss_name_label.transform! rot_to_pos
-          # p 'here'
-          # p hss_name_label.bounds.height
-          # p @h - hss_name_label.bounds.height
-          # p (@h - hss_name_label.bounds.height) /2
-          # p @h - ((@h - hss_name_label.bounds.height) /2)
-          # p 'to here'
+          #Conditions if the hss is different sizes
+          #conditions if the hss is rectangular (probs build from scratch, or use defualt and make group for editing)
+          #add Etch marks that fit appropriate size
+        rescue Exception => e
+          puts e.message
+          puts e.backtrace.inspect
+          UI.messagebox("There was a problem inserting the baseplates")
+        end
+      end
 
-          dist_to_slide = ((@h - hss_name_label.bounds.height)/2)
-          # p dist_to_slide
-          y_copy = Y_AXIS.clone
-          y_copy.length = dist_to_slide
-          slide_to_center = Geom::Transformation.translation(y_copy)
-          hss_name_label.transform! slide_to_center
+      # BASEPLATES = ["SQ","OC","IL","IC","EX","DR","DL","DI"]
+      # DI = Door Inline
+      # DL = Door Left
+      # DR = Door Right
+      # EX = Exterior
+      # IC = Inside Corner
+      # IL = Inline
+      # OC = Outside Corner
+      # SQ = Square
 
 
-          label2 = hss_name_label.copy
-          place_2nd_copy = Geom::Transformation.translation(Geom::Vector3d.new(@w,0,0))
-          label2.transform! place_2nd_copy
+      def sq_plate(w, h, c)
+        points = [
+          p1 = [(-(w/2)-STANDARD_BASE_MARGIN), (-(h/2)-STANDARD_BASE_MARGIN), 0],
+          p2 = [((w/2)+STANDARD_BASE_MARGIN), (-(h/2)-STANDARD_BASE_MARGIN), 0],
+          p3 = [(w/2)+STANDARD_BASE_MARGIN, ((h/2)+STANDARD_BASE_MARGIN), 0],
+          p4 = [(-(w/2)-STANDARD_BASE_MARGIN), ((h/2)+STANDARD_BASE_MARGIN), 0]
+        ]
+        return points
+      end
 
-          rot_to_face = Geom::Transformation.rotation(hss_name_label.bounds.center, Z_AXIS, 180.degrees)
-          hss_name_label.transform! rot_to_face
+      def oc_plate(w,h,c)
+        points = [
+          pt1 = [-(w/2)-BASEPLATE_MINIMUM_WELD_OVERHANG, -(h/2)-BASEPLATE_MINIMUM_WELD_OVERHANG, 0],
+          pt2 = [(w/2)+ STANDARD_BASE_MARGIN, -(h/2)-BASEPLATE_MINIMUM_WELD_OVERHANG,0],
+          pt3 = [(w/2)+ STANDARD_BASE_MARGIN, (h/2)+STANDARD_WELD_OVERHANG, 0],
+          pt4 = [(w/2)+ STANDARD_WELD_OVERHANG, (h/2)+STANDARD_WELD_OVERHANG, 0 ],
+          pt5 = [(w/2)+ STANDARD_WELD_OVERHANG, (h/2)+STANDARD_BASE_MARGIN, 0],
+          pt6 = [-(w/2)-BASEPLATE_MINIMUM_WELD_OVERHANG, (h/2)+STANDARD_BASE_MARGIN, 0]
+        ]
+        return points
+      end
 
-          dist_to_slide2 = (vec.length - @name_label_group.bounds.depth) / 2
-          z_copy = Z_AXIS.clone
-          z_copy.length = dist_to_slide2
-          slide_to_mid = Geom::Transformation.translation(z_copy)
+      def il_plate(w,h,c)
+        points = [
+          p1 = [-(w/2)-STANDARD_BASE_MARGIN, -(h/2)-BASEPLATE_MINIMUM_WELD_OVERHANG, 0],
+          p2 = [(w/2)+ STANDARD_BASE_MARGIN, -(h/2)-BASEPLATE_MINIMUM_WELD_OVERHANG, 0],
+          p3 = [(w/2)+ STANDARD_BASE_MARGIN,  (h/2)+BASEPLATE_MINIMUM_WELD_OVERHANG, 0],
+          p4 = [-(w/2)-STANDARD_BASE_MARGIN,  (h/2)+BASEPLATE_MINIMUM_WELD_OVERHANG, 0]
+        ]
+      end
 
-          @name_label_group.transform! slide_to_mid
+      def ic_plate(w,h,c)
+        points = [
+          pt1 = [-(w/2)-STANDARD_WELD_OVERHANG, -(h/2)-STANDARD_WELD_OVERHANG, 0],
+          pt2 = [(w/2)+ STANDARD_BASE_MARGIN, -(h/2)-STANDARD_WELD_OVERHANG,0],
+          pt3 = [(w/2)+ STANDARD_BASE_MARGIN, (h/2)+BASEPLATE_MINIMUM_WELD_OVERHANG, 0],
+          pt4 = [(w/2)+ BASEPLATE_MINIMUM_WELD_OVERHANG, (h/2)+BASEPLATE_MINIMUM_WELD_OVERHANG, 0 ],
+          pt5 = [(w/2)+ BASEPLATE_MINIMUM_WELD_OVERHANG, (h/2)+STANDARD_BASE_MARGIN, 0],
+          pt6 = [-(w/2)-STANDARD_WELD_OVERHANG, (h/2)+STANDARD_BASE_MARGIN, 0]
+        ]
+        return points
+      end
 
-          if @w >= LABEL_HEIGHT
-            label3 = label2.copy
-            rotlab3 = Geom::Transformation.rotation(label3.bounds.center, Z_AXIS, 270.degrees)
-            movup3 = Geom::Transformation.translation(Geom::Vector3d.new(0,-(@h/2),0))
-            label3.transform! rotlab3
-            label3.transform! movup3
+      def ex_plate(w,h,c)
+        points = [
+          p1 = [-(w/2)-STANDARD_BASE_MARGIN, -(h/2)-STANDARD_WELD_OVERHANG, 0],
+          p2 = [(w/2)+ STANDARD_BASE_MARGIN, -(h/2)-STANDARD_WELD_OVERHANG, 0],
+          p3 = [(w/2)+ STANDARD_BASE_MARGIN,  (h/2)+BASEPLATE_MINIMUM_WELD_OVERHANG, 0],
+          p4 = [-(w/2)-STANDARD_BASE_MARGIN,  (h/2)+BASEPLATE_MINIMUM_WELD_OVERHANG, 0]
+        ]
+      end
 
-            movover3 = Geom::Transformation.translation(Geom::Vector3d.new(-@w/2,0,0))
-            label3.transform! movover3
+      def dr_plate(w,h,c)
+        points = [
+          p1 = [-(w/2)-BASEPLATE_MINIMUM_WELD_OVERHANG, -(h/2)-STANDARD_WELD_OVERHANG,0],
+          p2 = [(w/2)+(STANDARD_BASE_MARGIN*2), -(h/2)-STANDARD_WELD_OVERHANG,0 ],
+          p3 = [(w/2)+(STANDARD_BASE_MARGIN*2), (h/2)+BASEPLATE_MINIMUM_WELD_OVERHANG,0 ],
+          p4 = [-(w/2)-BASEPLATE_MINIMUM_WELD_OVERHANG, (h/2)+BASEPLATE_MINIMUM_WELD_OVERHANG,0]
+        ]
+      end
 
-            label4 = label3.copy
-            rot4 = Geom::Transformation.rotation(label4.bounds.center, Z_AXIS, 180.degrees)
-            movedown4 = Geom::Transformation.translation(Geom::Vector3d.new(0,@h,0))
-            label4.transform! rot4
-            label4.transform! movedown4
+      def dl_plate(w,h,c)
+        points = [
+          p1 = [-(w/2)-(STANDARD_BASE_MARGIN*2), -(h/2)-STANDARD_WELD_OVERHANG,0],
+          p2 = [(w/2)+BASEPLATE_MINIMUM_WELD_OVERHANG, -(h/2)-STANDARD_WELD_OVERHANG,0 ],
+          p3 = [(w/2)+BASEPLATE_MINIMUM_WELD_OVERHANG, (h/2)+BASEPLATE_MINIMUM_WELD_OVERHANG,0 ],
+          p4 = [-(w/2)-(STANDARD_BASE_MARGIN*2), (h/2)+BASEPLATE_MINIMUM_WELD_OVERHANG,0]
+        ]
+      end
+
+      def di_plate(w,h,c)
+        points = [
+          p1 = [-(w/2)-BASEPLATE_MINIMUM_WELD_OVERHANG, -(h/2)-BASEPLATE_MINIMUM_WELD_OVERHANG,0],
+          p2 = [(w/2)+(STANDARD_BASE_MARGIN*2), -(h/2)-BASEPLATE_MINIMUM_WELD_OVERHANG,0 ],
+          p3 = [(w/2)+(STANDARD_BASE_MARGIN*2), (h/2)+BASEPLATE_MINIMUM_WELD_OVERHANG,0 ],
+          p4 = [-(w/2)-BASEPLATE_MINIMUM_WELD_OVERHANG, (h/2)+BASEPLATE_MINIMUM_WELD_OVERHANG,0]
+        ]
+      end
+
+      def add_name_label(vec)
+       begin
+        @name_label_group = @hss_outer_group.entities.add_group
+        @name_label_group.name = @tube_name
+        ####################
+        beam_direction = vec
+        heading = Geom::Vector3d.new beam_direction
+        heading[2] = 0
+        angle = heading.angle_between NORTH
+
+         #Adds in the label of the name of the beam at the center on both sides
+        component_names = []
+        @definition_list.map {|comp| component_names << comp.name}
+        if component_names.include? @tube_name
+          # p 'includes name'
+          comp_def = @definition_list["#{@tube_name}"]
+        else
+          # p 'created name'
+          comp_def = @definition_list.add "#{@tube_name}"
+          comp_def.description = "The #{@tube_name} label"
+          ents = comp_def.entities
+          _3d_text = ents.add_3d_text("#{@tube_name}", TextAlignCenter, "1CamBam_Stick_7", false, false, LABEL_HEIGHT, 3.0, 0.0, false, 0.0)
+          # p "loaded CamBam_Stick_7: #{_3d_text}"
+          save_path = Sketchup.find_support_file "Components", ""
+          comp_def.save_as(save_path + "/#{@tube_name}.skp")
+        end
+
+        hss_name_label = @name_label_group.entities.add_instance comp_def, ORIGIN
+
+        rot_to_pos = Geom::Transformation.rotation(ORIGIN, Y_AXIS, 270.degrees)
+        hss_name_label.transform! rot_to_pos
+
+        dist_to_slide = ((@h - hss_name_label.bounds.height)/2)
+        # p dist_to_slide
+        y_copy = Y_AXIS.clone
+        y_copy.length = dist_to_slide
+        slide_to_center = Geom::Transformation.translation(y_copy)
+        hss_name_label.transform! slide_to_center
+
+        labels = []
+        if @h == @w
+          # p "four labels"
+          for n in 1..3
+            labels.push hss_name_label.copy
+            rotation_incrememnts = 90.degrees
           end
-          p "tube height is #{@h}"
-          p "tube width is #{@w}"
+        else
+          # p 'two labels'
+          labels.push hss_name_label.copy
+          rotation_incrememnts = 180.degrees
+        end
 
-          ####################
+        labels.each_with_index do |l,i|
+          # p rotation_incrememnts.radians
+          rot = Geom::Transformation.rotation(@center_of_column.position, Z_AXIS, (rotation_incrememnts*(i+1)))
+          l.transform! rot
+        end
+
+        dist_to_slide2 = (vec.length - @name_label_group.bounds.depth) / 2
+        z_copy = Z_AXIS.clone
+        z_copy.length = dist_to_slide2
+        slide_to_mid = Geom::Transformation.translation(z_copy)
+
+        @name_label_group.transform! slide_to_mid
+
+        ####################
         rescue Exception => e
           puts e.message
           puts e.backtrace.inspect
@@ -321,7 +486,11 @@ module EA_Extensions623
       end
 
       def align_tube(vec, group)
-        group.transform! @trans
+        group.transform! @trans #Fixed this so the column is not scaled
+        adjustment_vec = vec.clone
+        adjustment_vec.length = @base_thickness #this ,ight also need to account for the height from slab (1 1/2")
+        slide_up = Geom::Transformation.translation(adjustment_vec)
+        @entities.transform_entities(slide_up, group)
       end
 
       def extrude_tube(vec, face)
@@ -330,19 +499,19 @@ module EA_Extensions623
 
       def create_geometry(pt1, pt2, view)
           model = view.model
-          model.start_operation("Draw TS", true)
+          # model.start_operation("Draw TS", true)
 
           vec = pt2 - pt1
           if( vec.length < 2 )
               UI.beep
-              UI.messagebox("Please draw a beam longer than 2")
+              UI.messagebox("Please draw a HSS longer than 2")
               return
           end
 
           if vec.parallel? Z_AXIS
-            column = true
+            @is_column = true
           else
-            column = false
+            @is_column = false
           end
 
           draw_tube(vec)
@@ -405,8 +574,8 @@ module EA_Extensions623
           @vx = @vy.axes[0] if not_a_zero_vec
           @vz = @vy.axes[1] if not_a_zero_vec
         end
-        @trans = Geom::Transformation.axes @ip1.position, @vx, @vy, @vz if @ip1.valid? && not_a_zero_vec
-        @trans2 = Geom::Transformation.axes @ip2.position, @vx, @vy, @vz if @ip1.valid? && not_a_zero_vec
+        @trans = Geom::Transformation.axes @ip1.position, @vx, @vy, @vz.reverse if @ip1.valid? && not_a_zero_vec
+        @trans2 = Geom::Transformation.axes @ip2.position, @vx, @vy, @vz.reverse if @ip1.valid? && not_a_zero_vec
       end
 
       # onUserText is called when the user enters something into the VCB
@@ -492,7 +661,6 @@ module EA_Extensions623
 
       # Draw the geometry
       def draw_ghost(pt1, pt2, view)
-
         vec = pt1 - pt2
 
         if vec.parallel? @x_red
@@ -552,7 +720,7 @@ module EA_Extensions623
           end
 
         elsif (key == VK_LEFT && repeat == 1)
-          p 'left'
+          # p 'left'
           if( @state == 1 && @ip1.valid? )
             if @left_lock == true
               view.lock_inference
@@ -569,7 +737,7 @@ module EA_Extensions623
           end
 
         elsif (key == VK_RIGHT && repeat == 1)
-          p 'right'
+          # p 'right'
           if( @state == 1 && @ip1.valid? )
             if @right_lock == true
               view.lock_inference
@@ -586,7 +754,7 @@ module EA_Extensions623
           end
 
         elsif (key == VK_UP && repeat == 1)
-          p 'up'
+          # p 'up'
           if( @state == 1 && @ip1.valid? )
             if @up_lock == true
               view.lock_inference
