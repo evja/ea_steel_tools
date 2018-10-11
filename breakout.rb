@@ -21,11 +21,9 @@ module EA_Extensions623
           if ents[0].class == Sketchup::Group && ents[0].name.match(GROUP_REGEX)
             # p 'passed as a group'
             return true
-
-          elsif ents[0].class == Sketchup::ComponentInstance && ents[0].definition.name.match(GROUP_REGEX)
+          elsif ents[0].class == Sketchup::ComponentInstance #&& ents[0].definition.name.match(GROUP_REGEX)
             # p 'passed as a Component'
             return true
-
           else
             # p 'not validated'
             return false

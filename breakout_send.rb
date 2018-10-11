@@ -88,6 +88,7 @@ module EA_Extensions623
             temp_group = @model.active_entities.add_group(member)
             member_definition = temp_group.definition
             if member.class == Sketchup::ComponentInstance
+              p 'component'
               if member.name.empty?
                 part_name = member.definition.name
               else
@@ -96,6 +97,7 @@ module EA_Extensions623
             else
               part_name = mamber.name
             end
+            p part_name
             new_file = UI.savepanel("Save the Breakout", @path, "#{part_name}.skp" )
             if new_file
               Sketchup.undo
@@ -112,7 +114,17 @@ module EA_Extensions623
           steel_member = @steel_members.first
           temp_group = @model.active_entities.add_group(steel_member)
           defn = temp_group.definition
-          @new_file_path = UI.savepanel("Save the Breakout", @path, "#{@beam_name}.skp" )
+          if steel_member.class == Sketchup::ComponentInstance
+            p 'component'
+            if steel_member.name.empty?
+              part_name = steel_member.definition.name
+            else
+              part_name = steel_member.name
+            end
+          else
+            part_name = steel_member.name
+          end
+          @new_file_path = UI.savepanel("Save the Breakout", @path, "#{part_name}.skp" )
           p @new_file_path
           if !@new_file_path.nil?
             defn.save_as(@new_file_path)

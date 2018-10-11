@@ -3,21 +3,6 @@ module EA_Extensions623
 
     class RolledSteel < RolledDialog
       include BeamLibrary
-      ###############
-      ## CONSTANTS ##
-      ###############
-
-      ##################################
-      #@@@@@@@@ BEAM variables @@@@@@@@#
-      ##################################
-      #Sets the root radus for the beams
-      RADIUS = 3
-      # This sets the stiffener location from each end of the beam
-      STIFF_LOCATION = 2
-      #Distance from the end of the beam the 13/14" holes are placed
-      BIG_HOLES_LOCATION = 4
-      # Minimum distance from the inside of the flanges to the center of 13/16" holes can be
-      MIN_BIG_HOLE_DISTANCE_FROM_KZONE = 1.25
 
       def initialize(data)
 
@@ -67,41 +52,31 @@ module EA_Extensions623
         @@radius_offset     = data[:radius_offset]
         # @@segment_length    = date[:seg_length] #Update the dialog to allow for 4" 8" & 16" Segements on the rolled tool
 
-        colors = {
-          orange:  {name: ' C ¾" Thick',    rgb: [225,135,50]},
-          yellow:  {name: ' D ⅝" Thick',    rgb: [225,225,50]},
-          green:   {name: ' E ½" Thick',    rgb: [50,225,50 ]},
-          blue:    {name: ' F ⅜" Thick',    rgb: [50,118,225]},
-          indigo:  {name: ' G 5/16" Thick', rgb: [118,50,225]},
-          purple:  {name: ' H ¼" Thick',    rgb: [186,50,225]}
-        }
-
-
         case @@stiff_thickness
         when '1/4'
           @stiff_scale = 2 #this doubles the size of the plate from it's standard 1/8" to 1/4"
-          clr1 = colors[:purple][:name]
-          rgb  = colors[:purple][:rgb]
+          clr1 = STEEL_COLORS[:purple][:name]
+          rgb  = STEEL_COLORS[:purple][:rgb]
         when '5/16'
           @stiff_scale = 2.5
-          clr1 = colors[:indigo][:name]
-          rgb  = colors[:indigo][:rgb]
+          clr1 = STEEL_COLORS[:indigo][:name]
+          rgb  = STEEL_COLORS[:indigo][:rgb]
         when '3/8'
           @stiff_scale = 3
-          clr1 = colors[:blue][:name]
-          rgb  = colors[:blue][:rgb]
+          clr1 = STEEL_COLORS[:blue][:name]
+          rgb  = STEEL_COLORS[:blue][:rgb]
         when '1/2'
           @stiff_scale = 4
-          clr1 = colors[:green][:name]
-          rgb  = colors[:green][:rgb]
+          clr1 = STEEL_COLORS[:green][:name]
+          rgb  = STEEL_COLORS[:green][:rgb]
         when '5/8'
           @stiff_scale = 5
-          clr1 = colors[:yellow][:name]
-          rgb  = colors[:yellow][:rgb]
+          clr1 = STEEL_COLORS[:yellow][:name]
+          rgb  = STEEL_COLORS[:yellow][:rgb]
         when '3/4'
           @stiff_scale = 6
-          clr1 = colors[:orange][:name]
-          rgb  = colors[:orange][:rgb]
+          clr1 = STEEL_COLORS[:orange][:name]
+          rgb  = STEEL_COLORS[:orange][:rgb]
         end
 
         if @material_names.include? clr1
@@ -115,24 +90,24 @@ module EA_Extensions623
         case @@shearpl_thickness
         when '1/4'
           @shear_scale = 2
-          clr2 = colors[:purple][:name]
-          rgb2  = colors[:purple][:rgb]
+          clr2 = STEEL_COLORS[:purple][:name]
+          rgb2  = STEEL_COLORS[:purple][:rgb]
         when '3/8'
           @shear_scale = 3
-          clr2 = colors[:blue][:name]
-          rgb2  = colors[:blue][:rgb]
+          clr2 = STEEL_COLORS[:blue][:name]
+          rgb2  = STEEL_COLORS[:blue][:rgb]
         when '1/2'
           @shear_scale = 4
-          clr2 = colors[:green][:name]
-          rgb2  = colors[:green][:rgb]
+          clr2 = STEEL_COLORS[:green][:name]
+          rgb2  = STEEL_COLORS[:green][:rgb]
         when '5/8'
           @shear_scale = 5
-          clr2 = colors[:yellow][:name]
-          rgb2  = colors[:yellow][:rgb]
+          clr2 = STEEL_COLORS[:yellow][:name]
+          rgb2  = STEEL_COLORS[:yellow][:rgb]
         when '3/4'
           @shear_scale = 6
-          clr2 = colors[:orange][:name]
-          rgb2  = colors[:orange][:rgb]
+          clr2 = STEEL_COLORS[:orange][:name]
+          rgb2  = STEEL_COLORS[:orange][:rgb]
         end
 
         if @material_names.include? clr2
@@ -247,102 +222,156 @@ module EA_Extensions623
         end
         stiffener_plate = "PL #{@@height_class}(#{wc}) Stiffener"
 
-        file_path1 = Sketchup.find_support_file "ea_steel_tools/Beam Components/9_16 Hole Set.skp", "Plugins"
-        file_path2 = Sketchup.find_support_file "ea_steel_tools/Beam Components/13_16 Hole Set.skp", "Plugins"
-        file_path3 = Sketchup.find_support_file "ea_steel_tools/Beam Components/2 x½_ Studs.skp", "Plugins"
-        file_path4 = Sketchup.find_support_file "ea_steel_tools/Beam Components/UP.skp", "Plugins/"
-        file_path5 = Sketchup.find_support_file "#{ROOT_FILE_PATH}/Beam Components/#{stiffener_plate}.skp", "Plugins/"
+        file_path1 = Sketchup.find_support_file "#{COMPONENT_PATH}/#{NN_SXTNTHS_HOLE}", "Plugins"
+        file_path2 = Sketchup.find_support_file "#{COMPONENT_PATH}/#{THRTN_SXTNTHS_HOLE}", "Plugins"
+        file_path3 = Sketchup.find_support_file "#{COMPONENT_PATH}/#{HLF_INCH_STD}", "Plugins"
+        file_path4 = Sketchup.find_support_file "#{COMPONENT_PATH}/#{UP_DRCTN}", "Plugins/"
+        file_path5 = Sketchup.find_support_file "#{COMPONENT_PATH}/#{stiffener_plate}.skp", "Plugins/"
         if @hc < 10
-          file_path6 = Sketchup.find_support_file "#{ROOT_FILE_PATH}/Beam Components/PL #{@@height_class}(#{wc}) to #{@@height_class}.skp", "Plugins/"
+          file_path6 = Sketchup.find_support_file "#{COMPONENT_PATH}/PL #{@@height_class}(#{wc}) to #{@@height_class}.skp", "Plugins/"
         elsif @hc >= 10
-          file_path6 = Sketchup.find_support_file "#{ROOT_FILE_PATH}/Beam Components/PL #{@@height_class}(#{wc}) to W10.skp", "Plugins/"
+          file_path6 = Sketchup.find_support_file "#{COMPONENT_PATH}/PL #{@@height_class}(#{wc}) to W10.skp", "Plugins/"
         end
-        file_path7 = Sketchup.find_support_file "#{ROOT_FILE_PATH}/Beam Components/PL #{@@height_class}(#{wc}) to W12.skp", "Plugins/"
+        file_path7 = Sketchup.find_support_file "#{COMPONENT_PATH}/PL #{@@height_class}(#{wc}) to W12.skp", "Plugins/"
 
-        @nine_sixteenths_hole     = @definition_list.load file_path1
-        @thirteen_sixteenths_hole = @definition_list.load file_path2
-        @half_inch_stud           = @definition_list.load file_path3
-        @up_arrow                 = @definition_list.load file_path4
-        @stiffener                = @definition_list.load file_path5
-        @shear_pl_ww10            = @definition_list.load file_path6 if file_path6
-        @shear_pl_ww12            = @definition_list.load file_path7 if @hc > 10
+        begin
+          @nine_sixteenths_hole = @definition_list.load file_path1
+        rescue Exception => e
+          puts e.message
+          puts e.backtrace.inspect
+          UI.messagebox("There was a problem loading 9/16 holes")
+        end
+
+        begin
+          @thirteen_sixteenths_hole = @definition_list.load file_path2
+        rescue Exception => e
+          puts e.message
+          puts e.backtrace.inspect
+          UI.messagebox("There was a problem loading 13/16 holes")
+        end
+
+        begin
+          @half_inch_stud = @definition_list.load file_path3
+        rescue Exception => e
+          puts e.message
+          puts e.backtrace.inspect
+          UI.messagebox("There was a problem loading the 1/2\" studs")
+        end
+
+        begin
+          @up_arrow = @definition_list.load file_path4
+        rescue Exception => e
+          puts e.message
+          puts e.backtrace.inspect
+          UI.messagebox("There was a problem loading the UP Arrow")
+        end
+
+        begin
+          @stiffener = @definition_list.load file_path5
+        rescue Exception => e
+          puts e.message
+          puts e.backtrace.inspect
+          UI.messagebox("There was a problem loading the Stiffeners")
+        end
+
+        begin
+          @shear_pl_ww10            = @definition_list.load file_path6 if file_path6
+        rescue Exception => e
+          puts e.message
+          puts e.backtrace.inspect
+          UI.messagebox("There was a problem loading 10\" Shear Plates")
+        end
+
+        begin
+          @shear_pl_ww12            = @definition_list.load file_path7 if @hc > 10
+        rescue Exception => e
+          puts e.message
+          puts e.backtrace.inspect
+          UI.messagebox("There was a problem loading the 12\" Shear Plates")
+        end
       end
 
       def create_beam(origin_arc)
-        #Completed Methods
-        set_groups
-        profile = draw_beam(@@beam_data)
+        begin
+          #Completed Methods
+          set_groups
+          profile = draw_beam(@@beam_data)
 
-        # @@has_holes = false # uncomment this to toggle holes
-        if @@has_holes
-          web_holes    = add_web_holes    if @@web_holes
-          flange_holes = add_flange_holes if @@flange_holes
-          large_holes  = add_shear_holes  if @hc >= 8
-          guage_holes  = add_guage_holes
+          # @@has_holes = false # uncomment this to toggle holes
+          if @@has_holes
+            web_holes    = add_web_holes    if @@web_holes
+            flange_holes = add_flange_holes if @@flange_holes
+            large_holes  = add_shear_holes  if @hc >= 8
+            guage_holes  = add_guage_holes
+          end
+
+          # Draw the New Arc with 8" Segments
+          arc = draw_new_arc(origin_arc)
+
+          # Adds in the labels for the steel
+          labels = add_labels(arc)
+
+          # Adds in the plates
+          add_stiffeners(@stiff_scale, @stiff_color) if @@has_stiffeners
+          add_shearplates(@shear_scale, @shear_color) if @@has_shearplates
+
+          align_with_curve(profile, arc) #this returns an array. The FACE that has been aligned and the ARC
+          extrude_face(profile, arc)
+          spread_parts(arc)
+          erase_arc(arc) #Keep this at the bottom of the #create_beam method
+          @working_group.explode
+          if @@has_holes && @@cuts_holes
+            @solid_group.explode
+            @web_holes.each(&@explode) if @@web_holes
+            @flange_holes.each(&@explode) if @@flange_holes
+            @shear_holes.each(&@explode)
+            @guage_holes.each(&@explode)
+          end
+          @studs.each {|st| st.layer = @steel_layer} if !@studs.empty?
+          # @stiff_plates.each {|stp| st.layer = @steel_layer} if !@stiff_plates.empty?
+          # @sh_plates.each {|shp| st.layer = @steel_layer} if !@sh_plates.empty?
+          rescue Exception => e
+            puts e.message
+            puts e.backtrace.inspect
+            UI.messagebox("There was a problem drawing the curved beam")
+          end
         end
 
-        # Draw the New Arc with 8" Segments
-        arc = draw_new_arc(origin_arc)
+        def set_groups
+          active_model = Sketchup.active_model.active_entities.parent
+          @working_group      = @entities.add_group
+          @working_group_ents = @working_group.entities
+          @outer_group = @working_group_ents.add_group # add plates
+          @outer_group.name = 'Beam'
 
-        # Adds in the labels for the steel
-        labels = add_labels(arc)
+          @inner_group = @outer_group.entities.add_group #Add Labels
+          @inner_group.name = "#{@@beam_name}"
+          @steel_layer = Sketchup.active_model.layers.add " Steel"
+          @inner_group.layer = @steel_layer
 
-        # Adds in the plates
-        add_stiffeners(@stiff_scale, @stiff_color) if @@has_stiffeners
-        add_shearplates(@shear_scale, @shear_color) if @@has_shearplates
+          @solid_group = @inner_group.entities.add_group
+          @centergroup = @solid_group.entities.add_group
 
-        align_with_curve(profile, arc) #this returns an array. The FACE that has been aligned and the ARC
-        extrude_face(profile, arc)
-        spread_parts(arc)
-        erase_arc(arc) #Keep this at the bottom of the #create_beam method
-        @working_group.explode
-        if @@has_holes && @@cuts_holes
-          @solid_group.explode
-          @web_holes.each(&@explode) if @@web_holes
-          @flange_holes.each(&@explode) if @@flange_holes
-          @shear_holes.each(&@explode)
-          @guage_holes.each(&@explode)
+          b = @outer_group.bounds
+          h = b.height
+          w = b.width
+          d = b.depth
+
+          # Sets the outer group for the beam and should be named "Beam"
+          # Sets the inside group for the beam and should be named "W--X--"
+          # Sets the inner most group for the beam and should be named "Difference"
+          #############################
+          ##    GROUP STRUCTURE (3 groups)
+          # @outer_group {
+          #   --plates, studs--
+          #   @inner_group {
+          #     --holes, labels--
+          #     @solid_group {
+          #       geometry
+          #     }
+          #   }
+          # }
         end
-        @studs.each {|st| st.layer = @steel_layer} if !@studs.empty?
-        # @stiff_plates.each {|stp| st.layer = @steel_layer} if !@stiff_plates.empty?
-        # @sh_plates.each {|shp| st.layer = @steel_layer} if !@sh_plates.empty?
-      end
-
-      def set_groups
-        active_model = Sketchup.active_model.active_entities.parent
-        @working_group      = @entities.add_group
-        @working_group_ents = @working_group.entities
-        @outer_group = @working_group_ents.add_group # add plates
-        @outer_group.name = 'Beam'
-
-        @inner_group = @outer_group.entities.add_group #Add Labels
-        @inner_group.name = "#{@@beam_name}"
-        @steel_layer = Sketchup.active_model.layers.add " Steel"
-        @inner_group.layer = @steel_layer
-
-        @solid_group = @inner_group.entities.add_group
-        @centergroup = @solid_group.entities.add_group
-
-        b = @outer_group.bounds
-        h = b.height
-        w = b.width
-        d = b.depth
-
-        # Sets the outer group for the beam and should be named "Beam"
-        # Sets the inside group for the beam and should be named "W--X--"
-        # Sets the inner most group for the beam and should be named "Difference"
-        #############################
-        ##    GROUP STRUCTURE (3 groups)
-        # @outer_group {
-        #   --plates, studs--
-        #   @inner_group {
-        #     --holes, labels--
-        #     @solid_group {
-        #       geometry
-        #     }
-        #   }
-        # }
-      end
 
       def draw_beam(data)
         #set variable for the Name, Height Class, Height, Width, flange thickness, web thickness and radius for the beams
@@ -420,335 +449,365 @@ module EA_Extensions623
       end
 
       def add_web_holes
-        @c = Geom::Point3d.new 0,0, @h/2
+        begin
+          @c = Geom::Point3d.new 0,0, @h/2
 
-        scale_web = @tw/2
-        scale_hole = Geom::Transformation.scaling ORIGIN, 1, 1, scale_web
-        webhole1 = @inner_group.entities.add_instance @nine_sixteenths_hole, ORIGIN
-        webhole1.transform! scale_hole
+          scale_web = @tw/2
+          scale_hole = Geom::Transformation.scaling ORIGIN, 1, 1, scale_web
+          webhole1 = @inner_group.entities.add_instance @nine_sixteenths_hole, ORIGIN
+          webhole1.transform! scale_hole
 
-        # align1 = Geom::Transformation.axes @c.position, @x_vec, @z_vec, @y_vec
-        align1 = Geom::Transformation.axes @c, Z_AXIS, Y_AXIS, X_AXIS
-        webhole1.transform! align1
+          # align1 = Geom::Transformation.axes @c.position, @x_vec, @z_vec, @y_vec
+          align1 = Geom::Transformation.axes @c, Z_AXIS, Y_AXIS, X_AXIS
+          webhole1.transform! align1
 
-        # align_hole(webhole1, @y_vec, 0)
-        @hc >= 14 ? @h-(@tf+3) : (0.5*@h)+(0.25*@hc)
+          # align_hole(webhole1, @y_vec, 0)
+          @hc >= 14 ? @h-(@tf+3) : (0.5*@h)+(0.25*@hc)
 
-        c = webhole1.bounds.center
-        adjust1 = @c - c
+          c = webhole1.bounds.center
+          adjust1 = @c - c
 
-        adjust2 = Z_AXIS.clone
-        adjust2.length = @first_web_hole_dist_from_center
+          adjust2 = Z_AXIS.clone
+          adjust2.length = @first_web_hole_dist_from_center
 
-        move1 = Geom::Transformation.new adjust1
-        move2 = Geom::Transformation.translation adjust2
-        webhole1.transform! move1
-        webhole1.transform! move2
+          move1 = Geom::Transformation.new adjust1
+          move2 = Geom::Transformation.translation adjust2
+          webhole1.transform! move1
+          webhole1.transform! move2
 
-        #Here on the web by now
+          #Here on the web by now
 
-        webhole2 = webhole1.copy
+          webhole2 = webhole1.copy
 
-        slide_down = Geom::Vector3d.new Z_AXIS
-        slide_down.length = @webhole_stagger
-        slide_down.reverse!
-        move_down = Geom::Transformation.new(slide_down)
-        webhole2.transform! move_down
-        @web_holes.push webhole1, webhole2
-        @all_added_entities_so_far.push webhole1, webhole2
-        @holes.push webhole1, webhole2
-        return @web_holes
+          slide_down = Geom::Vector3d.new Z_AXIS
+          slide_down.length = @webhole_stagger
+          slide_down.reverse!
+          move_down = Geom::Transformation.new(slide_down)
+          webhole2.transform! move_down
+          @web_holes.push webhole1, webhole2
+          @all_added_entities_so_far.push webhole1, webhole2
+          @holes.push webhole1, webhole2
+          return @web_holes
+        rescue Exception => e
+          puts e.message
+          puts e.backtrace.inspect
+          UI.messagebox("There was a problem inserting the 9/16 holes into the web")
+        end
       end
 
       def add_flange_holes
-        if @tf < 0.75
-          scale_flange = @tf/2
-          scale_hole = Geom::Transformation.scaling ORIGIN, 1, 1, scale_flange
+        begin
+          if @tf < 0.75
+            scale_flange = @tf/2
+            scale_hole = Geom::Transformation.scaling ORIGIN, 1, 1, scale_flange
 
-          flangehole1 = @inner_group.entities.add_instance @nine_sixteenths_hole, ORIGIN
-          flangehole1.transform! scale_hole
+            flangehole1 = @inner_group.entities.add_instance @nine_sixteenths_hole, ORIGIN
+            flangehole1.transform! scale_hole
+
+            z = Geom::Vector3d.new(0,0,1)
+            vec = @side_line.line[1]
+            angle = vec.angle_between z
+
+            rot = Geom::Transformation.rotation ORIGIN, [0,1,0], angle
+            flangehole1.transform! rot
+
+            align_hole(flangehole1, vec, 0)
+            # move hole to a corner of the flange
+            # c = flangehole1.bounds.center
+            position = @top_edge.start.position - ORIGIN
+
+            move = Geom::Transformation.new position
+            flangehole1.transform! move
+
+            # determine if the holes stagger or are 1-5/8" from edge
+            # set it to width
+            vec2 = X_AXIS.clone
+            @flange_hole_stagger ? vec2.length = ((@w/2)-(@guage_width/2)) : vec2.length = 1.6250
+            # vec2.reverse!
+            slide1 = Geom::Transformation.new vec2.reverse!
+            flangehole1.transform! slide1
+            # copy another one
+            flangehole2 = flangehole1.copy
+            # position the copy
+            vec3 = vec2.clone
+            @flange_hole_stagger ? vec3.length = @guage_width : vec3.length = @w-((1.6250)*2)
+            slide2 = Geom::Transformation.new vec3
+            flangehole2.transform! slide2
+
+            # copy holes to the other flange
+            flangehole3 = flangehole1.copy
+            flangehole4 = flangehole2.copy
+
+            vec4 = @bottom_edge.start.position - @top_edge.end.position
+            vec4.length = @h-@tf
+            send_to_flange = Geom::Transformation.new vec4
+            flangehole3.transform! vec4
+            flangehole4.transform! vec4
+
+            @flange_holes.push flangehole1, flangehole2, flangehole3, flangehole4
+            @all_added_entities_so_far.push flangehole1, flangehole2, flangehole3, flangehole4
+            @holes.push flangehole1, flangehole2, flangehole3, flangehole4
+            return @flange_holes
+          else # add in 1/2" studs
+            @flange_hole_stagger ? dist = @guage_width/2 : dist = (@w/2) - 1.6250
+            stud1 = @outer_group.entities.add_instance @half_inch_stud, [dist, 0, @h]
+
+            stud2 = stud1.copy
+            place_2nd_stud = Geom::Transformation.translation [(@flange_hole_stagger ? -@guage_width : (@w - (1.6250*2))*-1), 0, 0]
+            stud2.transform! place_2nd_stud
+
+            cpoint = [0,0,@h/2]
+            rot = Geom::Transformation.rotation cpoint, [0,1,0], 180.degrees
+
+            stud3 = stud2.copy
+            stud4 = stud1.copy
+            @outer_group.entities.transform_entities rot, stud3, stud4
+
+            @studs.push stud1, stud2, stud3, stud4
+            @all_added_entities_so_far.push stud1, stud2, stud3, stud4
+          end
+        rescue Exception => e
+          puts e.message
+          puts e.backtrace.inspect
+          UI.messagebox("There was a problem inserting the 9/16\" flage holes into the beam")
+        end
+      end
+
+      def add_shear_holes
+        begin
+          scale_web = @tw/2
+
+          # Sets the spacing for the 13/16" Web holes to be spaced from each other vertically
+          reasonable_spacing = 3
+          # if @hc >= 10
+          #   reasonable_spacing = 3
+          # else
+          #   reasonable_spacing = 2.5
+          # end
+
+          @number_of_sheer_holes = (((((@h - ((2*@tf)+(@r * 2))) - (MIN_BIG_HOLE_DISTANCE_FROM_KZONE*2)) / 3).to_i) +1)
+          @number_of_sheer_holes = 2  if @hc <= 6
+
+          dist = Geom::Vector3d.new [0,0,1]
+
+          y1 = 0
+          z = (0.5*@h)
+          x = (-0.5*@tw)
+
+          #adds in the 13/16" Web/Connection holes
+          @number_of_sheer_holes.even? ? z = (z-reasonable_spacing.to_f/2)-(((@number_of_sheer_holes-2)/2)*reasonable_spacing) : z = z-(((@number_of_sheer_holes-1)/2)*reasonable_spacing)
+
+          for n in 0..(@number_of_sheer_holes-1) do
+            point = Geom::Point3d.new x, y1, (z + (n*reasonable_spacing))
+            scale_hole = Geom::Transformation.scaling point, scale_web, 1, 1
+            t1 = Geom::Transformation.rotation point, [0,1,0], 270.degrees
+            inst =  @inner_group.entities.add_instance @thirteen_sixteenths_hole, point
+            inst.transform! t1
+            inst.transform! scale_hole
+            @shear_holes << inst
+            @holes << inst
+            @all_added_entities_so_far << inst
+          end
+
+          return @holes
+        rescue Exception => e
+          puts e.message
+          puts e.backtrace.inspect
+          UI.messagebox("There was a problem inserting the 13/16\" holes into the beam")
+        end
+      end
+
+      def add_guage_holes
+        begin
+          scale_flange = @tf/2
+          scale_guage_hole = Geom::Transformation.scaling ORIGIN, 1, 1, scale_flange
+
+          guagehole1 = @inner_group.entities.add_instance @thirteen_sixteenths_hole, ORIGIN
+          guagehole1.transform! scale_guage_hole
 
           z = Geom::Vector3d.new(0,0,1)
           vec = @side_line.line[1]
           angle = vec.angle_between z
 
           rot = Geom::Transformation.rotation ORIGIN, [0,1,0], angle
-          flangehole1.transform! rot
+          guagehole1.transform! rot
 
-          align_hole(flangehole1, vec, 0)
+          align_hole(guagehole1, vec, 0)
+
           # move hole to a corner of the flange
-          # c = flangehole1.bounds.center
           position = @top_edge.start.position - ORIGIN
 
           move = Geom::Transformation.new position
-          flangehole1.transform! move
+          guagehole1.transform! move
 
           # determine if the holes stagger or are 1-5/8" from edge
           # set it to width
           vec2 = X_AXIS.clone
-          @flange_hole_stagger ? vec2.length = ((@w/2)-(@guage_width/2)) : vec2.length = 1.6250
-          # vec2.reverse!
+          vec2.length = ((@w/2)-(@guage_width/2))
+
           slide1 = Geom::Transformation.new vec2.reverse!
-          flangehole1.transform! slide1
+          guagehole1.transform! slide1
           # copy another one
-          flangehole2 = flangehole1.copy
+          guagehole2 = guagehole1.copy
+
           # position the copy
           vec3 = vec2.clone
-          @flange_hole_stagger ? vec3.length = @guage_width : vec3.length = @w-((1.6250)*2)
+          vec3.length = @guage_width
           slide2 = Geom::Transformation.new vec3
-          flangehole2.transform! slide2
+          guagehole2.transform! slide2
 
           # copy holes to the other flange
-          flangehole3 = flangehole1.copy
-          flangehole4 = flangehole2.copy
+          guagehole3 = guagehole1.copy
+          guagehole4 = guagehole2.copy
 
           vec4 = @bottom_edge.start.position - @top_edge.end.position
           vec4.length = @h-@tf
           send_to_flange = Geom::Transformation.new vec4
-          flangehole3.transform! vec4
-          flangehole4.transform! vec4
+          guagehole3.transform! vec4
+          guagehole4.transform! vec4
 
-          @flange_holes.push flangehole1, flangehole2, flangehole3, flangehole4
-          @all_added_entities_so_far.push flangehole1, flangehole2, flangehole3, flangehole4
-          @holes.push flangehole1, flangehole2, flangehole3, flangehole4
-          return @flange_holes
-        else # add in 1/2" studs
-          @flange_hole_stagger ? dist = @guage_width/2 : dist = (@w/2) - 1.6250
-          stud1 = @outer_group.entities.add_instance @half_inch_stud, [dist, 0, @h]
-
-          stud2 = stud1.copy
-          place_2nd_stud = Geom::Transformation.translation [(@flange_hole_stagger ? -@guage_width : (@w - (1.6250*2))*-1), 0, 0]
-          stud2.transform! place_2nd_stud
-
-          cpoint = [0,0,@h/2]
-          rot = Geom::Transformation.rotation cpoint, [0,1,0], 180.degrees
-
-          stud3 = stud2.copy
-          stud4 = stud1.copy
-          @outer_group.entities.transform_entities rot, stud3, stud4
-
-          @studs.push stud1, stud2, stud3, stud4
-          @all_added_entities_so_far.push stud1, stud2, stud3, stud4
+          @guage_holes.push guagehole1, guagehole2, guagehole3, guagehole4
+          @all_added_entities_so_far.push guagehole1, guagehole2, guagehole3, guagehole4
+          @holes.push guagehole1, guagehole2, guagehole3, guagehole4
+          return @guage_holes
+        rescue Exception => e
+          puts e.message
+          puts e.backtrace.inspect
+          UI.messagebox("There was a problem inserting the guage holes into the beam")
         end
-      end
-
-      def add_shear_holes
-        scale_web = @tw/2
-
-        # Sets the spacing for the 13/16" Web holes to be spaced from each other vertically
-        reasonable_spacing = 3
-        # if @hc >= 10
-        #   reasonable_spacing = 3
-        # else
-        #   reasonable_spacing = 2.5
-        # end
-
-        @number_of_sheer_holes = (((((@h - ((2*@tf)+(@r * 2))) - (MIN_BIG_HOLE_DISTANCE_FROM_KZONE*2)) / 3).to_i) +1)
-        @number_of_sheer_holes = 2  if @hc <= 6
-
-        dist = Geom::Vector3d.new [0,0,1]
-
-        y1 = 0
-        z = (0.5*@h)
-        x = (-0.5*@tw)
-
-        #adds in the 13/16" Web/Connection holes
-        @number_of_sheer_holes.even? ? z = (z-reasonable_spacing.to_f/2)-(((@number_of_sheer_holes-2)/2)*reasonable_spacing) : z = z-(((@number_of_sheer_holes-1)/2)*reasonable_spacing)
-
-        for n in 0..(@number_of_sheer_holes-1) do
-          point = Geom::Point3d.new x, y1, (z + (n*reasonable_spacing))
-          scale_hole = Geom::Transformation.scaling point, scale_web, 1, 1
-          t1 = Geom::Transformation.rotation point, [0,1,0], 270.degrees
-          inst =  @inner_group.entities.add_instance @thirteen_sixteenths_hole, point
-          inst.transform! t1
-          inst.transform! scale_hole
-          @shear_holes << inst
-          @holes << inst
-          @all_added_entities_so_far << inst
-        end
-
-        return @holes
-      end
-
-      def add_guage_holes
-        scale_flange = @tf/2
-        scale_guage_hole = Geom::Transformation.scaling ORIGIN, 1, 1, scale_flange
-
-        guagehole1 = @inner_group.entities.add_instance @thirteen_sixteenths_hole, ORIGIN
-        guagehole1.transform! scale_guage_hole
-
-        z = Geom::Vector3d.new(0,0,1)
-        vec = @side_line.line[1]
-        angle = vec.angle_between z
-
-        rot = Geom::Transformation.rotation ORIGIN, [0,1,0], angle
-        guagehole1.transform! rot
-
-        align_hole(guagehole1, vec, 0)
-
-        # move hole to a corner of the flange
-        position = @top_edge.start.position - ORIGIN
-
-        move = Geom::Transformation.new position
-        guagehole1.transform! move
-
-        # determine if the holes stagger or are 1-5/8" from edge
-        # set it to width
-        vec2 = X_AXIS.clone
-        vec2.length = ((@w/2)-(@guage_width/2))
-
-        slide1 = Geom::Transformation.new vec2.reverse!
-        guagehole1.transform! slide1
-        # copy another one
-        guagehole2 = guagehole1.copy
-
-        # position the copy
-        vec3 = vec2.clone
-        vec3.length = @guage_width
-        slide2 = Geom::Transformation.new vec3
-        guagehole2.transform! slide2
-
-        # copy holes to the other flange
-        guagehole3 = guagehole1.copy
-        guagehole4 = guagehole2.copy
-
-        vec4 = @bottom_edge.start.position - @top_edge.end.position
-        vec4.length = @h-@tf
-        send_to_flange = Geom::Transformation.new vec4
-        guagehole3.transform! vec4
-        guagehole4.transform! vec4
-
-        @guage_holes.push guagehole1, guagehole2, guagehole3, guagehole4
-        @all_added_entities_so_far.push guagehole1, guagehole2, guagehole3, guagehole4
-        @holes.push guagehole1, guagehole2, guagehole3, guagehole4
-        return @guage_holes
       end
 
       def add_labels(arc)
-        start_direction_group = @inner_group.entities.add_group
-        start_ents = start_direction_group.entities
+        begin
+          start_direction_group = @inner_group.entities.add_group
+          start_ents = start_direction_group.entities
 
-        end_direction_group = @inner_group.entities.add_group
-        end_ents = end_direction_group.entities
+          end_direction_group = @inner_group.entities.add_group
+          end_ents = end_direction_group.entities
 
-        up_direction_group = @inner_group.entities.add_group
-        up_ents = up_direction_group.entities
+          up_direction_group = @inner_group.entities.add_group
+          up_ents = up_direction_group.entities
 
-        beam_label_group = @inner_group.entities.add_group
-        label_ents = beam_label_group.entities
+          beam_label_group = @inner_group.entities.add_group
+          label_ents = beam_label_group.entities
 
-        arc_start_line = arc.first_edge
-        arc_end_line   = arc.last_edge
+          arc_start_line = arc.first_edge
+          arc_end_line   = arc.last_edge
 
-        xp1 = arc_start_line.start.position
-        xp2 = arc_start_line.end.position
+          xp1 = arc_start_line.start.position
+          xp2 = arc_start_line.end.position
 
-        yp1 = arc_end_line.start.position
-        yp2 = arc_end_line.end.position
+          yp1 = arc_end_line.start.position
+          yp2 = arc_end_line.end.position
 
-        vec1 = xp1 - xp2
-        vec2 = yp2 - yp1
+          vec1 = xp1 - xp2
+          vec2 = yp2 - yp1
 
-        beam_direction_x = vec1
-        beam_direction_y = vec2
-        heading_x = Geom::Vector3d.new beam_direction_x
-        heading_y = Geom::Vector3d.new beam_direction_y
-        heading_x[2] = 0
-        heading_y[2] = 0
-        angle_x = heading_x.angle_between Y_AXIS
-        angle_y = heading_y.angle_between Y_AXIS
+          beam_direction_x = vec1
+          beam_direction_y = vec2
+          heading_x = Geom::Vector3d.new beam_direction_x
+          heading_y = Geom::Vector3d.new beam_direction_y
+          heading_x[2] = 0
+          heading_y[2] = 0
+          angle_x = heading_x.angle_between Y_AXIS
+          angle_y = heading_y.angle_between Y_AXIS
 
-        direction1 = get_direction(angle_x, vec1)
-        direction2 = get_direction(angle_y, vec2)
+          direction1 = get_direction(angle_x, vec1)
+          direction2 = get_direction(angle_y, vec2)
 
-        #Gets the file paths for the direction labels
-        # Direction Labels have the axis at the center of mass
-        file_path1 = Sketchup.find_support_file "#{ROOT_FILE_PATH}/Beam Components/#{direction1}.skp", "Plugins/"
-        start_direction = @definition_list.load file_path1
-        file_path2 = Sketchup.find_support_file "#{ROOT_FILE_PATH}/Beam Components/#{direction2}.skp", "Plugins/"
-        end_direction = @definition_list.load file_path2
+          #Gets the file paths for the direction labels
+          # Direction Labels have the axis at the center of mass
+          file_path1 = Sketchup.find_support_file "#{COMPONENT_PATH}/#{direction1}.skp", "Plugins/"
+          start_direction = @definition_list.load file_path1
+          file_path2 = Sketchup.find_support_file "#{COMPONENT_PATH}/#{direction2}.skp", "Plugins/"
+          end_direction = @definition_list.load file_path2
 
-        direction_insertion_point1 = [(@tw/2), 0, @h/2]
-        direction_insertion_point2 = [(-@tw/2), 0, @h/2]
+          direction_insertion_point1 = [(@tw/2), 0, @h/2]
+          direction_insertion_point2 = [(-@tw/2), 0, @h/2]
 
-        tr = Geom::Transformation.axes direction_insertion_point1, Y_AXIS, Z_AXIS
-        tr2 = Geom::Transformation.axes direction_insertion_point2, Y_AXIS.reverse, Z_AXIS
+          tr = Geom::Transformation.axes direction_insertion_point1, Y_AXIS, Z_AXIS
+          tr2 = Geom::Transformation.axes direction_insertion_point2, Y_AXIS.reverse, Z_AXIS
 
-        start = true
-        if start
-          start_label = start_ents.add_instance start_direction, ORIGIN
-          start_label.move! tr
+          start = true
+          if start
+            start_label = start_ents.add_instance start_direction, ORIGIN
+            start_label.move! tr
 
-          start_label2 = start_ents.add_instance start_direction, ORIGIN
-          start_label2.move! tr2
+            start_label2 = start_ents.add_instance start_direction, ORIGIN
+            start_label2.move! tr2
 
-          end_label = end_ents.add_instance end_direction, ORIGIN
-          end_label.move! tr
+            end_label = end_ents.add_instance end_direction, ORIGIN
+            end_label.move! tr
 
-          end_label2 = end_ents.add_instance end_direction, ORIGIN
-          end_label2.move! tr2
+            end_label2 = end_ents.add_instance end_direction, ORIGIN
+            end_label2.move! tr2
+          end
+
+          #gets the name of the beam (Size of the beam)
+          component_names = []
+          @definition_list.map {|comp| component_names << comp.name}
+          if component_names.include? @@beam_name
+            comp_def = @definition_list["#{@@beam_name}"]
+          else
+            comp_def = @definition_list.add "#{@@beam_name}"
+            comp_def.description = "The #{@@beam_name} label"
+            ents = comp_def.entities
+            _3d_text = ents.add_3d_text("#{@@beam_name}", TextAlignCenter, "1CamBam_Stick_7", false, false, 3.0, 3.0, 0.0, false, 0.0)
+            save_path = Sketchup.find_support_file "Components", ""
+            comp_def.save_as(save_path + "/#{@@beam_name}.skp")
+          end
+
+          if arc.radius > 216
+            inlabel_offset = 1/16.to_f
+          elsif arc.radius >= 144
+            inlabel_offset = 2/16.to_f
+          elsif arc.radius >= 96
+            inlabel_offset = 3/16.to_f
+          elsif arc.radius >= 84
+            inlabel_offset = 4/16.to_f
+          elsif arc.radius >= 72
+            inlabel_offset = 5/16.to_f
+          elsif arc.radius >= 60
+            inlabel_offset = 6/16.to_f
+          elsif arc.radius >= 56
+            inlabel_offset = 7/16.to_f
+          elsif arc.radius >= 48
+            inlabel_offset = 8/16.to_f
+          elsif arc.radius >= 40
+            inlabel_offset = 9/16.to_f
+          elsif arc.radius >= 0
+            inlabel_offset = 1.to_f
+          end
+
+          label_width  = comp_def.bounds.width
+          label_height = comp_def.bounds.height
+          label_center = comp_def.bounds.center
+
+          tr3 = Geom::Transformation.axes [(@tw/2) + 0.0625, ((@segment_length/2)-(label_width/2))-(7/16.to_f), (@h/2)-(label_height/2)], Y_AXIS, Z_AXIS
+          tr4 = Geom::Transformation.axes [-(@tw/2) - inlabel_offset, ((@segment_length/2)+(label_width/2))+(7/16.to_f), (@h/2)-(label_height/2)], Y_AXIS.reverse, Z_AXIS
+          # Adds in the labels and sets them in position
+          @beam_label = label_ents.add_instance comp_def, ORIGIN
+          @beam_label.move! tr3
+
+          @beam_label2 = label_ents.add_instance comp_def, ORIGIN
+          @beam_label2.move! tr4
+
+          # up_label = up_ents.add_instance @up_arrow, ORIGIN
+          # up_label.move! tr
+
+          # up_label2 = up_ents.add_instance @up_arrow, ORIGIN
+          # up_label2.move! tr2
+
+          @start_labels.push start_direction_group
+          @end_labels.push end_direction_group
+          @up_label.push up_direction_group
+          @beam_labels.push beam_label_group
+          @all_added_entities_so_far.push end_direction_group, beam_label_group, up_direction_group, start_direction_group
+        rescue Exception => e
+          puts e.message
+          puts e.backtrace.inspect
+          UI.messagebox("There was a problem adding the labels in the beam")
         end
-
-        #gets the name of the beam (Size of the beam)
-        component_names = []
-        @definition_list.map {|comp| component_names << comp.name}
-        if component_names.include? @@beam_name
-          comp_def = @definition_list["#{@@beam_name}"]
-        else
-          comp_def = @definition_list.add "#{@@beam_name}"
-          comp_def.description = "The #{@@beam_name} label"
-          ents = comp_def.entities
-          _3d_text = ents.add_3d_text("#{@@beam_name}", TextAlignCenter, "1CamBam_Stick_7", false, false, 3.0, 3.0, 0.0, false, 0.0)
-          save_path = Sketchup.find_support_file "Components", ""
-          comp_def.save_as(save_path + "/#{@@beam_name}.skp")
-        end
-
-        if arc.radius > 216
-          inlabel_offset = 1/16.to_f
-        elsif arc.radius >= 144
-          inlabel_offset = 2/16.to_f
-        elsif arc.radius >= 96
-          inlabel_offset = 3/16.to_f
-        elsif arc.radius >= 84
-          inlabel_offset = 4/16.to_f
-        elsif arc.radius >= 72
-          inlabel_offset = 5/16.to_f
-        elsif arc.radius >= 60
-          inlabel_offset = 6/16.to_f
-        elsif arc.radius >= 56
-          inlabel_offset = 7/16.to_f
-        elsif arc.radius >= 48
-          inlabel_offset = 8/16.to_f
-        elsif arc.radius >= 40
-          inlabel_offset = 9/16.to_f
-        elsif arc.radius >= 0
-          inlabel_offset = 1.to_f
-        end
-
-        label_width  = comp_def.bounds.width
-        label_height = comp_def.bounds.height
-        label_center = comp_def.bounds.center
-
-        tr3 = Geom::Transformation.axes [(@tw/2) + 0.0625, ((@segment_length/2)-(label_width/2))-(7/16.to_f), (@h/2)-(label_height/2)], Y_AXIS, Z_AXIS
-        tr4 = Geom::Transformation.axes [-(@tw/2) - inlabel_offset, ((@segment_length/2)+(label_width/2))+(7/16.to_f), (@h/2)-(label_height/2)], Y_AXIS.reverse, Z_AXIS
-        # Adds in the labels and sets them in position
-        @beam_label = label_ents.add_instance comp_def, ORIGIN
-        @beam_label.move! tr3
-
-        @beam_label2 = label_ents.add_instance comp_def, ORIGIN
-        @beam_label2.move! tr4
-
-        # up_label = up_ents.add_instance @up_arrow, ORIGIN
-        # up_label.move! tr
-
-        # up_label2 = up_ents.add_instance @up_arrow, ORIGIN
-        # up_label2.move! tr2
-
-        @start_labels.push start_direction_group
-        @end_labels.push end_direction_group
-        @up_label.push up_direction_group
-        @beam_labels.push beam_label_group
-        @all_added_entities_so_far.push end_direction_group, beam_label_group, up_direction_group, start_direction_group
       end
 
       def add_stiffeners(scale, color)
