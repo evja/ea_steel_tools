@@ -18,7 +18,7 @@ load 'ea_steel_tools/dialog_rolled.rb'
 load 'ea_steel_tools/dialog_tube_steel.rb'
 load 'ea_steel_tools/layout_send.rb'
 load 'ea_steel_tools/steel_tools_menus.rb'
-
+load 'ea_guide_tools/ea_guide_tools.rb'
 
 load 'ea_steel_tools/breakout_setup.rb'
 load 'ea_steel_tools/breakout.rb'
@@ -26,6 +26,7 @@ load 'ea_steel_tools/breakout_send.rb'
 load 'ea_steel_tools/dialog_rolled.rb'
 load 'ea_steel_tools/dialog.rb'
 load 'ea_steel_tools_loader.rb'
+
 
 load 'ea_steel_tools/Updater/updater.rb'
 dialog = UI::HtmlDialog.new(

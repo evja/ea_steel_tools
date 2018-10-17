@@ -83,32 +83,32 @@ module EA_Extensions623
 
       def create_new_file()
         if @multiple
-          paths = []
-          @steel_members.each do |member|
-            temp_group = @model.active_entities.add_group(member)
-            member_definition = temp_group.definition
-            if member.class == Sketchup::ComponentInstance
-              p 'component'
-              if member.name.empty?
-                part_name = member.definition.name
-              else
-                part_name = member.name
-              end
-            else
-              part_name = mamber.name
-            end
-            p part_name
-            new_file = UI.savepanel("Save the Breakout", @path, "#{part_name}.skp" )
-            if new_file
-              Sketchup.undo
-              member_definition.save_as(new_file)
-              paths.push new_file
-              member.material = @materials["#{BEAM_COLOR}"]
-              set_breakout_directory(@path)
-            end
-            temp_group.explode if temp_group
-          end
-          paths.each {|path| UI.openURL(path)}
+          # paths = []
+          # @steel_members.each do |member|
+          #   temp_group = @model.active_entities.add_group(member)
+          #   member_definition = temp_group.definition
+          #   if member.class == Sketchup::ComponentInstance
+          #     p 'component'
+          #     if member.name.empty?
+          #       part_name = member.definition.name
+          #     else
+          #       part_name = member.name
+          #     end
+          #   else
+          #     part_name = mamber.name
+          #   end
+          #   p part_name
+          #   new_file = UI.savepanel("Save the Breakout", @path, "#{part_name}.skp" )
+          #   if new_file
+          #     Sketchup.undo
+          #     member_definition.save_as(new_file)
+          #     paths.push new_file
+          #     member.material = @materials["#{BEAM_COLOR}"]
+          #     set_breakout_directory(@path)
+          #   end
+          #   temp_group.explode if temp_group
+          # end
+          # paths.each {|path| UI.openURL(path)}
         else
           p 'creating a new file'
           steel_member = @steel_members.first

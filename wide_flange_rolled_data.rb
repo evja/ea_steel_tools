@@ -221,12 +221,13 @@ module EA_Extensions623
           wc = var.join('.')
         end
         stiffener_plate = "PL #{@@height_class}(#{wc}) Stiffener"
-
+        
         file_path1 = Sketchup.find_support_file "#{COMPONENT_PATH}/#{NN_SXTNTHS_HOLE}", "Plugins"
         file_path2 = Sketchup.find_support_file "#{COMPONENT_PATH}/#{THRTN_SXTNTHS_HOLE}", "Plugins"
         file_path3 = Sketchup.find_support_file "#{COMPONENT_PATH}/#{HLF_INCH_STD}", "Plugins"
         file_path4 = Sketchup.find_support_file "#{COMPONENT_PATH}/#{UP_DRCTN}", "Plugins/"
         file_path5 = Sketchup.find_support_file "#{COMPONENT_PATH}/#{stiffener_plate}.skp", "Plugins/"
+
         if @hc < 10
           file_path6 = Sketchup.find_support_file "#{COMPONENT_PATH}/PL #{@@height_class}(#{wc}) to #{@@height_class}.skp", "Plugins/"
         elsif @hc >= 10
