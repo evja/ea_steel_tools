@@ -22,8 +22,13 @@ module EA_Extensions623
           @@basethick             = 0.75
           @@start_plate_thickness = ''
           @@end_plate_thickness   = ''
-          @@stud_spacing          = 16  #Integer 16 or 24
+          @@studspacing           = 24  #Integer 16 or 24 or 32
           @@state                 = 1   #Integer()
+          @@north_stud_selct      = true
+          @@south_stud_selct      = true
+          @@east_stud_selct       = true
+          @@west_stud_selct       = true
+          @@stud_toggle           = true
         end
 
         options = {
@@ -36,15 +41,6 @@ module EA_Extensions623
 
         window = SKUI::Window.new( options )
         @window1 = window
-
-        # These events doesn't trigger correctly when Firebug Lite
-        # is active because it introduces frames that interfere with
-        # the focus notifications.
-        window.on( :focus )  { puts 'Window Focus' }
-        window.on( :blur )   { puts 'Window Blur' }
-        window.on( :resize ) { |window, width, height|
-          # puts "Window Resize(#{width}, #{height})"
-        }
 
         #Creates the top group box that holds the dropdown lists of the
         group = SKUI::Groupbox.new( 'Select HSS' )
@@ -174,8 +170,109 @@ module EA_Extensions623
         basethckselect.on(:textchange) {|control, value|
           @@basethick = control.value
         }
+        
+        stud_toggle = SKUI::Checkbox.new("Toggle Studs")
+        stud_toggle.font = label_font
+        stud_toggle.position(280,20)
+        stud_toggle.checked = @@stud_toggle
+
+        group2.add_control stud_toggle
 
         # group2.add_control(basethckselect)
+        path = File.join( SKUI::PATH, '..', 'icons' )
+        file = File.join( path, 'hss_section.png' )
+
+        # ss is short for Stud Select and the xy is to be able to adjust the group together
+        ss_x = 15
+        ss_y = 0
+
+        img_profile = SKUI::Image.new( file )
+        img_profile.position( 175+ss_x, 40+ss_y )
+        img_profile.width = 130
+        img_profile.height = 130
+
+        group2.add_control( img_profile )
+
+        north_stud_selct = SKUI::Checkbox.new('N')
+        north_stud_selct.font = label_font
+        north_stud_selct.position(232+ss_x,20+ss_y)
+        north_stud_selct.checked = @@north_stud_selct
+        north_stud_selct.on (:change ) { |control|
+          @@north_stud_selct = control.checked?
+          stud_toggle.checked = false if not control.checked?
+        }
+
+        group2.add_control(north_stud_selct)
+
+        south_stud_selct = SKUI::Checkbox.new('S')
+        south_stud_selct.font = label_font
+        south_stud_selct.position(232+ss_x,175+ss_y)
+        south_stud_selct.checked = @@south_stud_selct
+        south_stud_selct.on (:change ) { |control|
+          @@south_stud_selct = control.checked?
+          stud_toggle.checked = false if not control.checked?
+        }
+
+        group2.add_control(south_stud_selct)
+
+        east_stud_selct = SKUI::Checkbox.new('E')
+        east_stud_selct.font = label_font
+        east_stud_selct.position(310+ss_x,97+ss_y)
+        east_stud_selct.checked = @@east_stud_selct
+        east_stud_selct.on (:change ) { |control|
+          @@east_stud_selct = control.checked?
+          stud_toggle.checked = false if not control.checked?
+        }
+
+        group2.add_control(east_stud_selct)
+
+        west_stud_selct = SKUI::Checkbox.new('W')
+        west_stud_selct.font = label_font
+        west_stud_selct.position(145+ss_x,97+ss_y)
+        west_stud_selct.checked = @@west_stud_selct
+        west_stud_selct.on (:change ) { |control|
+          @@west_stud_selct = control.checked?
+          stud_toggle.checked = false if not control.checked?
+        }
+
+        group2.add_control(west_stud_selct)
+
+        stud_toggle.on (:change) {|control|
+          @@stud_toggle = control.checked?
+          north_stud_selct.checked = control.checked?
+          @@north_stud_selct = control.checked?
+          south_stud_selct.checked = control.checked?
+          @@south_stud_selct = control.checked?
+          east_stud_selct.checked = control.checked?
+          @@east_stud_selct = control.checked?
+          west_stud_selct.checked = control.checked?
+          @@west_stud_selct = control.checked?
+        }
+
+        ssp_x = 10
+        ssp_y = 165
+
+        ssp_label = SKUI::Label.new('Stud Spacing')
+        ssp_label.position(0+ssp_x, 0+ssp_y)
+        group2.add_control(ssp_label
+          )
+        # create 2 radio buttins for 16" and 24"
+        sel_16 = SKUI::RadioButton.new("16\"")
+        sel_16.position(100+ssp_x,0+ssp_y)
+        sel_16.checked = true if @@studspacing == 16
+        sel_16.on(:change) {|control|
+          @@studspacing = 16 if control.checked?
+        }
+        group2.add_control(sel_16)
+
+        sel_24 = SKUI::RadioButton.new("24\"")
+        sel_24.position(145+ssp_x,0+ssp_y)
+        sel_24.checked = true if @@studspacing == 24
+        sel_24.on(:change) {|control|
+          @@studspacing = 24 if control.checked?
+        }
+        group2.add_control(sel_24)
+
 
 
         ########################################################################
@@ -189,16 +286,12 @@ module EA_Extensions623
             wall_thickness:    @@wall_thickness,
             data:              @@beam_data,
             base_type:         @@basetype,
-            base_thick:        @@basethick
-            # placement:         @@placement,
-            # has_holes:         @@has_holes,
-            # stagger:           @@hole_spacing,
-            # cuts_holes:        @@cuts_holes,
-            # stiffeners:        @@has_stiffeners,
-            # shearplates:       @@has_shearplates,
-            # stiff_thickness:   @@stiff_thickness,
-            # shearpl_thickness: @@shearpl_thickness,
-            # force_studs:       @@force_studs
+            base_thick:        @@basethick,
+            stud_spacing:      @@studspacing,
+            north_stud_selct:  @@north_stud_selct,
+            south_stud_selct:  @@south_stud_selct,
+            east_stud_selct:   @@east_stud_selct,
+            west_stud_selct:   @@west_stud_selct
           }
           control.window.close
           Sketchup.active_model.select_tool EASteelTools::TubeTool.new(data)

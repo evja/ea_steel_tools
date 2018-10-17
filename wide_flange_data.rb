@@ -1,38 +1,8 @@
 module EA_Extensions623
   module EASteelTools
 
-    ROOT_FILE_PATH = "ea_steel_tools"
-    #Setc the north direction as the green axis
-    NORTH = Geom::Vector3d.new [0,1,0]
-
-    #**********************************************************************#
-
     class FlangeTool < Control
       include BeamLibrary
-      ##################################
-      #@@@@@@@@ BEAM variables @@@@@@@@#
-      ##################################
-      #Sets the root radus for the beams
-      RADIUS = 3
-      #This sets the distance from the end of the beam the direction labels go
-      LABELX = 10
-      #Sets the distance from the ends of the beams that holes cannot be, in inches
-      NO_HOLE_ZONE = 6
-      #Sets the minimum beam length before the web holes do not stagger(Actual minimum is < 8)
-      MINIMUM_BEAM_LENGTH = 16
-      # This sets the stiffener location from each end of the beam
-      STIFF_LOCATION = 2
-      #Distance from the end of the beam the 13/14" holes are placed
-      BIG_HOLES_LOCATION = 4
-      # Minimum distance from the inside of the flanges to the center of 13/16" holes can be
-      MIN_BIG_HOLE_DISTANCE_FROM_KZONE = 1.5
-      #########################################
-      #@@@@@@@@@@@ COLUMN variables @@@@@@@@@@#
-      #########################################s
-      #Sets label distance from the bottom of the column
-      LABEL_HEIGHT_FROM_FLOOR = 10
-      #Sets tyhe distance from the top of the column to the stiffeners
-      STIFFENER_DIST = 0
 
       # This is the standard Ruby initialize method that is called when you create
       # a new object.
@@ -63,40 +33,31 @@ module EA_Extensions623
         @@shearpl_thickness = data[:shearpl_thickness]  #String '1/4' or '3/8' or '1/2'
         @@force_studs       = data[:force_studs]
 
-        colors = {
-          orange:  {name: ' C ¾" Thick',    rgb: [255,135,50]},
-          yellow:  {name: ' D ⅝" Thick',    rgb: [255,255,50]},
-          green:   {name: ' E ½" Thick',    rgb: [50,255,50 ]},
-          blue:    {name: ' F ⅜" Thick',    rgb: [50,118,255]},
-          indigo:  {name: ' G 5/16" Thick', rgb: [118,50,255]},
-          purple:  {name: ' H ¼" Thick',    rgb: [186,50,255]}
-        }
-
         case @@stiff_thickness
         when '1/4'
           @stiff_scale = 2
-          clr1 = colors[:purple][:name]
-          rgb  = colors[:purple][:rgb]
+          clr1 = STEEL_COLORS[:purple][:name]
+          rgb  = STEEL_COLORS[:purple][:rgb]
         when '5/16'
           @stiff_scale = 2.5
-          clr1 = colors[:indigo][:name]
-          rgb  = colors[:indigo][:rgb]
+          clr1 = STEEL_COLORS[:indigo][:name]
+          rgb  = STEEL_COLORS[:indigo][:rgb]
         when '3/8'
           @stiff_scale = 3
-          clr1 = colors[:blue][:name]
-          rgb  = colors[:blue][:rgb]
+          clr1 = STEEL_COLORS[:blue][:name]
+          rgb  = STEEL_COLORS[:blue][:rgb]
         when '1/2'
           @stiff_scale = 4
-          clr1 = colors[:green][:name]
-          rgb  = colors[:green][:rgb]
+          clr1 = STEEL_COLORS[:green][:name]
+          rgb  = STEEL_COLORS[:green][:rgb]
         when '5/8'
           @stiff_scale = 5
-          clr1 = colors[:yellow][:name]
-          rgb  = colors[:yellow][:rgb]
+          clr1 = STEEL_COLORS[:yellow][:name]
+          rgb  = STEEL_COLORS[:yellow][:rgb]
         when '3/4'
           @stiff_scale = 6
-          clr1 = colors[:orange][:name]
-          rgb  = colors[:orange][:rgb]
+          clr1 = STEEL_COLORS[:orange][:name]
+          rgb  = STEEL_COLORS[:orange][:rgb]
         end
 
         if @material_names.include? clr1
@@ -109,24 +70,24 @@ module EA_Extensions623
         case @@shearpl_thickness
         when '1/4'
           @shear_scale = 2
-          clr2 = colors[:purple][:name]
-          rgb2  = colors[:purple][:rgb]
+          clr2 = STEEL_COLORS[:purple][:name]
+          rgb2  = STEEL_COLORS[:purple][:rgb]
         when '3/8'
           @shear_scale = 3
-          clr2 = colors[:blue][:name]
-          rgb2  = colors[:blue][:rgb]
+          clr2 = STEEL_COLORS[:blue][:name]
+          rgb2  = STEEL_COLORS[:blue][:rgb]
         when '1/2'
           @shear_scale = 4
-          clr2 = colors[:green][:name]
-          rgb2  = colors[:green][:rgb]
+          clr2 = STEEL_COLORS[:green][:name]
+          rgb2  = STEEL_COLORS[:green][:rgb]
         when '5/8'
           @shear_scale = 5
-          clr2 = colors[:yellow][:name]
-          rgb2  = colors[:yellow][:rgb]
+          clr2 = STEEL_COLORS[:yellow][:name]
+          rgb2  = STEEL_COLORS[:yellow][:rgb]
         when '3/4'
           @shear_scale = 6
-          clr2 = colors[:orange][:name]
-          rgb2  = colors[:orange][:rgb]
+          clr2 = STEEL_COLORS[:orange][:name]
+          rgb2  = STEEL_COLORS[:orange][:rgb]
         end
 
         if @material_names.include? clr2
@@ -483,11 +444,11 @@ module EA_Extensions623
           end
 
           # Load the 9/16" holes from the collection
-          file_path1 = Sketchup.find_support_file "#{ROOT_FILE_PATH}/Beam Components/9_16 Hole Set.skp", "Plugins/"
+          file_path1 = Sketchup.find_support_file "#{COMPONENT_PATH}/#{ NN_SXTNTHS_HOLE}", "Plugins/"
           nine_sixteenths_hole = @definition_list.load file_path1
 
           #load the 1/2" studs ready for placing
-          file_path_stud = Sketchup.find_support_file "#{ROOT_FILE_PATH}/Beam Components/2_Studs.skp", "Plugins/"
+          file_path_stud = Sketchup.find_support_file "#{COMPONENT_PATH}/#{HLF_INCH_STD}", "Plugins/"
           half_inch_stud = @definition_list.load file_path_stud
 
           @@force_studs ? element = half_inch_stud : element = nine_sixteenths_hole
@@ -562,10 +523,10 @@ module EA_Extensions623
           end
 
           # Load the 9/16" holes from the collection
-          file_path1 = Sketchup.find_support_file "#{ROOT_FILE_PATH}/Beam Components/9_16 Hole Set.skp", "Plugins/"
+          file_path1 = Sketchup.find_support_file "#{COMPONENT_PATH}/#{NN_SXTNTHS_HOLE}", "Plugins/"
           nine_sixteenths_hole = @definition_list.load file_path1
           #load the 1/2" studs ready for placing
-          file_path_stud = Sketchup.find_support_file "#{ROOT_FILE_PATH}/Beam Components/2_Studs.skp", "Plugins/"
+          file_path_stud = Sketchup.find_support_file "#{COMPONENT_PATH}/#{HLF_INCH_STD}", "Plugins/"
           half_inch_stud = @definition_list.load file_path_stud
 
 
@@ -650,7 +611,7 @@ module EA_Extensions623
           end
 
           # Load the 13/16" holes from the collection
-          file_path2 = Sketchup.find_support_file "#{ROOT_FILE_PATH}/Beam Components/13_16 Hole Set.skp", "Plugins/"
+          file_path2 = Sketchup.find_support_file "#{COMPONENT_PATH}/#{THRTN_SXTNTHS_HOLE}", "Plugins/"
           thirteen_sixteenths_hole = @definition_list.load file_path2
 
           #initialize some variables
@@ -786,9 +747,9 @@ module EA_Extensions623
           end
 
           #Gets the file paths for the labels
-          file_path1 = Sketchup.find_support_file "#{ROOT_FILE_PATH}/Beam Components/#{direction1}.skp", "Plugins/"
+          file_path1 = Sketchup.find_support_file "#{COMPONENT_PATH}/#{direction1}.skp", "Plugins/"
           end_direction = @definition_list.load file_path1
-          file_path2 = Sketchup.find_support_file "#{ROOT_FILE_PATH}/Beam Components/#{direction2}.skp", "Plugins/"
+          file_path2 = Sketchup.find_support_file "#{COMPONENT_PATH}/#{direction2}.skp", "Plugins/"
           start_direction = @definition_list.load file_path2
 
           for n in 1..2
@@ -835,13 +796,13 @@ module EA_Extensions623
             comp_def = @definition_list.add "#{@@beam_name}"
             comp_def.description = "The #{@@beam_name} label"
             ents = comp_def.entities
-            _3d_text = ents.add_3d_text("#{@@beam_name}", TextAlignCenter, "1CamBam_Stick_7", false, false, 3.0, 3.0, 0.0, false, 0.0)
+            _3d_text = ents.add_3d_text("#{@@beam_name}", TextAlignCenter, "#{STEEL_FONT}", false, false, 3.0, 3.0, 0.0, false, 0.0)
             # p "loaded CamBam_Stick_7: #{_3d_text}"
             save_path = Sketchup.find_support_file "Components", ""
             comp_def.save_as(save_path + "/#{@@beam_name}.skp")
           end
 
-          file_path = Sketchup.find_support_file "#{ROOT_FILE_PATH}/Beam Components/UP.skp", "Plugins/"
+          file_path = Sketchup.find_support_file "#{COMPONENT_PATH}/#{UP_DRCTN}", "Plugins/"
           up_direction = @definition_list.load file_path
 
           # Adds in the UP directioal label on both sides of the web
@@ -910,10 +871,10 @@ module EA_Extensions623
           label_ents = beam_label_group.entities
 
           #Gets the file paths for the labels
-          f1 = Sketchup.find_support_file "#{ROOT_FILE_PATH}/Beam Components/N.skp", "Plugins/"
-          f2 = Sketchup.find_support_file "#{ROOT_FILE_PATH}/Beam Components/S.skp", "Plugins/"
-          f3 = Sketchup.find_support_file "#{ROOT_FILE_PATH}/Beam Components/E.skp", "Plugins/"
-          f4 = Sketchup.find_support_file "#{ROOT_FILE_PATH}/Beam Components/W.skp", "Plugins/"
+          f1 = Sketchup.find_support_file "#{COMPONENT_PATH}/#{NORTH_LABEL}", "Plugins/"
+          f2 = Sketchup.find_support_file "#{COMPONENT_PATH}/#{SOUTH_LABEL}", "Plugins/"
+          f3 = Sketchup.find_support_file "#{COMPONENT_PATH}/#{EAST_LABEL}", "Plugins/"
+          f4 = Sketchup.find_support_file "#{COMPONENT_PATH}/#{WEST_LABEL}", "Plugins/"
           north = @definition_list.load f1
           south = @definition_list.load f2
           east = @definition_list.load f3
@@ -970,7 +931,7 @@ module EA_Extensions623
             comp_def.save_as(save_path + "/#{@@beam_name}.skp")
           end
 
-          file_path = Sketchup.find_support_file "#{ROOT_FILE_PATH}/Beam Components/UP.skp", "Plugins/"
+          file_path = Sketchup.find_support_file "#{COMPONENT_PATH}/#{UP_DRCTN}", "Plugins/"
           up_direction = @definition_list.load file_path
 
           # Adds in the UP directioal label on both sides of the web
@@ -1031,7 +992,7 @@ module EA_Extensions623
 
           stiffener_plate = "PL #{@@height_class}(#{wc}) Stiffener"
 
-          file_path_stiffener = Sketchup.find_support_file "#{ROOT_FILE_PATH}/Beam Components/#{stiffener_plate}.skp", "Plugins/"
+          file_path_stiffener = Sketchup.find_support_file "#{COMPONENT_PATH}/#{stiffener_plate}.skp", "Plugins/"
 
           #Sets the x y and z values for placement of the plates
           x = STIFF_LOCATION
@@ -1099,11 +1060,11 @@ module EA_Extensions623
 
           small_shear_plate = "PL #{@@height_class}(#{wc}) to #{@@height_class}" #This is for all beams smaller than W10's
           if @hc < 10
-            file_path_sm_shear_plate = Sketchup.find_support_file "#{ROOT_FILE_PATH}/Beam Components/#{small_shear_plate}.skp", "Plugins/"
+            file_path_sm_shear_plate = Sketchup.find_support_file "#{COMPONENT_PATH}/#{small_shear_plate}.skp", "Plugins/"
           else
-            file_path_sm_shear_plate = Sketchup.find_support_file "#{ROOT_FILE_PATH}/Beam Components/#{to_w10_shear_plate}.skp", "Plugins/"
+            file_path_sm_shear_plate = Sketchup.find_support_file "#{COMPONENT_PATH}/#{to_w10_shear_plate}.skp", "Plugins/"
           end
-           file_path_lg_shear_plate = Sketchup.find_support_file "#{ROOT_FILE_PATH}/Beam Components/#{to_w12_shear_plate}.skp", "Plugins/"
+           file_path_lg_shear_plate = Sketchup.find_support_file "#{COMPONENT_PATH}/#{to_w12_shear_plate}.skp", "Plugins/"
 
           #Sets the x y and z values for placement of the plates
           x = STIFF_LOCATION

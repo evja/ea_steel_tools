@@ -1,6 +1,8 @@
 module EA_Extensions623
   module EASteelTools
     require 'sketchup'
+    require "testup/testcase"
+
     require FNAME+'/'+'control.rb'
     require FNAME+'/'+'beam_library.rb'
     require FNAME+'/'+'hss_library.rb'
@@ -14,7 +16,9 @@ module EA_Extensions623
     require FNAME+'/'+'breakout_setup.rb'
     require FNAME+'/'+'breakout.rb'
     require FNAME+'/'+'breakout_send.rb'
+    require FNAME+'/'+'layout_send.rb'
     require FNAME+'/'+'load_schemas.rb'
+    require FNAME+'/'+'magic_numbers.rb'
     require FNAME+'/'+'update.rb'
     # require FNAME+'/'+'test.rb'
 
@@ -99,6 +103,12 @@ module EA_Extensions623
         menu.add_item("Breakout") {Sketchup.active_model.select_tool EASteelTools::Breakout.new }
         menu.add_separator
       end
+    end
+
+    UI.add_context_menu_handler do |menu|
+      menu.add_separator
+      menu.add_item("Send to Layout") { EASteelTools::SendToLayout.new(Sketchup.active_model.selection[0], Sketchup.active_model.path) }
+      menu.add_separator
     end
 
   end
