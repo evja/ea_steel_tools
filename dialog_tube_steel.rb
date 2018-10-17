@@ -170,7 +170,7 @@ module EA_Extensions623
         basethckselect.on(:textchange) {|control, value|
           @@basethick = control.value
         }
-
+        
         stud_toggle = SKUI::Checkbox.new("Toggle Studs")
         stud_toggle.font = label_font
         stud_toggle.position(280,20)
@@ -272,6 +272,7 @@ module EA_Extensions623
           @@studspacing = 24 if control.checked?
         }
         group2.add_control(sel_24)
+
 
 
         ########################################################################
