@@ -70,7 +70,7 @@ module EA_Extensions623
     BASEPLATE_RADIUS = 0.5
     RADIUS_SEGMENT = 6
     STANDARD_TOP_PLATE_SIZE = 7
-    MINIMUM_STUD_DIST_FROM_BASE = 3
+    MINIMUM_STUD_DIST_FROM_HSS_ENDS = 8
 
 
     # Normal steel colors for 3DS conventions and procedures
