@@ -169,7 +169,7 @@ module EA_Extensions623
         basethckselect.on(:textchange) {|control, value|
           @@basethick = control.value
         }
-        
+
         stud_toggle = SKUI::Checkbox.new("Toggle Studs")
         stud_toggle.font = label_font
         stud_toggle.position(320,20)
@@ -233,16 +233,16 @@ module EA_Extensions623
           @@west_stud_selct = control.checked?
         }
 
-        ssp_x = 10
+        ssp_x = 2
         ssp_y = 165
 
         ssp_label = SKUI::Label.new('Stud Spacing')
-        ssp_label.position(0+ssp_x, 0+ssp_y)
+        ssp_label.position(30+ssp_x, -25 +ssp_y)
         @group2.add_control(ssp_label
           )
         # create 2 radio buttins for 16" and 24"
         sel_16 = SKUI::RadioButton.new("16\"")
-        sel_16.position(100+ssp_x,0+ssp_y)
+        sel_16.position(10+ssp_x,0+ssp_y)
         sel_16.checked = true if @@studspacing == 16
         sel_16.on(:change) {|control|
           @@studspacing = 16 if control.checked?
@@ -250,12 +250,20 @@ module EA_Extensions623
         @group2.add_control(sel_16)
 
         sel_24 = SKUI::RadioButton.new("24\"")
-        sel_24.position(145+ssp_x,0+ssp_y)
+        sel_24.position(55+ssp_x,0+ssp_y)
         sel_24.checked = true if @@studspacing == 24
         sel_24.on(:change) {|control|
           @@studspacing = 24 if control.checked?
         }
         @group2.add_control(sel_24)
+
+        sel_32 = SKUI::RadioButton.new("32\"")
+        sel_32.position(100+ssp_x,0+ssp_y)
+        sel_32.checked = true if @@studspacing == 32
+        sel_32.on(:change) {|control|
+          @@studspacing = 32 if control.checked?
+        }
+        @group2.add_control(sel_32)
 
 
 

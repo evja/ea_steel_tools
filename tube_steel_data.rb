@@ -516,22 +516,25 @@ module EA_Extensions623
       end
 
       def add_studs(length, spread)
-
         begin
+
+          max_dist_from_hss_end = spread*0.75
 
           file_path = Sketchup.find_support_file "#{COMPONENT_PATH}/#{HLF_INCH_STD}", "Plugins"
           @half_inch_stud = @definition_list.load file_path
           start_dist = MINIMUM_STUD_DIST_FROM_HSS_ENDS
-          copies = (length.to_i/spread)
+          copies = ((length - (start_dist*2))/spread).to_i
 
-          # if start_dist < MINIMUM_STUD_DIST_FROM_HSS_ENDS
-          #   start_dist += spread/2
+          # if (spread*copies)+start_dist >= length.to_i - start_dist/2
+          #   start_dist += start_dist/2
           #   copies -= 1
           # end
+          remaining_working_space = (length - ((spread*copies)+start_dist))
 
-          if (spread*copies)+start_dist >= length.to_i - MINIMUM_STUD_DIST_FROM_HSS_ENDS/2
-            start_dist += start_dist/2
-            copies -= 1
+          p remaining_working_space
+
+          if remaining_working_space > max_dist_from_hss_end
+            start_dist = (length - (copies*spread))/2
           end
 
           if @east_stud_selct
@@ -690,15 +693,15 @@ module EA_Extensions623
 
           end
 
-          start_dist = ((length.to_inch%spread))/2
-          copies = (length.to_i/spread)
+          # start_dist = ((length.to_inch%spread))/2
+          # copies = (length.to_i/spread)
 
-          if start_dist < MINIMUM_STUD_DIST_FROM_HSS_ENDS
-            start_dist += spread/2
-            copies -= 1
-          end
+          # if start_dist < MINIMUM_STUD_DIST_FROM_HSS_ENDS
+          #   start_dist += spread/2
+          #   copies -= 1
+          # end
 
-          dist = spread*copies
+          dist = length-16
 
           up_vec = Geom::Vector3d.new(0,0,dist)
           slide_up = Geom::Transformation.translation(up_vec)
