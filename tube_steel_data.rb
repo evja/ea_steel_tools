@@ -525,13 +525,7 @@ module EA_Extensions623
           start_dist = MINIMUM_STUD_DIST_FROM_HSS_ENDS
           copies = ((length - (start_dist*2))/spread).to_i
 
-          # if (spread*copies)+start_dist >= length.to_i - start_dist/2
-          #   start_dist += start_dist/2
-          #   copies -= 1
-          # end
           remaining_working_space = (length - ((spread*copies)+start_dist))
-
-          p remaining_working_space
 
           if remaining_working_space > max_dist_from_hss_end
             start_dist = (length - (copies*spread))/2
@@ -679,7 +673,7 @@ module EA_Extensions623
           rot = Geom::Transformation.rotation pt, Z_AXIS, 180.degrees
           up_arrow_group.entities.transform_entities rot, up_copy1
 
-          if @h >= 3
+          if @w >= 3
             up_arrow2 = up_arrow.copy
             rot1 = Geom::Transformation.rotation pt, Z_AXIS, 90.degrees
             up_arrow_group.entities.transform_entities rot1, up_arrow2
