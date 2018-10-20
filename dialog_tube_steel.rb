@@ -8,7 +8,6 @@ module EA_Extensions623
 
     class HssDialog
       include HSSLibrary
-      BASETYPES = ["SQ","OC","IL","IC","EX","DR","DL","DI"]
 
       @@state = 0
 
@@ -66,7 +65,7 @@ module EA_Extensions623
         @group1.add_control( label1 )
 
         label2 = SKUI::Label.new('X')
-        label2.position(190,30)
+        label2.position(193,30)
         @group1.add_control( label2 )
         @group1.add_control( hc_list_label )
 
@@ -81,7 +80,7 @@ module EA_Extensions623
         width_size_dropdown = SKUI::Listbox.new( list2 )
         @@width_class.empty? ? @@width_class = (width_size_dropdown.value = width_size_dropdown.items.first) : @@width_class = (width_size_dropdown.value = width_size_dropdown.items.grep(@@width_class).first.to_s)
         width_size_dropdown.position( 130, 25 )
-        width_size_dropdown.width = 50
+        width_size_dropdown.width = 55
 
         @group1.add_control( width_size_dropdown )
 
@@ -103,13 +102,12 @@ module EA_Extensions623
           width_size_dropdown = SKUI::Listbox.new( list2 )
           @@width_class = width_size_dropdown.value = width_size_dropdown.items.first
           width_size_dropdown.position( 130, 25 )
-          width_size_dropdown.width = 50
+          width_size_dropdown.width = 55
           @group1.add_control( width_size_dropdown )
           @sq_image.visible = (control.value.to_i == @@width_class.to_i)
           @rec_image.visible = (control.value.to_i > @@width_class.to_i)
 
           list3 = all_guage_options_in(@@height_class, @@width_class)
-          p list3
           wall_thickness_dropdown = SKUI::Listbox.new( list3 )
           # @@wall_thickness = (wall_thickness_dropdown.value = wall_thickness_dropdown.items.first)
           wall_thickness_dropdown.position( 210, 25 )
@@ -140,7 +138,6 @@ module EA_Extensions623
 
         width_size_dropdown.on( :change ) { |control, value|
           @@width_class = control.value
-          p control.value
           @sq_image.visible = (control.value.to_i == @@height_class.to_i)
           @rec_image.visible = (control.value.to_i < @@height_class.to_i)
         }
@@ -169,7 +166,7 @@ module EA_Extensions623
         basethckselect.on(:textchange) {|control, value|
           @@basethick = control.value
         }
-        
+
         stud_toggle = SKUI::Checkbox.new("Toggle Studs")
         stud_toggle.font = label_font
         stud_toggle.position(320,20)
@@ -233,16 +230,16 @@ module EA_Extensions623
           @@west_stud_selct = control.checked?
         }
 
-        ssp_x = 10
+        ssp_x = 2
         ssp_y = 165
 
         ssp_label = SKUI::Label.new('Stud Spacing')
-        ssp_label.position(0+ssp_x, 0+ssp_y)
+        ssp_label.position(30+ssp_x, -25 +ssp_y)
         @group2.add_control(ssp_label
           )
         # create 2 radio buttins for 16" and 24"
         sel_16 = SKUI::RadioButton.new("16\"")
-        sel_16.position(100+ssp_x,0+ssp_y)
+        sel_16.position(10+ssp_x,0+ssp_y)
         sel_16.checked = true if @@studspacing == 16
         sel_16.on(:change) {|control|
           @@studspacing = 16 if control.checked?
@@ -250,12 +247,20 @@ module EA_Extensions623
         @group2.add_control(sel_16)
 
         sel_24 = SKUI::RadioButton.new("24\"")
-        sel_24.position(145+ssp_x,0+ssp_y)
+        sel_24.position(55+ssp_x,0+ssp_y)
         sel_24.checked = true if @@studspacing == 24
         sel_24.on(:change) {|control|
           @@studspacing = 24 if control.checked?
         }
         @group2.add_control(sel_24)
+
+        sel_32 = SKUI::RadioButton.new("32\"")
+        sel_32.position(100+ssp_x,0+ssp_y)
+        sel_32.checked = true if @@studspacing == 32
+        sel_32.on(:change) {|control|
+          @@studspacing = 32 if control.checked?
+        }
+        @group2.add_control(sel_32)
 
 
 

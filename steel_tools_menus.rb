@@ -1,7 +1,6 @@
 module EA_Extensions623
   module EASteelTools
     require 'sketchup'
-    require "testup/testcase"
 
     require FNAME+'/'+'control.rb'
     require FNAME+'/'+'beam_library.rb'
@@ -21,8 +20,6 @@ module EA_Extensions623
     require FNAME+'/'+'magic_numbers.rb'
     require FNAME+'/'+'update.rb'
     # require FNAME+'/'+'test.rb'
-
-    # require 'hss_column_data.rb'         # Coming Soon
 
   if !file_loaded?('ea_steel_tools_menu_loader')
     @@EA_tools_menu = UI.menu("Extensions").add_submenu("Steel Tools")
