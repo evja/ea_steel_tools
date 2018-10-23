@@ -24,6 +24,9 @@ module EA_Extensions623
 
         @hss_is_rotated = data[:hss_is_rotated]
 
+        @start_tolerance = data[:start_tolerance].to_f
+        @end_tolerance = data[:end_tolerance].to_f
+
         @h = values[:h].to_f #height of the tube
         @w = values[:b].to_f #width of the tube
 
@@ -254,9 +257,8 @@ module EA_Extensions623
         @entities.transform_entities mv_prof_to_c, @hss_outer_group
 
 
-
         extrude_length = vec.clone
-        extrude_length.length = (vec.length - (@base_thickness*2)) #This thickness is accouting for bot top and bottom plate. if the top plates thickness is controlled it will need to be accounted for if it varies from the base thickness
+        extrude_length.length = (vec.length - (@base_thickness*2)) - (@start_tolerance+@end_tolerance) #This thickness is accouting for bot top and bottom plate. if the top plates thickness is controlled it will need to be accounted for if it varies from the base thickness
         extrude_tube(extrude_length, main_face)
         add_name_label(vec)
         add_studs(extrude_length.length, @@stud_spacing)
@@ -770,7 +772,7 @@ module EA_Extensions623
       def align_tube(vec, group)
         group.transform! @trans #Fixed this so the column is not scaled
         adjustment_vec = vec.clone
-        adjustment_vec.length = @base_thickness #this ,ight also need to account for the height from slab (1 1/2")
+        adjustment_vec.length = (@base_thickness+@start_tolerance) #this ,ight also need to account for the height from slab (1 1/2")
         slide_up = Geom::Transformation.translation(adjustment_vec)
         @entities.transform_entities(slide_up, group)
 

@@ -29,6 +29,9 @@ module EA_Extensions623
           @@west_stud_selct       = true
           @@stud_toggle           = true
           @@hss_is_rotated        = false
+
+          @@start_tolerance        = 1.5
+          @@end_tolerance          = 0.0675
         end
 
 
@@ -233,13 +236,41 @@ module EA_Extensions623
           @@basethick = control.value
         }
 
+        start_tol = SKUI::Textbox.new (@@start_tolerance.to_f)
+        start_tol.name = :start_tolerance
+        start_tol.position(80,100)
+        start_tol.width = 50
+        start_tol.height = 20
+        start_tol.on( :textchange ) { |control|
+          @@start_tolerance = control.value.to_s.to_r.to_f
+        }
+        @group2.add_control start_tol
+
+
+        end_tol = SKUI::Textbox.new (@@end_tolerance.to_f)
+        end_tol.name = :start_tolerance
+        end_tol.position(80,75)
+        end_tol.width = 50
+        end_tol.height = 20
+        end_tol.on( :textchange ) { |control|
+          @@end_tolerance = control.value.to_s.to_r.to_f
+        }
+        @group2.add_control end_tol
+
+        st_tol_label = SKUI::Label.new('T - Tolerance', start_tol)
+        st_tol_label.position(5, 79)
+        @group2.add_control(st_tol_label)
+
+        end_tol_label = SKUI::Label.new('B - Tolerance', end_tol)
+        end_tol_label.position(5, 104)
+        @group2.add_control(end_tol_label)
+
+
         stud_toggle = SKUI::Checkbox.new("Toggle Studs")
         stud_toggle.font = @label_font
         stud_toggle.position(320,20)
         stud_toggle.checked = @@stud_toggle
-
         @group2.add_control stud_toggle
-
 
         north_stud_selct = SKUI::Checkbox.new('N')
         north_stud_selct.font = @label_font
@@ -302,8 +333,7 @@ module EA_Extensions623
 
         ssp_label = SKUI::Label.new('Stud Spacing')
         ssp_label.position(30+ssp_x, -25 +ssp_y)
-        @group2.add_control(ssp_label
-          )
+        @group2.add_control(ssp_label)
         # create 2 radio buttins for 16" and 24"
         sel_16 = SKUI::RadioButton.new("16\"")
         sel_16.position(10+ssp_x,0+ssp_y)
@@ -351,9 +381,13 @@ module EA_Extensions623
             south_stud_selct:  @@south_stud_selct,
             east_stud_selct:   @@east_stud_selct,
             west_stud_selct:   @@west_stud_selct,
-            hss_is_rotated:    @@hss_is_rotated
+            hss_is_rotated:    @@hss_is_rotated,
+            start_tolerance:   @@start_tolerance,
+            end_tolerance:     @@end_tolerance 
           }
           # p "rotated rectangle = #{@@hss_is_rotated}"
+          p @@end_tolerance
+          p @@start_tolerance
           control.window.close
           Sketchup.active_model.select_tool EASteelTools::TubeTool.new(data)
         }
