@@ -69,7 +69,7 @@ module EA_Extensions623
       end
 
       def deactivate(view)
-        @window.close
+        @window.close if @window
         Sketchup.send_action "selectSelectionTool:"
         view.invalidate
       end
@@ -502,13 +502,13 @@ module EA_Extensions623
         }
         container_shear.add_control( chk_shearplates )
 
-        offset = SKUI::Textbox.new( @@radius_offset.to_f )
+        offset = SKUI::Textbox.new( @@radius_offset.to_s.to_r.to_f )
         offset.name = :radius_offset
         offset.position(115, 96)
         offset.width = 60
         offset.height = 25
         offset.on( :textchange ) {|control|
-          @@radius_offset = control.value.to_f
+          @@radius_offset = control.value.to_s.to_r.to_f
         }
         group3.add_control(offset)
 

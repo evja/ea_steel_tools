@@ -6,6 +6,7 @@ model = Sketchup.active_model
 ents = model.entities
 sel = model.selection
 scenes = model.pages
+load 'ea_steel_tools/magic_numbers.rb'
 
 
 load 'ea_steel_tools/steel_tools_menus.rb'
@@ -13,7 +14,6 @@ load 'ea_steel_tools/tube_steel_data.rb'
 load 'ea_steel_tools/dialog_tube_steel.rb'
 load 'ea_steel_tools/hss_library.rb'
 
-load 'ea_steel_tools/magic_numbers.rb'
 
 load 'ea_steel_tools/wide_flange_rolled_data.rb'
 load 'ea_steel_tools/dialog_rolled.rb'
