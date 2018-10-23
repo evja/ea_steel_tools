@@ -28,11 +28,15 @@ module EA_Extensions623
           @@east_stud_selct       = true
           @@west_stud_selct       = true
           @@stud_toggle           = true
+          @@hss_is_rotated        = false
         end
 
+
+        @label_font = SKUI::Font.new( 'Comic Sans MS', 8, true )
         @img_path = File.join( SKUI::PATH, '..', 'icons' )
         @img_file1 = File.join( @img_path, 'hss_section.png' )
         @img_file2 = File.join( @img_path, 'hss_rec_section.png' )
+        @img_file3 = File.join( @img_path, 'hss_rec_section_rotated.png' )
 
         # ss is short for Stud Select and the xy is to be able to adjust the group together
         ss_x = 15
@@ -51,11 +55,21 @@ module EA_Extensions623
 
         set_groups(@window1) # <- Method
 
-        @rec_image = set_image2(@group2, @img_file2, ss_x, ss_y)
         @sq_image = set_image1(@group2, @img_file1, ss_x, ss_y)
+        @rec_image = set_image2(@group2, @img_file2, ss_x, ss_y)
+        @rec_image_rot = set_image3(@group2, @img_file3, ss_x, ss_y)
 
-        # @sq_image.visible = @@width_class == @height_class
-        # @rec_image.visible = @@width_class < @@height_class
+        rotate_hss = SKUI::Checkbox.new("Rotate 90º")
+        rotate_hss.font = @label_font
+        rotate_hss.position(320, 165)
+        rotate_hss.checked = @@hss_is_rotated
+        rotate_hss.on (:change ) { |control|
+          @@hss_is_rotated = control.checked?
+          @rec_image.visible = !control.checked?
+          @rec_image_rot.visible = control.checked?
+        }
+        @group2.add_control rotate_hss
+        rotate_hss.visible = !(@@width_class.to_f == @@height_class.to_f)
 
         hc_list_label = SKUI::Label.new('Size')
         hc_list_label.position(10,25)
@@ -104,9 +118,28 @@ module EA_Extensions623
           width_size_dropdown.position( 130, 25 )
           width_size_dropdown.width = 55
           @group1.add_control( width_size_dropdown )
-          @sq_image.visible = (control.value.to_i == @@width_class.to_i)
-          @rec_image.visible = (control.value.to_i > @@width_class.to_i)
 
+          if @@width_class.to_f == @@height_class.to_f #is square tube
+            @sq_image.visible = true
+            @rec_image.visible = false
+            @rec_image_rot.visible = false
+            rotate_hss.visible = false
+            rotate_hss.checked = false
+
+          elsif @@width_class.to_f < @@height_class.to_f && !rotate_hss.checked? #is standard rectangle tube
+            @sq_image.visible = false
+            @rec_image.visible = true
+            @rec_image_rot.visible = false
+            rotate_hss.visible = true
+            rotate_hss.checked = false
+
+          elsif @@width_class.to_f < @@height_class.to_f && rotate_hss.checked? #is rectangle tube rotated 90º
+            @sq_image.visible = false
+            @rec_image.visible = false
+            @rec_image_rot.visible = true
+            rotate_hss.visible = true
+          end
+          @@hss_is_rotated = rotate_hss.checked?
           list3 = all_guage_options_in(@@height_class, @@width_class)
           wall_thickness_dropdown = SKUI::Listbox.new( list3 )
           # @@wall_thickness = (wall_thickness_dropdown.value = wall_thickness_dropdown.items.first)
@@ -119,8 +152,28 @@ module EA_Extensions623
 
           width_size_dropdown.on( :change ) { |control, value|
             @@width_class = control.value
-            @sq_image.visible = (control.value.to_i == @@height_class.to_i)
-            @rec_image.visible = (control.value.to_i < @@height_class.to_i)
+
+            if @@width_class.to_f == @@height_class.to_f #is square tube
+              @sq_image.visible = true
+              @rec_image.visible = false
+              @rec_image_rot.visible = false
+              rotate_hss.visible = false
+              rotate_hss.checked = false
+
+            elsif @@width_class.to_f < @@height_class.to_f && !rotate_hss.checked? #is standard rectangle tube
+              @sq_image.visible = false
+              @rec_image.visible = true
+              @rec_image_rot.visible = false
+              rotate_hss.visible = true
+              rotate_hss.checked = false
+
+            elsif @@width_class.to_f < @@height_class.to_f && rotate_hss.checked? #is rectangle tube rotated 90º
+              @sq_image.visible = false
+              @rec_image.visible = false
+              @rec_image_rot.visible = true
+              rotate_hss.visible = true
+            end
+            @@hss_is_rotated = rotate_hss.checked?
             list3 = all_guage_options_in(@@height_class, @@width_class)
             wall_thickness_dropdown = SKUI::Listbox.new( list3 )
             # @@wall_thickness = (wall_thickness_dropdown.value = wall_thickness_dropdown.items.sample)
@@ -138,15 +191,28 @@ module EA_Extensions623
 
         width_size_dropdown.on( :change ) { |control, value|
           @@width_class = control.value
-          @sq_image.visible = (control.value.to_i == @@height_class.to_i)
-          @rec_image.visible = (control.value.to_i < @@height_class.to_i)
+          if @@width_class.to_f == @@height_class.to_f #is square tube
+            @sq_image.visible = true
+            @rec_image.visible = false
+            @rec_image_rot.visible = false
+            rotate_hss.visible = false
+            rotate_hss.checked = false
+
+          elsif @@width_class.to_f < @@height_class.to_f && !rotate_hss.checked? #is standard rectangle tube
+            @sq_image.visible = false
+            @rec_image.visible = true
+            @rec_image_rot.visible = false
+            rotate_hss.visible = true
+            rotate_hss.checked = false
+
+          elsif @@width_class.to_f < @@height_class.to_f && rotate_hss.checked? #is rectangle tube rotated 90º
+            @sq_image.visible = false
+            @rec_image.visible = false
+            @rec_image_rot.visible = true
+            rotate_hss.visible = true
+          end
+          @@hss_is_rotated = rotate_hss.checked?
         }
-
-
-        # path = File.join( SKUI::PATH, '..', 'icons' )
-        # file = File.join( path, 'profile2.png' )
-
-        label_font = SKUI::Font.new( 'Comic Sans MS', 8, true )
 
         baseselect = SKUI::Listbox.new(BASETYPES)
         baseselect.position(30,30)
@@ -168,14 +234,15 @@ module EA_Extensions623
         }
 
         stud_toggle = SKUI::Checkbox.new("Toggle Studs")
-        stud_toggle.font = label_font
+        stud_toggle.font = @label_font
         stud_toggle.position(320,20)
         stud_toggle.checked = @@stud_toggle
 
         @group2.add_control stud_toggle
 
+
         north_stud_selct = SKUI::Checkbox.new('N')
-        north_stud_selct.font = label_font
+        north_stud_selct.font = @label_font
         north_stud_selct.position(232+ss_x,20+ss_y)
         north_stud_selct.checked = @@north_stud_selct
         north_stud_selct.on (:change ) { |control|
@@ -186,7 +253,7 @@ module EA_Extensions623
         @group2.add_control(north_stud_selct)
 
         south_stud_selct = SKUI::Checkbox.new('S')
-        south_stud_selct.font = label_font
+        south_stud_selct.font = @label_font
         south_stud_selct.position(232+ss_x,175+ss_y)
         south_stud_selct.checked = @@south_stud_selct
         south_stud_selct.on (:change ) { |control|
@@ -197,7 +264,7 @@ module EA_Extensions623
         @group2.add_control(south_stud_selct)
 
         east_stud_selct = SKUI::Checkbox.new('E')
-        east_stud_selct.font = label_font
+        east_stud_selct.font = @label_font
         east_stud_selct.position(310+ss_x,97+ss_y)
         east_stud_selct.checked = @@east_stud_selct
         east_stud_selct.on (:change ) { |control|
@@ -208,7 +275,7 @@ module EA_Extensions623
         @group2.add_control(east_stud_selct)
 
         west_stud_selct = SKUI::Checkbox.new('W')
-        west_stud_selct.font = label_font
+        west_stud_selct.font = @label_font
         west_stud_selct.position(145+ss_x,97+ss_y)
         west_stud_selct.checked = @@west_stud_selct
         west_stud_selct.on (:change ) { |control|
@@ -262,11 +329,14 @@ module EA_Extensions623
         }
         @group2.add_control(sel_32)
 
+        add_control_buttons(window)# <- Method
+      end
 
+      # def add_hss_selections()
 
-        ########################################################################
-        ########################################################################
+      # end
 
+      def add_control_buttons(window)
         btn_ok = SKUI::Button.new( 'OK' ) { |control|
           @@beam_data = find_tube(@@height_class, @@width_class)
           data = {
@@ -280,8 +350,10 @@ module EA_Extensions623
             north_stud_selct:  @@north_stud_selct,
             south_stud_selct:  @@south_stud_selct,
             east_stud_selct:   @@east_stud_selct,
-            west_stud_selct:   @@west_stud_selct
+            west_stud_selct:   @@west_stud_selct,
+            hss_is_rotated:    @@hss_is_rotated
           }
+          # p "rotated rectangle = #{@@hss_is_rotated}"
           control.window.close
           Sketchup.active_model.select_tool EASteelTools::TubeTool.new(data)
         }
@@ -293,19 +365,34 @@ module EA_Extensions623
         ####################
         # The close button #
         ####################
-        btn_close = SKUI::Button.new( 'Close' ) { |control|
+        @btn_close = SKUI::Button.new( 'Close' ) { |control|
+          clean_images([@sq_image, @rec_image, @rec_image_rot])
           control.window.close
           Sketchup.send_action "selectSelectionTool:"
         }
-        btn_close.position( -5, -5 )
-        window.add_control( btn_close )
+        @btn_close.position( -5, -5 )
+        window.add_control( @btn_close )
 
         window.default_button = btn_ok
-        window.cancel_button = btn_close
+        window.cancel_button = @btn_close
 
         window.show
 
         window
+      end
+
+      def onKeyDown(key, repeat, flags, view)
+        if key == 27
+          clean_images([@sq_image, @rec_image, @rec_image_rot])
+          @window1.release
+          Sketchup.send_action "selectSelectionTool:"
+        end
+      end
+
+      def clean_images(images)
+        images.each do |image|
+          image.release
+        end
       end
 
       def set_image1(group, image, x, y)
@@ -314,10 +401,8 @@ module EA_Extensions623
         img_profile.width = 130
         img_profile.height = 130
 
-
         group.add_control( img_profile )
-        img_profile.visible = (@@width_class.to_i == @@height_class.to_i)
-
+        img_profile.visible = (@@width_class.to_f == @@height_class.to_f)
         return img_profile
       end
 
@@ -327,11 +412,19 @@ module EA_Extensions623
         img_profile.width = 130
         img_profile.height = 130
 
+        group.add_control( img_profile )
+        img_profile.visible = (!@@hss_is_rotated && @@width_class < @@height_class)
+        return img_profile
+      end
+
+      def set_image3(group, image, x, y)
+        img_profile = SKUI::Image.new( image )
+        img_profile.position( 175+x, 40+y )
+        img_profile.width = 130
+        img_profile.height = 130
 
         group.add_control( img_profile )
-
-        img_profile.visible = (@@width_class.to_i < @@height_class.to_i)
-
+        img_profile.visible = (@@hss_is_rotated && @@width_class < @@height_class)
         return img_profile
       end
 
