@@ -22,8 +22,14 @@ module EA_Extensions623
         @east_stud_selct = data[:east_stud_selct]
         @west_stud_selct = data[:west_stud_selct]
 
+        @hss_is_rotated = data[:hss_is_rotated]
+
         @h = values[:h].to_f #height of the tube
         @w = values[:b].to_f #width of the tube
+
+        if @hss_is_rotated
+          @h, @w = @w, @h
+        end
 
         if @h == @w
           @square_tube = true
@@ -306,24 +312,24 @@ module EA_Extensions623
         begin
 
           # UI.messagebox("@h is #{@h}, @w is #{@w}")
-
+          h = [@h,@w].sort
           case type
           when 'SQ'
-            base_type = "#{@h.to_i}_ SQ"
+            base_type = "#{h[-1].to_i}_ SQ"
           when 'OC'
-            base_type = "#{@h.to_i}_ OC"
+            base_type = "#{h[-1].to_i}_ OC"
           when 'IL'
-            base_type = "#{@h.to_i}_ IL"
+            base_type = "#{h[-1].to_i}_ IL"
           when 'IC'
-            base_type = "#{@h.to_i}_ IC"
+            base_type = "#{h[-1].to_i}_ IC"
           when 'EX'
-            base_type = "#{@h.to_i}_ EX"
+            base_type = "#{h[-1].to_i}_ EX"
           when 'DR'
-            base_type = "#{@h.to_i}_ DR"
+            base_type = "#{h[-1].to_i}_ DR"
           when 'DL'
-            base_type = "#{@h.to_i}_ DL"
+            base_type = "#{h[-1].to_i}_ DL"
           when 'DI'
-            base_type = "#{@h.to_i}_ DI"
+            base_type = "#{h[-1].to_i}_ DI"
           end
           # p base_type
 
