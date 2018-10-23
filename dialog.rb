@@ -362,6 +362,14 @@ module EA_Extensions623
         window
       end
 
+      def onKeyDown(key, repeat, flags, view)
+        if key == 27
+          @window1.release
+          Sketchup.send_action "selectSelectionTool:"
+        end
+      end
+
+
       def self.close
         @window1.release
       end
