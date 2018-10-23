@@ -87,7 +87,8 @@ module EA_Extensions623
       grey:    {name: '1 Done',           rgb: [153,153,153]},
       layedout:    {name: '2 Layed Out',      rgb: [153,127,127]},
       brokeout:    {name: '3 Broken Out',     rgb: [255,180,127]},
-      modeled:    {name: '4 Modeled',        rgb: [255,255,127]}
+      modeled:    {name: '4 Modeled',        rgb: [255,255,127]},
+      pink:    {name: 'Edit', rgb: [255,25,113]}
     }
 
   end

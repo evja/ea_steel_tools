@@ -338,13 +338,23 @@ module EA_Extensions623
           file_path1 = Sketchup.find_support_file "ea_steel_tools/Beam Components/#{base_type}.skp", "Plugins"
           # p file_path1
 
-          unless file_path1.nil?
+          if file_path1
             @base_plate = @definition_list.load file_path1
+
+            slide_vec = Geom::Vector3d.new(@w/2, @h/2, 0) 
+            slide_base = Geom::Transformation.translation(slide_vec)
+            @bp = @hss_outer_group.entities.add_instance @base_plate, center
+            @bp.material = @base_plate_color
+          else
+            #insert generic baseplate
+            backup_baseplate = "4_ SQ"
+            file_path_backup = Sketchup.find_support_file "ea_steel_tools/Beam Components/#{backup_baseplate}.skp", "Plugins"
+            @base_plate = @definition_list.load file_path_backup
 
             slide_vec = Geom::Vector3d.new(@w/2, @h/2, 0)
             slide_base = Geom::Transformation.translation(slide_vec)
             @bp = @hss_outer_group.entities.add_instance @base_plate, center
-            @bp.material = @base_plate_color
+            @bp.material = STEEL_COLORS[:pink][:rgb]
           end
 
 
@@ -795,7 +805,7 @@ module EA_Extensions623
 
       def create_geometry(pt1, pt2, view)
           model = view.model
-          # model.start_operation("Draw TS", true)
+          model.start_operation("Draw TS", true)
 
           vec = pt2 - pt1
           if( vec.length < 2 )
@@ -812,7 +822,7 @@ module EA_Extensions623
 
           draw_tube(vec)
 
-          # model.commit_operation
+          model.commit_operation
 
         end
 
