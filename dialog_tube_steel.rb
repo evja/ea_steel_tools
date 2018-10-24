@@ -258,11 +258,11 @@ module EA_Extensions623
         @group2.add_control end_tol
 
         st_tol_label = SKUI::Label.new('T - Tolerance', start_tol)
-        st_tol_label.position(5, 79)
+        st_tol_label.position(5, 75)
         @group2.add_control(st_tol_label)
 
         end_tol_label = SKUI::Label.new('B - Tolerance', end_tol)
-        end_tol_label.position(5, 104)
+        end_tol_label.position(5, 100)
         @group2.add_control(end_tol_label)
 
 
@@ -328,36 +328,19 @@ module EA_Extensions623
           @@west_stud_selct = control.checked?
         }
 
-        ssp_x = 2
-        ssp_y = 165
 
-        ssp_label = SKUI::Label.new('Stud Spacing')
-        ssp_label.position(30+ssp_x, -25 +ssp_y)
+        stud_spacing_control = SKUI::Textbox.new(@@studspacing)
+        stud_spacing_control.position(80,140)
+        stud_spacing_control.width = 50
+        stud_spacing_control.height = 20
+        stud_spacing_control.on(:textchange) {|control|
+          @@studspacing = control.value
+        }
+        @group2.add_control(stud_spacing_control)
+
+        ssp_label = SKUI::Label.new('Stud Spacing', stud_spacing_control)
+        ssp_label.position(3,142)
         @group2.add_control(ssp_label)
-        # create 2 radio buttins for 16" and 24"
-        sel_16 = SKUI::RadioButton.new("16\"")
-        sel_16.position(10+ssp_x,0+ssp_y)
-        sel_16.checked = true if @@studspacing == 16
-        sel_16.on(:change) {|control|
-          @@studspacing = 16 if control.checked?
-        }
-        @group2.add_control(sel_16)
-
-        sel_24 = SKUI::RadioButton.new("24\"")
-        sel_24.position(55+ssp_x,0+ssp_y)
-        sel_24.checked = true if @@studspacing == 24
-        sel_24.on(:change) {|control|
-          @@studspacing = 24 if control.checked?
-        }
-        @group2.add_control(sel_24)
-
-        sel_32 = SKUI::RadioButton.new("32\"")
-        sel_32.position(100+ssp_x,0+ssp_y)
-        sel_32.checked = true if @@studspacing == 32
-        sel_32.on(:change) {|control|
-          @@studspacing = 32 if control.checked?
-        }
-        @group2.add_control(sel_32)
 
         add_control_buttons(window)# <- Method
       end

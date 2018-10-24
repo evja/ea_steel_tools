@@ -823,7 +823,6 @@ module EA_Extensions623
           draw_tube(vec)
 
           model.commit_operation
-
         end
 
         def onMouseMove(flags, x, y, view)
