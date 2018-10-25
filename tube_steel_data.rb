@@ -263,30 +263,40 @@ module EA_Extensions623
         mv_prof_to_c = sld_t_cx * sld_t_cy
 
         @entities.transform_entities mv_prof_to_c, @hss_outer_group
-
-
-        extrude_length = vec.clone
-        extrude_length.length = (vec.length - (@base_thickness*2)) - (@start_tolerance+@end_tolerance) #This thickness is accouting for bot top and bottom plate. if the top plates thickness is controlled it will need to be accounted for if it varies from the base thickness
-        extrude_tube(extrude_length, main_face)
-        add_name_label(vec)
-        add_studs(extrude_length.length, @@stud_spacing)
-        add_up_arrow(extrude_length.length, @@stud_spacing)
-        add_direction_labels()
-
-
-        align_tube(vec, @hss_outer_group)
-
         @material_names = @materials.map {|color| color.name}
 
-        if @material_names.include? STEEL_COLORS[:orange][:name]
-          @base_plate_color = STEEL_COLORS[:orange][:rgb]
-        else
-          @base_plate_color = @materials.add STEEL_COLORS[:orange][:name]
-          @base_plate_color.color = STEEL_COLORS[:orange][:rgb]
-        end
+        if @is_column
+          extrude_length = vec.clone
+          extrude_length.length = (vec.length - (@base_thickness*2)) - (@start_tolerance+@end_tolerance) #This thickness is accouting for bot top and bottom plate. if the top plates thickness is controlled it will need to be accounted for if it varies from the base thickness
+          extrude_tube(extrude_length, main_face)
+          add_studs(extrude_length.length, @@stud_spacing)
+          add_up_arrow(extrude_length.length, @@stud_spacing)
+          add_direction_labels()
 
-        insert_base_plates(@base_type, @center_of_column.position)
-        insert_top_plate(@center_of_column.position, extrude_length)
+
+          align_tube(vec, @hss_outer_group)
+
+
+          if @material_names.include? STEEL_COLORS[:orange][:name]
+            @base_plate_color = STEEL_COLORS[:orange][:rgb]
+          else
+            @base_plate_color = @materials.add STEEL_COLORS[:orange][:name]
+            @base_plate_color.color = STEEL_COLORS[:orange][:rgb]
+          end
+
+          insert_base_plates(@base_type, @center_of_column.position)
+          insert_top_plate(@center_of_column.position, extrude_length)
+        else
+          extrude_length = vec.clone
+          extrude_length.length = (vec.length - (HSS_BEAM_CAP_THICK*2))
+          extrude_tube(extrude_length, main_face)
+          add_name_label(vec)
+          align_tube(vec, @hss_outer_group)
+          #add_studs_beam
+          #add_direction_labels_beam
+          #add_cap plates
+
+        end
 
       end
 
@@ -790,10 +800,13 @@ module EA_Extensions623
       def align_tube(vec, group)
         group.transform! @trans #Fixed this so the column is not scaled
         adjustment_vec = vec.clone
-        adjustment_vec.length = (@base_thickness+@start_tolerance) #this ,ight also need to account for the height from slab (1 1/2")
+        if @is_column
+          adjustment_vec.length = (@base_thickness+@start_tolerance) #this ,ight also need to account for the height from slab (1 1/2")
+        else
+          adjustment_vec.length = HSS_BEAM_CAP_THICK #this ,ight also need to account for the height from slab (1 1/2")
+        end
         slide_up = Geom::Transformation.translation(adjustment_vec)
         @entities.transform_entities(slide_up, group)
-
 
         if vec[2] < 0 && @is_column
           if vec.parallel? Z_AXIS 
@@ -804,12 +817,6 @@ module EA_Extensions623
           rot_upright = Geom::Transformation.rotation(@vec_center, rot_vec, 180.degrees)
           group.transform! rot_upright
         end
-
-        width_vec = X_AXIS.clone
-        height_vec = Y_AXIS.clone
-
-        width_vec.length = -@w/2
-        height_vec.length = @h/2
       end
 
       def extrude_tube(vec, face)
