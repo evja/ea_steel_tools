@@ -27,6 +27,8 @@ module EA_Extensions623
         @start_tolerance = data[:start_tolerance].to_f
         @end_tolerance = data[:end_tolerance].to_f
 
+        @hss_type = data[:hss_type]
+
         @h = values[:h].to_f #height of the tube
         @w = values[:b].to_f #width of the tube
 
@@ -36,6 +38,12 @@ module EA_Extensions623
 
         if @h == @w
           @square_tube = true
+        end
+
+        if @hss_type == 'Column'
+          @is_column = true
+        else
+          @is_column = false
         end
 
         case data[:wall_thickness]
@@ -786,17 +794,22 @@ module EA_Extensions623
         slide_up = Geom::Transformation.translation(adjustment_vec)
         @entities.transform_entities(slide_up, group)
 
+
+        if vec[2] < 0 && @is_column
+          if vec.parallel? Z_AXIS 
+            rot_vec = X_AXIS
+          else
+            rot_vec = vec.cross(Z_AXIS)
+          end
+          rot_upright = Geom::Transformation.rotation(@vec_center, rot_vec, 180.degrees)
+          group.transform! rot_upright
+        end
+
         width_vec = X_AXIS.clone
         height_vec = Y_AXIS.clone
 
         width_vec.length = -@w/2
         height_vec.length = @h/2
-
-        # slide_center_width = Geom::Transformation.translation (width_vec)
-        # slide_center_height = Geom::Transformation.translation (height_vec)
-
-        # group.transform! (width_vec)
-        # group.transform! (height_vec)
       end
 
       def extrude_tube(vec, face)
@@ -805,7 +818,7 @@ module EA_Extensions623
 
       def create_geometry(pt1, pt2, view)
           model = view.model
-          model.start_operation("Draw TS", true)
+          # model.start_operation("Draw TS", true)
 
           vec = pt2 - pt1
           if( vec.length < 2 )
@@ -814,15 +827,11 @@ module EA_Extensions623
               return
           end
 
-          if vec.parallel? Z_AXIS
-            @is_column = true
-          else
-            @is_column = false
-          end
+          @vec_center = Geom::Point3d.new((pt1[0]+pt2[0])/2,(pt1[1]+pt2[1])/2,(pt1[2]+pt2[2])/2)
 
           draw_tube(vec)
 
-          model.commit_operation
+          # model.commit_operation
         end
 
         def onMouseMove(flags, x, y, view)

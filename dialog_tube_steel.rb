@@ -32,6 +32,8 @@ module EA_Extensions623
 
           @@start_tolerance        = 1.5
           @@end_tolerance          = 0.0675
+
+          @@hss_type                = 'Column' # Beam or Column Options
         end
 
 
@@ -64,7 +66,7 @@ module EA_Extensions623
 
         rotate_hss = SKUI::Checkbox.new("Rotate 90º")
         rotate_hss.font = @label_font
-        rotate_hss.position(320, 165)
+        rotate_hss.position(310, 155)
         rotate_hss.checked = @@hss_is_rotated
         rotate_hss.on (:change ) { |control|
           @@hss_is_rotated = control.checked?
@@ -74,29 +76,41 @@ module EA_Extensions623
         @group2.add_control rotate_hss
         rotate_hss.visible = !(@@width_class.to_f == @@height_class.to_f)
 
+        hss_type_select = SKUI::Listbox.new(["Column", "Beam"])
+        hss_type_select.position(300, 25)
+        hss_type_select.width = 68
+        hss_type_select.on (:change ) {|control|
+          @@hss_type = control.value
+        }
+        hss_type_label = SKUI::Label.new('Type')
+        hss_type_label.position(265,27)
+        @group1.add_control( hss_type_label )
+
+        @group1.add_control(hss_type_select)
+
         hc_list_label = SKUI::Label.new('Size')
-        hc_list_label.position(10,25)
+        hc_list_label.position(10,27)
 
         label1 = SKUI::Label.new('X')
-        label1.position(110,30)
+        label1.position(100,30)
         @group1.add_control( label1 )
 
         label2 = SKUI::Label.new('X')
-        label2.position(193,30)
+        label2.position(175,30)
         @group1.add_control( label2 )
         @group1.add_control( hc_list_label )
 
         list = all_height_classes
         height_class_dropdown = SKUI::Listbox.new( list )
         @@height_class.empty? ? @@height_class = (height_class_dropdown.value = height_class_dropdown.items.sample) : height_class_dropdown.value = height_class_dropdown.items.grep(@@height_class).first.to_s
-        height_class_dropdown.position( 50, 25 )
-        height_class_dropdown.width = 50
+        height_class_dropdown.position( 40, 25 )
+        height_class_dropdown.width = 55
 
 
         list2 = all_tubes_in(@@height_class)
         width_size_dropdown = SKUI::Listbox.new( list2 )
         @@width_class.empty? ? @@width_class = (width_size_dropdown.value = width_size_dropdown.items.first) : @@width_class = (width_size_dropdown.value = width_size_dropdown.items.grep(@@width_class).first.to_s)
-        width_size_dropdown.position( 130, 25 )
+        width_size_dropdown.position( 113, 25 )
         width_size_dropdown.width = 55
 
         @group1.add_control( width_size_dropdown )
@@ -107,8 +121,8 @@ module EA_Extensions623
         wall_thickness_dropdown = SKUI::Listbox.new( list3 )
         @@wall_thickness.empty? ? @@wall_thickness = (@@wall_thickness = wall_thickness_dropdown.items[1]) : (@@wall_thickness)
         wall_thickness_dropdown.value = @@wall_thickness
-        wall_thickness_dropdown.position( 210, 25 )
-        wall_thickness_dropdown.width = 75
+        wall_thickness_dropdown.position( 190, 25 )
+        wall_thickness_dropdown.width = 50
         wall_thickness_dropdown.on(:change) { |control, value|
           @@wall_thickness = control.value
         }
@@ -118,7 +132,7 @@ module EA_Extensions623
           list2 = all_tubes_in(control.value)
           width_size_dropdown = SKUI::Listbox.new( list2 )
           @@width_class = width_size_dropdown.value = width_size_dropdown.items.first
-          width_size_dropdown.position( 130, 25 )
+          width_size_dropdown.position( 113, 25 )
           width_size_dropdown.width = 55
           @group1.add_control( width_size_dropdown )
 
@@ -146,8 +160,8 @@ module EA_Extensions623
           list3 = all_guage_options_in(@@height_class, @@width_class)
           wall_thickness_dropdown = SKUI::Listbox.new( list3 )
           # @@wall_thickness = (wall_thickness_dropdown.value = wall_thickness_dropdown.items.first)
-          wall_thickness_dropdown.position( 210, 25 )
-          wall_thickness_dropdown.width = 75
+          wall_thickness_dropdown.position( 190, 25 )
+          wall_thickness_dropdown.width = 50
           wall_thickness_dropdown.on(:change) { |control, value|
             @@wall_thickness = control.value
           }
@@ -180,8 +194,8 @@ module EA_Extensions623
             list3 = all_guage_options_in(@@height_class, @@width_class)
             wall_thickness_dropdown = SKUI::Listbox.new( list3 )
             # @@wall_thickness = (wall_thickness_dropdown.value = wall_thickness_dropdown.items.sample)
-            wall_thickness_dropdown.position( 210, 25 )
-            wall_thickness_dropdown.width = 75
+            wall_thickness_dropdown.position( 190, 25 )
+            wall_thickness_dropdown.width = 50
             @group1.add_control( wall_thickness_dropdown )
             wall_thickness_dropdown.on(:change) { |control, value|
               @@wall_thickness = control.value
@@ -218,8 +232,8 @@ module EA_Extensions623
         }
 
         baseselect = SKUI::Listbox.new(BASETYPES)
-        baseselect.position(30,30)
-        baseselect.width = 75
+        baseselect.position(80,30)
+        baseselect.width = 50
         @@basetype.empty? ? @@basetype = (baseselect.value = BASETYPES.first) : baseselect.value = @@basetype
         baseselect.on(:change) { |control, value|
           @@basetype = control.value
@@ -227,14 +241,19 @@ module EA_Extensions623
 
         @group2.add_control(baseselect)
 
-        basethckselect = SKUI::Textbox.new(@@basethick)
-        basethckselect.name = :base_thickness
-        basethckselect.position(150,30)
-        basethckselect.width = 75
-        basethckselect.value = @@basethick
-        basethckselect.on(:textchange) {|control, value|
-          @@basethick = control.value
-        }
+        base_s_label = SKUI::Label.new('Base Plate', baseselect)
+        base_s_label.position(8, 33)
+        @group2.add_control(base_s_label)
+
+
+        # basethckselect = SKUI::Textbox.new(@@basethick)
+        # basethckselect.name = :base_thickness
+        # basethckselect.position(150,30)
+        # basethckselect.width = 75
+        # basethckselect.value = @@basethick
+        # basethckselect.on(:textchange) {|control, value|
+        #   @@basethick = control.value
+        # }
 
         start_tol = SKUI::Textbox.new (@@start_tolerance.to_f)
         start_tol.name = :start_tolerance
@@ -268,7 +287,7 @@ module EA_Extensions623
 
         stud_toggle = SKUI::Checkbox.new("Toggle Studs")
         stud_toggle.font = @label_font
-        stud_toggle.position(320,20)
+        stud_toggle.position(310,20)
         stud_toggle.checked = @@stud_toggle
         @group2.add_control stud_toggle
 
@@ -329,12 +348,12 @@ module EA_Extensions623
         }
 
 
-        stud_spacing_control = SKUI::Textbox.new(@@studspacing)
+        stud_spacing_control = SKUI::Textbox.new(@@studspacing.to_s.to_r.to_f)
         stud_spacing_control.position(80,140)
         stud_spacing_control.width = 50
         stud_spacing_control.height = 20
         stud_spacing_control.on(:textchange) {|control|
-          @@studspacing = control.value
+          @@studspacing = control.value.to_s.to_r.to_f
         }
         @group2.add_control(stud_spacing_control)
 
@@ -366,7 +385,8 @@ module EA_Extensions623
             west_stud_selct:   @@west_stud_selct,
             hss_is_rotated:    @@hss_is_rotated,
             start_tolerance:   @@start_tolerance,
-            end_tolerance:     @@end_tolerance 
+            end_tolerance:     @@end_tolerance,
+            hss_type:          @@hss_type  
           }
           # p "rotated rectangle = #{@@hss_is_rotated}"
           p @@end_tolerance
