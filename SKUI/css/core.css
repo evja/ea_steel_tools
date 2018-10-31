@@ -48,7 +48,7 @@ body
 body, body.platform-windows
 {
   color: #ddd;
-  background: #444;
+  background: #1f1f2e;
 }
 
 /* Windows 8.1 (Or IE11?), or setting text scaling will cause text to appear

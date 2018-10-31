@@ -17,6 +17,8 @@ load 'ea_steel_tools/hss_library.rb'
 
 load 'ea_steel_tools/wide_flange_rolled_data.rb'
 load 'ea_steel_tools/dialog_rolled.rb'
+cls
+
 
 load 'ea_steel_tools/wide_flange_data.rb'
 load 'ea_steel_tools/dialog.rb'
