@@ -1,7 +1,7 @@
 module EA_Extensions623
   module EASteelTools
 
-    class TubeTool
+    class TubeTool < Control
 
       # The activate method is called by SketchUp when the tool is first selected.
       # it is a good place to put most of your initialization
@@ -28,6 +28,8 @@ module EA_Extensions623
         @end_tolerance = data[:end_tolerance].to_f
 
         @hss_type = data[:hss_type]
+        @cap_thickness = data[:cap_thickness]
+        @hss_has_cap = data[:hss_has_cap]
 
         @h = values[:h].to_f #height of the tube
         @w = values[:b].to_f #width of the tube
@@ -98,11 +100,6 @@ module EA_Extensions623
         Sketchup::set_status_text ("Length"), SB_VCB_LABEL
       end
 
-      # def get_cham(a, b)
-      #   c = Math.sqrt(a**2 + b**2)
-      #   return c
-      # end
-
       def onSetCursor
         cursor_path = Sketchup.find_support_file ROOT_FILE_PATH+"/icons/ts_cursor1.png", "Plugins/"
         cursor_id = UI.create_cursor(cursor_path, 0, 0)
@@ -132,6 +129,59 @@ module EA_Extensions623
         end
       end #Draw
 
+      def draw_beam_caps(length)
+        cap = @hss_outer_group.entities.add_group
+        if @tw > 0.375
+          pts = [
+            pt1 = [0,0,0],
+            pt2 = [@w - (MINIMUM_WELD_OVERHANG*2), 0,0],
+            pt3 = [@w - (MINIMUM_WELD_OVERHANG*2), @h - (MINIMUM_WELD_OVERHANG*2), 0],
+            pt4 = [0, @h - (MINIMUM_WELD_OVERHANG*2), 0]
+          ]
+          set_dist = MINIMUM_WELD_OVERHANG
+        else
+          pts = [
+            pt1 = [0,0,0],
+            pt2 = [@w - @tw,0,0],
+            pt3 = [@w - @tw,@h - @tw,0],
+            pt4 = [0,@h - @tw,0]
+          ]
+          set_dist = @tw/2
+        end
+
+        cap_face = cap.entities.add_face pts
+        cap_face.reverse!
+        cap_face.pushpull @cap_thickness
+
+        v1 = X_AXIS.clone
+        v2 = Y_AXIS.clone
+
+        v1.length = set_dist
+        v2.length = set_dist
+
+
+        tr1 = Geom::Transformation.new(v1)
+        tr2 = Geom::Transformation.new(v2)
+
+        @hss_outer_group.entities.transform_entities tr1*tr2, cap
+
+        v3 = Z_AXIS.clone
+        v3.length = -@cap_thickness
+
+        sld = Geom::Transformation.new(v3)
+        @hss_outer_group.entities.transform_entities sld, cap
+
+        cap2 = cap.copy
+
+        v3.length = length.length + @cap_thickness
+        copy_away = Geom::Transformation.new(v3.reverse!)
+        @hss_outer_group.entities.transform_entities copy_away, cap2
+
+        color_by_thickness(cap, @cap_thickness)
+        cap2.material = cap.material
+        # color_by_thickness(cap2, @cap_thickness)
+      end
+
       def draw_control_line(pts, view)
         view.line_width = 2
         view.line_stipple = "."
@@ -155,7 +205,6 @@ module EA_Extensions623
 
         @hss_inner_group = @hss_outer_group.entities.add_group
         @hss_inner_group.name = @tube_name
-
       end
 
       def clear_groups
@@ -288,9 +337,10 @@ module EA_Extensions623
           insert_top_plate(@center_of_column.position, extrude_length)
         else
           extrude_length = vec.clone
-          extrude_length.length = (vec.length - (HSS_BEAM_CAP_THICK*2))
+          extrude_length.length = (vec.length - (@cap_thickness*2))
           extrude_tube(extrude_length, main_face)
           add_name_label(vec)
+          cap = draw_beam_caps(extrude_length)
           align_tube(vec, @hss_outer_group)
           #add_studs_beam
           #add_direction_labels_beam
@@ -803,7 +853,7 @@ module EA_Extensions623
         if @is_column
           adjustment_vec.length = (@base_thickness+@start_tolerance) #this ,ight also need to account for the height from slab (1 1/2")
         else
-          adjustment_vec.length = HSS_BEAM_CAP_THICK #this ,ight also need to account for the height from slab (1 1/2")
+          adjustment_vec.length = @cap_thickness #this ,ight also need to account for the height from slab (1 1/2")
         end
         slide_up = Geom::Transformation.translation(adjustment_vec)
         @entities.transform_entities(slide_up, group)
@@ -825,7 +875,7 @@ module EA_Extensions623
 
       def create_geometry(pt1, pt2, view)
           model = view.model
-          # model.start_operation("Draw TS", true)
+          model.start_operation("Draw TS", true)
 
           vec = pt2 - pt1
           if( vec.length < 2 )
@@ -838,7 +888,7 @@ module EA_Extensions623
 
           draw_tube(vec)
 
-          # model.commit_operation
+          model.commit_operation
         end
 
         def onMouseMove(flags, x, y, view)
