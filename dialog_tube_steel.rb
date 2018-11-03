@@ -386,7 +386,7 @@ module EA_Extensions623
             hss_is_rotated:    @@hss_is_rotated,
             start_tolerance:   @@start_tolerance,
             end_tolerance:     @@end_tolerance,
-            hss_type:          @@hss_type  
+            hss_type:          @@hss_type
           }
           # p "rotated rectangle = #{@@hss_is_rotated}"
           p @@end_tolerance
