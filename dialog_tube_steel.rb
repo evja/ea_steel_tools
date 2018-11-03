@@ -33,8 +33,22 @@ module EA_Extensions623
           @@start_tolerance        = 1.5
           @@end_tolerance          = 0.0675
 
-          @@hss_type                = 'Column' # Beam or Column Options
+          @@hss_type               = '' # Beam or Column Options
+
+          @@cap_thickness          = 0.25
+          @@hss_has_cap            = true
         end
+
+        ####################################################
+        #     TEST SPACE
+        ####################################################
+
+
+
+
+
+        ####################################################
+        ####################################################
 
 
         @label_font = SKUI::Font.new( 'Comic Sans MS', 8, true )
@@ -56,184 +70,46 @@ module EA_Extensions623
         }
 
         window = SKUI::Window.new( options )
+        # p window.theme
         @window1 = window
 
         set_groups(@window1) # <- Method
+
+        setup_hss_size_selections
 
         @sq_image = set_image1(@group2, @img_file1, ss_x, ss_y)
         @rec_image = set_image2(@group2, @img_file2, ss_x, ss_y)
         @rec_image_rot = set_image3(@group2, @img_file3, ss_x, ss_y)
 
-        rotate_hss = SKUI::Checkbox.new("Rotate 90º")
-        rotate_hss.font = @label_font
-        rotate_hss.position(310, 155)
-        rotate_hss.checked = @@hss_is_rotated
-        rotate_hss.on (:change ) { |control|
+        @rotate_hss = SKUI::Checkbox.new("Rotate 90º")
+        @rotate_hss.font = @label_font
+        @rotate_hss.position(310, 155)
+        @rotate_hss.checked = @@hss_is_rotated
+        @rotate_hss.on (:change ) { |control|
           @@hss_is_rotated = control.checked?
           @rec_image.visible = !control.checked?
           @rec_image_rot.visible = control.checked?
         }
-        @group2.add_control rotate_hss
-        rotate_hss.visible = !(@@width_class.to_f == @@height_class.to_f)
+        @group2.add_control @rotate_hss
+        @rotate_hss.visible = !(@@width_class.to_f == @@height_class.to_f)
 
-        hss_type_select = SKUI::Listbox.new(["Column", "Beam"])
-        hss_type_select.position(300, 25)
-        hss_type_select.width = 68
-        hss_type_select.on (:change ) {|control|
-          @@hss_type = control.value
-        }
+
         hss_type_label = SKUI::Label.new('Type')
         hss_type_label.position(265,27)
         @group1.add_control( hss_type_label )
 
+        @hss_types = ["Column", "Beam"]
+        hss_type_select = SKUI::Listbox.new(@hss_types)
+        hss_type_select.position(300, 25)
+        hss_type_select.width = 68
+        @@hss_type.empty? ? @@hss_type = (hss_type_select.value = @hss_types.last) : (hss_type_select.value = @@hss_type)
         @group1.add_control(hss_type_select)
 
-        hc_list_label = SKUI::Label.new('Size')
-        hc_list_label.position(10,27)
-
-        label1 = SKUI::Label.new('X')
-        label1.position(100,30)
-        @group1.add_control( label1 )
-
-        label2 = SKUI::Label.new('X')
-        label2.position(175,30)
-        @group1.add_control( label2 )
-        @group1.add_control( hc_list_label )
-
-        list = all_height_classes
-        height_class_dropdown = SKUI::Listbox.new( list )
-        @@height_class.empty? ? @@height_class = (height_class_dropdown.value = height_class_dropdown.items.sample) : height_class_dropdown.value = height_class_dropdown.items.grep(@@height_class).first.to_s
-        height_class_dropdown.position( 40, 25 )
-        height_class_dropdown.width = 55
-
-
-        list2 = all_tubes_in(@@height_class)
-        width_size_dropdown = SKUI::Listbox.new( list2 )
-        @@width_class.empty? ? @@width_class = (width_size_dropdown.value = width_size_dropdown.items.first) : @@width_class = (width_size_dropdown.value = width_size_dropdown.items.grep(@@width_class).first.to_s)
-        width_size_dropdown.position( 113, 25 )
-        width_size_dropdown.width = 55
-
-        @group1.add_control( width_size_dropdown )
-
-        # list3 = cuurent_selection_wall_thickness(@@width_class)
-        list3 = all_guage_options_in(@@height_class, @@width_class)
-        # p list3
-        wall_thickness_dropdown = SKUI::Listbox.new( list3 )
-        @@wall_thickness.empty? ? @@wall_thickness = (@@wall_thickness = wall_thickness_dropdown.items[1]) : (@@wall_thickness)
-        wall_thickness_dropdown.value = @@wall_thickness
-        wall_thickness_dropdown.position( 190, 25 )
-        wall_thickness_dropdown.width = 50
-        wall_thickness_dropdown.on(:change) { |control, value|
-          @@wall_thickness = control.value
-        }
-
-        height_class_dropdown.on( :change ) { |control, value|
-          @@height_class = control.value
-          list2 = all_tubes_in(control.value)
-          width_size_dropdown = SKUI::Listbox.new( list2 )
-          @@width_class = width_size_dropdown.value = width_size_dropdown.items.first
-          width_size_dropdown.position( 113, 25 )
-          width_size_dropdown.width = 55
-          @group1.add_control( width_size_dropdown )
-
-          if @@width_class.to_f == @@height_class.to_f #is square tube
-            @sq_image.visible = true
-            @rec_image.visible = false
-            @rec_image_rot.visible = false
-            rotate_hss.visible = false
-            rotate_hss.checked = false
-
-          elsif @@width_class.to_f < @@height_class.to_f && !rotate_hss.checked? #is standard rectangle tube
-            @sq_image.visible = false
-            @rec_image.visible = true
-            @rec_image_rot.visible = false
-            rotate_hss.visible = true
-            rotate_hss.checked = false
-
-          elsif @@width_class.to_f < @@height_class.to_f && rotate_hss.checked? #is rectangle tube rotated 90º
-            @sq_image.visible = false
-            @rec_image.visible = false
-            @rec_image_rot.visible = true
-            rotate_hss.visible = true
-          end
-          @@hss_is_rotated = rotate_hss.checked?
-          list3 = all_guage_options_in(@@height_class, @@width_class)
-          wall_thickness_dropdown = SKUI::Listbox.new( list3 )
-          # @@wall_thickness = (wall_thickness_dropdown.value = wall_thickness_dropdown.items.first)
-          wall_thickness_dropdown.position( 190, 25 )
-          wall_thickness_dropdown.width = 50
-          wall_thickness_dropdown.on(:change) { |control, value|
-            @@wall_thickness = control.value
-          }
-          @group1.add_control( wall_thickness_dropdown )
-
-          width_size_dropdown.on( :change ) { |control, value|
-            @@width_class = control.value
-
-            if @@width_class.to_f == @@height_class.to_f #is square tube
-              @sq_image.visible = true
-              @rec_image.visible = false
-              @rec_image_rot.visible = false
-              rotate_hss.visible = false
-              rotate_hss.checked = false
-
-            elsif @@width_class.to_f < @@height_class.to_f && !rotate_hss.checked? #is standard rectangle tube
-              @sq_image.visible = false
-              @rec_image.visible = true
-              @rec_image_rot.visible = false
-              rotate_hss.visible = true
-              rotate_hss.checked = false
-
-            elsif @@width_class.to_f < @@height_class.to_f && rotate_hss.checked? #is rectangle tube rotated 90º
-              @sq_image.visible = false
-              @rec_image.visible = false
-              @rec_image_rot.visible = true
-              rotate_hss.visible = true
-            end
-            @@hss_is_rotated = rotate_hss.checked?
-            list3 = all_guage_options_in(@@height_class, @@width_class)
-            wall_thickness_dropdown = SKUI::Listbox.new( list3 )
-            # @@wall_thickness = (wall_thickness_dropdown.value = wall_thickness_dropdown.items.sample)
-            wall_thickness_dropdown.position( 190, 25 )
-            wall_thickness_dropdown.width = 50
-            @group1.add_control( wall_thickness_dropdown )
-            wall_thickness_dropdown.on(:change) { |control, value|
-              @@wall_thickness = control.value
-            }
-          }
-        }
-        @group1.add_control( height_class_dropdown )
-
-        @group1.add_control( wall_thickness_dropdown )
-
-        width_size_dropdown.on( :change ) { |control, value|
-          @@width_class = control.value
-          if @@width_class.to_f == @@height_class.to_f #is square tube
-            @sq_image.visible = true
-            @rec_image.visible = false
-            @rec_image_rot.visible = false
-            rotate_hss.visible = false
-            rotate_hss.checked = false
-
-          elsif @@width_class.to_f < @@height_class.to_f && !rotate_hss.checked? #is standard rectangle tube
-            @sq_image.visible = false
-            @rec_image.visible = true
-            @rec_image_rot.visible = false
-            rotate_hss.visible = true
-            rotate_hss.checked = false
-
-          elsif @@width_class.to_f < @@height_class.to_f && rotate_hss.checked? #is rectangle tube rotated 90º
-            @sq_image.visible = false
-            @rec_image.visible = false
-            @rec_image_rot.visible = true
-            rotate_hss.visible = true
-          end
-          @@hss_is_rotated = rotate_hss.checked?
-        }
 
         baseselect = SKUI::Listbox.new(BASETYPES)
         baseselect.position(80,30)
         baseselect.width = 50
+        baseselect.visible = @@hss_type == 'Column'
         @@basetype.empty? ? @@basetype = (baseselect.value = BASETYPES.first) : baseselect.value = @@basetype
         baseselect.on(:change) { |control, value|
           @@basetype = control.value
@@ -243,17 +119,51 @@ module EA_Extensions623
 
         base_s_label = SKUI::Label.new('Base Plate', baseselect)
         base_s_label.position(8, 33)
+        base_s_label.visible = (@@hss_type == 'Column')
         @group2.add_control(base_s_label)
 
 
-        # basethckselect = SKUI::Textbox.new(@@basethick)
-        # basethckselect.name = :base_thickness
-        # basethckselect.position(150,30)
-        # basethckselect.width = 75
-        # basethckselect.value = @@basethick
-        # basethckselect.on(:textchange) {|control, value|
-        #   @@basethick = control.value
-        # }
+        hss_beam_cap_label = SKUI::Label.new("End Cap Thick")
+        hss_beam_cap_label.position(5,43)
+        hss_beam_cap_label.visible = (@@hss_type == 'Beam')
+        @group2.add_control(hss_beam_cap_label)
+
+        cap_select = SKUI::Textbox.new(@@cap_thickness)
+        cap_select.position(85,40)
+        cap_select.width = 50
+        cap_select.visible = @@hss_type == 'Beam'
+        cap_select.on( :textchange ) {|control|
+          @@cap_thickness = control.value.to_s.to_r.to_f
+        }
+        @group2.add_control(cap_select)
+
+        hss_has_cap_select = SKUI::Checkbox.new('End Caps?')
+        hss_has_cap_select.font = @label_font
+        hss_has_cap_select.position(25,20)
+        hss_has_cap_select.checked = @@hss_has_cap
+        hss_has_cap_select.visible = @@hss_type == 'Beam'
+        hss_has_cap_select.on( :change ) { |control|
+          @@hss_has_cap = control.checked?
+          hss_has_cap_select.checked = control.checked?
+        }
+        @group2.add_control(hss_has_cap_select)
+############################################################################
+#                HSS TYPE SELECTION FROM COLUMN TOP BEAM
+############################################################################
+
+        hss_type_select.on (:change ) {|control|
+          @@hss_type = control.value
+          baseselect.visible = @@hss_type == "Column"
+          base_s_label.visible = @@hss_type == "Column"
+          hss_beam_cap_label.visible = @@hss_type == 'Beam'
+          cap_select.visible = @@hss_type == 'Beam'
+          hss_has_cap_select.visible = @@hss_type == 'Beam'
+        }
+
+############################################################################
+#
+############################################################################
+
 
         start_tol = SKUI::Textbox.new (@@start_tolerance.to_f)
         start_tol.name = :start_tolerance
@@ -364,6 +274,151 @@ module EA_Extensions623
         add_control_buttons(window)# <- Method
       end
 
+      def setup_hss_size_selections
+        hc_list_label = SKUI::Label.new('Size')
+        hc_list_label.position(10,27)
+
+        label1 = SKUI::Label.new('X')
+        label1.position(100,30)
+        @group1.add_control( label1 )
+
+        label2 = SKUI::Label.new('X')
+        label2.position(175,30)
+        @group1.add_control( label2 )
+        @group1.add_control( hc_list_label )
+
+        list = all_height_classes
+        height_class_dropdown = SKUI::Listbox.new( list )
+        @@height_class.empty? ? @@height_class = (height_class_dropdown.value = height_class_dropdown.items.sample) : height_class_dropdown.value = height_class_dropdown.items.grep(@@height_class).first.to_s
+        height_class_dropdown.position( 40, 25 )
+        height_class_dropdown.width = 55
+
+
+        list2 = all_tubes_in(@@height_class)
+        width_size_dropdown = SKUI::Listbox.new( list2 )
+        @@width_class.empty? ? @@width_class = (width_size_dropdown.value = width_size_dropdown.items.first) : @@width_class = (width_size_dropdown.value = width_size_dropdown.items.grep(@@width_class).first.to_s)
+        width_size_dropdown.position( 113, 25 )
+        width_size_dropdown.width = 55
+
+        @group1.add_control( width_size_dropdown )
+
+        # list3 = cuurent_selection_wall_thickness(@@width_class)
+        list3 = all_guage_options_in(@@height_class, @@width_class)
+        # p list3
+        wall_thickness_dropdown = SKUI::Listbox.new( list3 )
+        @@wall_thickness.empty? ? @@wall_thickness = (@@wall_thickness = wall_thickness_dropdown.items[1]) : (@@wall_thickness)
+        wall_thickness_dropdown.value = @@wall_thickness
+        wall_thickness_dropdown.position( 190, 25 )
+        wall_thickness_dropdown.width = 50
+        wall_thickness_dropdown.on(:change) { |control, value|
+          @@wall_thickness = control.value
+        }
+
+        height_class_dropdown.on( :change ) { |control, value|
+          @@height_class = control.value
+          list2 = all_tubes_in(control.value)
+          width_size_dropdown = SKUI::Listbox.new( list2 )
+          @@width_class = width_size_dropdown.value = width_size_dropdown.items.first
+          width_size_dropdown.position( 113, 25 )
+          width_size_dropdown.width = 55
+          @group1.add_control( width_size_dropdown )
+
+          if @@width_class.to_f == @@height_class.to_f #is square tube
+            @sq_image.visible = true
+            @rec_image.visible = false
+            @rec_image_rot.visible = false
+            @rotate_hss.visible = false
+            @rotate_hss.checked = false
+
+          elsif @@width_class.to_f < @@height_class.to_f && !@rotate_hss.checked? #is standard rectangle tube
+            @sq_image.visible = false
+            @rec_image.visible = true
+            @rec_image_rot.visible = false
+            @rotate_hss.visible = true
+            @rotate_hss.checked = false
+
+          elsif @@width_class.to_f < @@height_class.to_f && @rotate_hss.checked? #is rectangle tube rotated 90º
+            @sq_image.visible = false
+            @rec_image.visible = false
+            @rec_image_rot.visible = true
+            @rotate_hss.visible = true
+          end
+          @@hss_is_rotated = @rotate_hss.checked?
+          list3 = all_guage_options_in(@@height_class, @@width_class)
+          wall_thickness_dropdown = SKUI::Listbox.new( list3 )
+          # @@wall_thickness = (wall_thickness_dropdown.value = wall_thickness_dropdown.items.first)
+          wall_thickness_dropdown.position( 190, 25 )
+          wall_thickness_dropdown.width = 50
+          wall_thickness_dropdown.on(:change) { |control, value|
+            @@wall_thickness = control.value
+          }
+          @group1.add_control( wall_thickness_dropdown )
+
+          width_size_dropdown.on( :change ) { |control, value|
+            @@width_class = control.value
+
+            if @@width_class.to_f == @@height_class.to_f #is square tube
+              @sq_image.visible = true
+              @rec_image.visible = false
+              @rec_image_rot.visible = false
+              @rotate_hss.visible = false
+              @rotate_hss.checked = false
+
+            elsif @@width_class.to_f < @@height_class.to_f && !@rotate_hss.checked? #is standard rectangle tube
+              @sq_image.visible = false
+              @rec_image.visible = true
+              @rec_image_rot.visible = false
+              @rotate_hss.visible = true
+              @rotate_hss.checked = false
+
+            elsif @@width_class.to_f < @@height_class.to_f && @rotate_hss.checked? #is rectangle tube rotated 90º
+              @sq_image.visible = false
+              @rec_image.visible = false
+              @rec_image_rot.visible = true
+              @rotate_hss.visible = true
+            end
+            @@hss_is_rotated = @rotate_hss.checked?
+            list3 = all_guage_options_in(@@height_class, @@width_class)
+            wall_thickness_dropdown = SKUI::Listbox.new( list3 )
+            # @@wall_thickness = (wall_thickness_dropdown.value = wall_thickness_dropdown.items.sample)
+            wall_thickness_dropdown.position( 190, 25 )
+            wall_thickness_dropdown.width = 50
+            @group1.add_control( wall_thickness_dropdown )
+            wall_thickness_dropdown.on(:change) { |control, value|
+              @@wall_thickness = control.value
+            }
+          }
+        }
+        @group1.add_control( height_class_dropdown )
+
+        @group1.add_control( wall_thickness_dropdown )
+
+        width_size_dropdown.on( :change ) { |control, value|
+          @@width_class = control.value
+          if @@width_class.to_f == @@height_class.to_f #is square tube
+            @sq_image.visible = true
+            @rec_image.visible = false
+            @rec_image_rot.visible = false
+            @rotate_hss.visible = false
+            @rotate_hss.checked = false
+
+          elsif @@width_class.to_f < @@height_class.to_f && !@rotate_hss.checked? #is standard rectangle tube
+            @sq_image.visible = false
+            @rec_image.visible = true
+            @rec_image_rot.visible = false
+            @rotate_hss.visible = true
+            @rotate_hss.checked = false
+
+          elsif @@width_class.to_f < @@height_class.to_f && @rotate_hss.checked? #is rectangle tube rotated 90º
+            @sq_image.visible = false
+            @rec_image.visible = false
+            @rec_image_rot.visible = true
+            @rotate_hss.visible = true
+          end
+          @@hss_is_rotated = @rotate_hss.checked?
+        }
+      end
+
       # def add_hss_selections()
 
       # end
@@ -386,11 +441,11 @@ module EA_Extensions623
             hss_is_rotated:    @@hss_is_rotated,
             start_tolerance:   @@start_tolerance,
             end_tolerance:     @@end_tolerance,
-            hss_type:          @@hss_type
+            hss_type:          @@hss_type,
+            cap_thickness:     @@cap_thickness,
+            hss_has_cap:       @@hss_has_cap
           }
           # p "rotated rectangle = #{@@hss_is_rotated}"
-          p @@end_tolerance
-          p @@start_tolerance
           control.window.close
           Sketchup.active_model.select_tool EASteelTools::TubeTool.new(data)
         }

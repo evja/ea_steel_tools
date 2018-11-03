@@ -42,7 +42,8 @@ module SKUI
 
     # @since 1.0.0
     THEME_DEFAULT  = nil
-    THEME_GRAPHITE = File.join( PATH_CSS, 'theme_graphite.css' ).freeze
+    # THEME_GRAPHITE = File.join( PATH_CSS, 'theme_graphite.css' ).freeze
+    THEME_3DS      = File.join( PATH_CSS, 'theme_3ds.css')
 
     # @private
     attr_reader( :bridge )
@@ -72,7 +73,7 @@ module SKUI
 
         :preferences_key  => nil,
 
-        :theme            => THEME_GRAPHITE
+        :theme            => THEME_3DS
       }
       active_options = defaults.merge( options )
 
