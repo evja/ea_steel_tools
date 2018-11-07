@@ -41,12 +41,12 @@ module EA_Extensions623
 
         ####################################################
         #     TEST SPACE
-        ####################################################
+        ####################################################    
 
 
 
 
-
+        
         ####################################################
         ####################################################
 
@@ -93,7 +93,7 @@ module EA_Extensions623
         @group2.add_control @rotate_hss
         @rotate_hss.visible = !(@@width_class.to_f == @@height_class.to_f)
 
-
+        
         hss_type_label = SKUI::Label.new('Type')
         hss_type_label.position(265,27)
         @group1.add_control( hss_type_label )
@@ -122,7 +122,7 @@ module EA_Extensions623
         base_s_label.visible = (@@hss_type == 'Column')
         @group2.add_control(base_s_label)
 
-
+        
         hss_beam_cap_label = SKUI::Label.new("End Cap Thick")
         hss_beam_cap_label.position(5,43)
         hss_beam_cap_label.visible = (@@hss_type == 'Beam')
@@ -147,22 +147,6 @@ module EA_Extensions623
           hss_has_cap_select.checked = control.checked?
         }
         @group2.add_control(hss_has_cap_select)
-############################################################################
-#                HSS TYPE SELECTION FROM COLUMN TOP BEAM
-############################################################################
-
-        hss_type_select.on (:change ) {|control|
-          @@hss_type = control.value
-          baseselect.visible = @@hss_type == "Column"
-          base_s_label.visible = @@hss_type == "Column"
-          hss_beam_cap_label.visible = @@hss_type == 'Beam'
-          cap_select.visible = @@hss_type == 'Beam'
-          hss_has_cap_select.visible = @@hss_type == 'Beam'
-        }
-
-############################################################################
-#
-############################################################################
 
 
         start_tol = SKUI::Textbox.new (@@start_tolerance.to_f)
@@ -201,9 +185,15 @@ module EA_Extensions623
         stud_toggle.checked = @@stud_toggle
         @group2.add_control stud_toggle
 
+
+
+
+
+
         north_stud_selct = SKUI::Checkbox.new('N')
         north_stud_selct.font = @label_font
         north_stud_selct.position(232+ss_x,20+ss_y)
+        north_stud_selct.visible = (@@hss_type == 'Column')
         north_stud_selct.checked = @@north_stud_selct
         north_stud_selct.on (:change ) { |control|
           @@north_stud_selct = control.checked?
@@ -215,6 +205,7 @@ module EA_Extensions623
         south_stud_selct = SKUI::Checkbox.new('S')
         south_stud_selct.font = @label_font
         south_stud_selct.position(232+ss_x,175+ss_y)
+        south_stud_selct.visible = (@@hss_type == 'Column')
         south_stud_selct.checked = @@south_stud_selct
         south_stud_selct.on (:change ) { |control|
           @@south_stud_selct = control.checked?
@@ -226,6 +217,7 @@ module EA_Extensions623
         east_stud_selct = SKUI::Checkbox.new('E')
         east_stud_selct.font = @label_font
         east_stud_selct.position(310+ss_x,97+ss_y)
+        east_stud_selct.visible = (@@hss_type == 'Column')
         east_stud_selct.checked = @@east_stud_selct
         east_stud_selct.on (:change ) { |control|
           @@east_stud_selct = control.checked?
@@ -237,6 +229,7 @@ module EA_Extensions623
         west_stud_selct = SKUI::Checkbox.new('W')
         west_stud_selct.font = @label_font
         west_stud_selct.position(145+ss_x,97+ss_y)
+        west_stud_selct.visible = (@@hss_type == 'Column')
         west_stud_selct.checked = @@west_stud_selct
         west_stud_selct.on (:change ) { |control|
           @@west_stud_selct = control.checked?
@@ -245,6 +238,96 @@ module EA_Extensions623
 
         @group2.add_control(west_stud_selct)
 
+
+######################################################################
+# WORKING BELOW
+######################################################################
+
+        top_stud_selct = SKUI::Checkbox.new('T')
+        top_stud_selct.font = @label_font
+        top_stud_selct.position(232+ss_x,20+ss_y)
+        top_stud_selct.visible = (@@hss_type == 'Beam')
+        top_stud_selct.checked = @@north_stud_selct
+        top_stud_selct.on (:change ) { |control|
+          @@north_stud_selct = control.checked?
+          stud_toggle.checked = false if not control.checked?
+        }
+
+        @group2.add_control(top_stud_selct)
+
+        bottom_stud_selct = SKUI::Checkbox.new('B')
+        bottom_stud_selct.font = @label_font
+        bottom_stud_selct.position(232+ss_x,175+ss_y)
+        bottom_stud_selct.visible = (@@hss_type == 'Beam')
+        bottom_stud_selct.checked = @@south_stud_selct
+        bottom_stud_selct.on (:change ) { |control|
+          @@south_stud_selct = control.checked?
+          stud_toggle.checked = false if not control.checked?
+        }
+
+        @group2.add_control(bottom_stud_selct)
+
+        right_stud_selct = SKUI::Checkbox.new('R')
+        right_stud_selct.font = @label_font
+        right_stud_selct.position(310+ss_x,97+ss_y)
+        right_stud_selct.visible = (@@hss_type == 'Beam')
+        right_stud_selct.checked = @@west_stud_selct
+        right_stud_selct.on (:change ) { |control|
+          @@west_stud_selct = control.checked?
+          stud_toggle.checked = false if not control.checked?
+        }
+
+        @group2.add_control(right_stud_selct)
+
+        left_stud_selct = SKUI::Checkbox.new('L')
+        left_stud_selct.font = @label_font
+        left_stud_selct.position(145+ss_x,97+ss_y)
+        left_stud_selct.visible = (@@hss_type == 'Beam')
+        left_stud_selct.checked = @@east_stud_selct
+        left_stud_selct.on (:change ) { |control|
+          @@east_stud_selct = control.checked?
+          stud_toggle.checked = false if not control.checked?
+        }
+
+        @group2.add_control(left_stud_selct)
+
+
+######################################################################
+# WORKING ABOVE
+######################################################################
+
+
+############################################################################
+#                HSS TYPE SELECTION FROM COLUMN TOP BEAM
+############################################################################
+
+        hss_type_select.on (:change ) {|control|
+          @@hss_type = control.value
+
+          @@hss_type == 'Column' ? when_column = true : when_column = false
+          @@hss_type == 'Beam' ? when_beam = true : when_beam = false
+
+          baseselect.visible = when_column
+          base_s_label.visible = when_column
+          north_stud_selct.visible = when_column
+          south_stud_selct.visible = when_column
+          east_stud_selct.visible = when_column
+          west_stud_selct.visible = when_column
+
+          hss_beam_cap_label.visible = when_beam
+          cap_select.visible = when_beam 
+          hss_has_cap_select.visible = when_beam
+          top_stud_selct.visible = when_beam
+          bottom_stud_selct.visible = when_beam
+          right_stud_selct.visible = when_beam
+          left_stud_selct.visible = when_beam
+
+
+        }
+
+############################################################################
+#               
+############################################################################
         stud_toggle.on (:change) {|control|
           @@stud_toggle = control.checked?
           north_stud_selct.checked = control.checked?
