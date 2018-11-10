@@ -320,11 +320,9 @@ module EA_Extensions623
           extrude_tube(extrude_length, main_face)
           add_studs(extrude_length.length, @@stud_spacing)
           add_up_arrow(extrude_length.length, @@stud_spacing)
+          add_name_label(vec)
           add_direction_labels()
-
-
           align_tube(vec, @hss_outer_group)
-
 
           if @material_names.include? STEEL_COLORS[:orange][:name]
             @base_plate_color = STEEL_COLORS[:orange][:rgb]
@@ -337,10 +335,15 @@ module EA_Extensions623
           insert_top_plate(@center_of_column.position, extrude_length)
         else
           extrude_length = vec.clone
-          extrude_length.length = (vec.length - (@cap_thickness*2))
+          if @hss_has_cap
+            extrude_length.length = (vec.length - (@cap_thickness*2))
+          else
+            extrude_length.length = vec.length
+          end
           extrude_tube(extrude_length, main_face)
           add_name_label(vec)
-          cap = draw_beam_caps(extrude_length)
+          add_studs(extrude_length.length, @@stud_spacing)
+          cap = draw_beam_caps(extrude_length) if @hss_has_cap
           align_tube(vec, @hss_outer_group)
           #add_studs_beam
           #add_direction_labels_beam
@@ -409,7 +412,7 @@ module EA_Extensions623
           if file_path1
             @base_plate = @definition_list.load file_path1
 
-            slide_vec = Geom::Vector3d.new(@w/2, @h/2, 0) 
+            slide_vec = Geom::Vector3d.new(@w/2, @h/2, 0)
             slide_base = Geom::Transformation.translation(slide_vec)
             @bp = @hss_outer_group.entities.add_instance @base_plate, center
             @bp.material = @base_plate_color
@@ -852,14 +855,14 @@ module EA_Extensions623
         adjustment_vec = vec.clone
         if @is_column
           adjustment_vec.length = (@base_thickness+@start_tolerance) #this ,ight also need to account for the height from slab (1 1/2")
-        else
+        elsif @hss_has_cap
           adjustment_vec.length = @cap_thickness #this ,ight also need to account for the height from slab (1 1/2")
+          slide_up = Geom::Transformation.translation(adjustment_vec)
+          @entities.transform_entities(slide_up, group)
         end
-        slide_up = Geom::Transformation.translation(adjustment_vec)
-        @entities.transform_entities(slide_up, group)
 
         if vec[2] < 0 && @is_column
-          if vec.parallel? Z_AXIS 
+          if vec.parallel? Z_AXIS
             rot_vec = X_AXIS
           else
             rot_vec = vec.cross(Z_AXIS)
@@ -874,24 +877,24 @@ module EA_Extensions623
       end
 
       def create_geometry(pt1, pt2, view)
-          model = view.model
-          model.start_operation("Draw TS", true)
+        model = view.model
+        model.start_operation("Draw TS", true)
 
-          vec = pt2 - pt1
-          if( vec.length < 2 )
-              UI.beep
-              UI.messagebox("Please draw a HSS longer than 2")
-              return
-          end
-
-          @vec_center = Geom::Point3d.new((pt1[0]+pt2[0])/2,(pt1[1]+pt2[1])/2,(pt1[2]+pt2[2])/2)
-
-          draw_tube(vec)
-
-          model.commit_operation
+        vec = pt2 - pt1
+        if( vec.length < 2 )
+            UI.beep
+            UI.messagebox("Please draw a HSS longer than 2")
+            return
         end
 
-        def onMouseMove(flags, x, y, view)
+        @vec_center = Geom::Point3d.new((pt1[0]+pt2[0])/2,(pt1[1]+pt2[1])/2,(pt1[2]+pt2[2])/2)
+
+        draw_tube(vec)
+
+        model.commit_operation
+      end
+
+      def onMouseMove(flags, x, y, view)
         @vx = Geom::Vector3d.new 1,0,0
         @vy = Geom::Vector3d.new 0,1,0
         @vz = Geom::Vector3d.new 0,0,1
