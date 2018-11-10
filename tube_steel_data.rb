@@ -34,6 +34,8 @@ module EA_Extensions623
         @h = values[:h].to_f #height of the tube
         @w = values[:b].to_f #width of the tube
 
+
+        # This rotates the orientation of the hss if it is a rectangle and you want the long side facing 90° rotation
         if @hss_is_rotated
           @h, @w = @w, @h
         end
@@ -49,23 +51,23 @@ module EA_Extensions623
         end
 
         case data[:wall_thickness]
-        when '1/8'
+        when '1/8"'
           @tw = 0.125
-        when '3/16'
+        when '3/16"'
           @tw = 0.1875
-        when '1/4'
+        when '1/4"'
           @tw = 0.25
-        when '5/16'
+        when '5/16"'
           @tw = 0.3125
-        when '3/8'
+        when '3/8"'
           @tw = 0.375
-        when '1/2'
+        when '1/2"'
           @tw = 0.5
-        when '5/8'
+        when '5/8"'
           @tw = 0.625
-        when '3/4'
+        when '3/4"'
           @tw = 0.75
-        when '7/8'
+        when '7/8"'
           @tw = 0.875
         else
           @tw = 0.25
@@ -205,6 +207,7 @@ module EA_Extensions623
 
         @hss_inner_group = @hss_outer_group.entities.add_group
         @hss_inner_group.name = @tube_name
+        @hss_inner_group.definition.behavior.no_scale_mask = (110010)
       end
 
       def clear_groups
@@ -293,8 +296,10 @@ module EA_Extensions623
         face_to_delete = ents[0].common_face ents[1]
         face_to_delete.erase! if face_to_delete
 
+        centerpoint_group = @hss_outer_group.entities.add_group
         main_face = @hss_inner_group.entities.select{|e| e.is_a? Sketchup::Face}[0].reverse!
-        @center_of_column = @hss_outer_group.entities.add_cpoint(@hss_outer_group.bounds.center)
+        @center_of_column = centerpoint_group.entities.add_cpoint(@hss_outer_group.bounds.center)
+        centerpoint_group.locked = true
 
         slide_face = Geom::Transformation.translation(Geom::Vector3d.new(0,-@h, 0))
 
@@ -359,15 +364,6 @@ module EA_Extensions623
           @half_inch_stud = @definition_list.load file_path
           copies = (length/spread).to_i
           start_dist = (length - (copies * spread))/2
-
-          p copies
-          p start_dist
-
-          # remaining_working_space = (length - ((spread*copies)+start_dist))
-
-          # if remaining_working_space > max_dist_from_hss_end
-          #   start_dist = (length - (copies*spread))/2
-          # end
 
           if @east_stud_selct
             e_stud = @hss_outer_group.entities.add_instance @half_inch_stud, @center_of_column.position

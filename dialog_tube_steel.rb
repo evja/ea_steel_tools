@@ -102,7 +102,7 @@ module EA_Extensions623
         hss_type_select = SKUI::Listbox.new(@hss_types)
         hss_type_select.position(300, 25)
         hss_type_select.width = 68
-        @@hss_type.empty? ? @@hss_type = (hss_type_select.value = @hss_types.last) : (hss_type_select.value = @@hss_type)
+        @@hss_type.empty? ? @@hss_type = (hss_type_select.value = @hss_types.first) : (hss_type_select.value = @@hss_type)
         @group1.add_control(hss_type_select)
 
 
@@ -184,8 +184,6 @@ module EA_Extensions623
         stud_toggle.position(310,20)
         stud_toggle.checked = @@stud_toggle
         @group2.add_control stud_toggle
-
-
 
 
 
@@ -396,6 +394,8 @@ module EA_Extensions623
         wall_thickness_dropdown.on(:change) { |control, value|
           @@wall_thickness = control.value
         }
+
+        p @@wall_thickness
 
         height_class_dropdown.on( :change ) { |control, value|
           @@height_class = control.value
