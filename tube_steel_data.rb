@@ -207,7 +207,7 @@ module EA_Extensions623
 
         @hss_inner_group = @hss_outer_group.entities.add_group
         @hss_inner_group.name = @tube_name
-        @hss_inner_group.definition.behavior.no_scale_mask = (110010)
+        @hss_inner_group.definition.behavior.no_scale_mask = 123
       end
 
       def clear_groups
@@ -319,8 +319,8 @@ module EA_Extensions623
         @entities.transform_entities mv_prof_to_c, @hss_outer_group
         @material_names = @materials.map {|color| color.name}
 
+        extrude_length = vec.clone
         if @is_column
-          extrude_length = vec.clone
           extrude_length.length = (vec.length - (@base_thickness*2)) - (@start_tolerance+@end_tolerance) #This thickness is accouting for bot top and bottom plate. if the top plates thickness is controlled it will need to be accounted for if it varies from the base thickness
           extrude_tube(extrude_length, main_face)
           add_studs(extrude_length.length, @@stud_spacing)
@@ -339,7 +339,6 @@ module EA_Extensions623
           insert_base_plates(@base_type, @center_of_column.position)
           insert_top_plate(@center_of_column.position, extrude_length)
         else
-          extrude_length = vec.clone
           if @hss_has_cap
             extrude_length.length = (vec.length - (@cap_thickness*2))
           else
@@ -347,10 +346,9 @@ module EA_Extensions623
           end
           extrude_tube(extrude_length, main_face)
           add_name_label(vec)
-          add_studs(extrude_length.length, @@stud_spacing)
+          add_studs_beam(extrude_length.length, @@stud_spacing)
           cap = draw_beam_caps(extrude_length) if @hss_has_cap
           align_tube(vec, @hss_outer_group)
-          add_studs_beam(extrude_length.length, @@stud_spacing)
           #add_direction_labels_beam
           #add_cap plates
 
@@ -360,13 +358,18 @@ module EA_Extensions623
 
       def add_studs_beam(length, spread)
         begin
-
+          length = length.to_f
+          p "length is #{length.to_f}"
+          p "spread is #{spread}"
           max_dist_from_hss_end = spread*0.75
 
           file_path = Sketchup.find_support_file "#{COMPONENT_PATH}/#{HLF_INCH_STD}", "Plugins"
           @half_inch_stud = @definition_list.load file_path
-          copies = (length/spread).to_i
+          copies = (length/spread).to_i - 1
+          p "copies are #{copies}"
           start_dist = (length - (copies * spread))/2
+
+          p start_dist
 
           if @east_stud_selct
             e_stud = @hss_outer_group.entities.add_instance @half_inch_stud, @center_of_column.position
@@ -379,6 +382,7 @@ module EA_Extensions623
             @hss_outer_group.entities.transform_entities slide1, e_stud
 
             vec2 = Geom::Vector3d.new(0,0,start_dist)
+            p vec2
             slide_to_start = Geom::Transformation.translation(vec2)
 
             @hss_outer_group.entities.transform_entities slide_to_start, e_stud
@@ -482,7 +486,7 @@ module EA_Extensions623
         rescue Exception => e
           puts e.message
           puts e.backtrace.inspect
-          UI.messagebox("There was a problem inserting the #{@half_inch_stud} into the model")
+          UI.messagebox("There was a problem inserting the half_inch_stud into the model")
         end
       end
 
@@ -739,7 +743,6 @@ module EA_Extensions623
 
       def add_studs(length, spread)
         begin
-
           max_dist_from_hss_end = spread*0.75
 
           file_path = Sketchup.find_support_file "#{COMPONENT_PATH}/#{HLF_INCH_STD}", "Plugins"
@@ -988,11 +991,15 @@ module EA_Extensions623
         adjustment_vec = vec.clone
         if @is_column
           adjustment_vec.length = (@base_thickness+@start_tolerance) #this ,ight also need to account for the height from slab (1 1/2")
-        elsif @hss_has_cap
-          adjustment_vec.length = @cap_thickness #this ,ight also need to account for the height from slab (1 1/2")
-          slide_up = Geom::Transformation.translation(adjustment_vec)
-          @entities.transform_entities(slide_up, group)
+        else
+          if @hss_has_cap
+            adjustment_vec.length = @cap_thickness #this ,ight also need to account for the height from slab (1 1/2")
+          else
+            adjustment_vec.length = 0 #this ,ight also need to account for the height from slab (1 1/2")
+          end
         end
+        slide_up = Geom::Transformation.translation(adjustment_vec)
+        @entities.transform_entities(slide_up, group)
 
         if vec[2] < 0 && @is_column
           if vec.parallel? Z_AXIS
@@ -1002,6 +1009,7 @@ module EA_Extensions623
           end
           rot_upright = Geom::Transformation.rotation(@vec_center, rot_vec, 180.degrees)
           group.transform! rot_upright
+          p 'FLIPPED'
         end
       end
 
