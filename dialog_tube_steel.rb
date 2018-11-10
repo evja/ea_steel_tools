@@ -41,12 +41,12 @@ module EA_Extensions623
 
         ####################################################
         #     TEST SPACE
-        ####################################################    
+        ####################################################
 
 
 
 
-        
+
         ####################################################
         ####################################################
 
@@ -93,7 +93,7 @@ module EA_Extensions623
         @group2.add_control @rotate_hss
         @rotate_hss.visible = !(@@width_class.to_f == @@height_class.to_f)
 
-        
+
         hss_type_label = SKUI::Label.new('Type')
         hss_type_label.position(265,27)
         @group1.add_control( hss_type_label )
@@ -102,7 +102,7 @@ module EA_Extensions623
         hss_type_select = SKUI::Listbox.new(@hss_types)
         hss_type_select.position(300, 25)
         hss_type_select.width = 68
-        @@hss_type.empty? ? @@hss_type = (hss_type_select.value = @hss_types.first) : (hss_type_select.value = @@hss_type)
+        @@hss_type.empty? ? @@hss_type = (hss_type_select.value = @hss_types.last) : (hss_type_select.value = @@hss_type)
         @group1.add_control(hss_type_select)
 
 
@@ -122,7 +122,7 @@ module EA_Extensions623
         base_s_label.visible = (@@hss_type == 'Column')
         @group2.add_control(base_s_label)
 
-        
+
         hss_beam_cap_label = SKUI::Label.new("End Cap Thick")
         hss_beam_cap_label.position(5,43)
         hss_beam_cap_label.visible = (@@hss_type == 'Beam')
@@ -313,7 +313,7 @@ module EA_Extensions623
           west_stud_selct.visible = when_column
 
           hss_beam_cap_label.visible = when_beam
-          cap_select.visible = when_beam 
+          cap_select.visible = when_beam
           hss_has_cap_select.visible = when_beam
           top_stud_selct.visible = when_beam
           bottom_stud_selct.visible = when_beam
@@ -324,7 +324,7 @@ module EA_Extensions623
         }
 
 ############################################################################
-#               
+#
 ############################################################################
         stud_toggle.on (:change) {|control|
           @@stud_toggle = control.checked?

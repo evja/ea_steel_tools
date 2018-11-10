@@ -345,31 +345,119 @@ module EA_Extensions623
             extrude_length.length = vec.length
           end
           extrude_tube(extrude_length, main_face)
-          add_name_label(vec)
+          # add_name_label(vec)
           add_studs_beam(extrude_length.length, @@stud_spacing)
-          cap = draw_beam_caps(extrude_length) if @hss_has_cap
+          add_hss_beam_labels(vec)
+          # cap = draw_beam_caps(extrude_length) if @hss_has_cap
           align_tube(vec, @hss_outer_group)
-          #add_direction_labels_beam
           #add_cap plates
 
         end
-
       end
+
+      def add_hss_beam_labels(vec)
+        start_direction_group = @hss_outer_group.entities.add_group
+        start_ents = start_direction_group.entities
+        end_direction_group = @hss_outer_group.entities.add_group
+        end_ents = end_direction_group.entities
+        up_direction_group = @hss_outer_group.entities.add_group
+        up_ents = up_direction_group.entities
+
+        beam_direction = vec
+        p vec
+        heading = Geom::Vector3d.new beam_direction
+        heading[2] = 0
+        angle = heading.angle_between NORTH
+
+        #Sets the direction labels according to the beam vec
+        #Single Directions
+        case angle
+        when (0.degrees)..(30.degrees)
+          direction1 = 'N'
+          direction2 = 'S'
+        when (60.degrees)..(120.degrees)
+          if vec[0] >= 0
+          direction1 = 'E'
+          direction2 = 'W'
+        else
+          direction1 = 'W'
+          direction2 = 'E'
+        end
+        when (150.degrees)..(180.degrees)
+          direction1 = 'S'
+          direction2 = 'N'
+        #Compound Directions
+        when (30.degrees)..(60.degrees)
+          if vec[0] >= 0
+            direction1 = 'NE'
+            direction2 = 'SW'
+          else
+            direction1 = 'NW'
+            direction2 = 'SE'
+          end
+        when (120.degrees)..(150.degrees)
+          if vec[0] >= 0
+            direction1 = 'SE'
+            direction2 = 'NW'
+          else
+            direction1 = 'SW'
+            direction2 = 'NE'
+          end
+        end
+
+        #Gets the file paths for the labels
+        file_path1 = Sketchup.find_support_file "#{COMPONENT_PATH}/#{direction1}.skp", "Plugins/"
+        end_direction = @definition_list.load file_path1
+        file_path2 = Sketchup.find_support_file "#{COMPONENT_PATH}/#{direction2}.skp", "Plugins/"
+        start_direction = @definition_list.load file_path2
+
+        start_dir_beam1 = start_direction_group.entities.add_instance start_direction, @center_of_column.position
+        start_dir_beam2 = start_direction_group.entities.add_instance start_direction, @center_of_column.position
+        end_dir_beam1 = end_direction_group.entities.add_instance end_direction, @center_of_column.position
+        end_dir_beam2 = end_direction_group.entities.add_instance end_direction, @center_of_column.position
+
+        rot = Geom::Transformation.rotation(@center_of_column.position, Y_AXIS, 90.degrees)
+        @hss_outer_group.entities.transform_entities rot, start_dir_beam1
+        @hss_outer_group.entities.transform_entities rot, end_dir_beam1
+
+        vec_slide1 = Geom::Vector3d.new(@w/2,0,0)
+        slide1 = Geom::Transformation.translation(vec_slide1)
+        @hss_outer_group.entities.transform_entities slide1, start_dir_beam1
+        @hss_outer_group.entities.transform_entities slide1, end_dir_beam1
+
+        vec2 = Geom::Vector3d.new(0,0,6)
+        p vec2
+        slide_to_start = Geom::Transformation.translation(vec2)
+
+        rot = Geom::Transformation.rotation(@center_of_column.position, Y_AXIS, 270.degrees)
+        @hss_outer_group.entities.transform_entities rot, start_dir_beam2
+        @hss_outer_group.entities.transform_entities rot, end_dir_beam2
+
+        vec_slide2 = Geom::Vector3d.new(-@w/2,0,0)
+        slide1 = Geom::Transformation.translation(vec_slide2)
+        @hss_outer_group.entities.transform_entities slide1, start_dir_beam2
+        @hss_outer_group.entities.transform_entities slide1, end_dir_beam2
+
+        vec2 = Geom::Vector3d.new(0,0,6)
+
+        @hss_outer_group.entities.transform_entities slide_to_start, start_direction_group
+
+        vec3 = Geom::Vector3d.new(0,0,(vec.length)-6)
+        slide_to_end = Geom::Transformation.translation(vec3)
+        @hss_outer_group.entities.transform_entities slide_to_end, end_direction_group
+
+
+      end #hss beam lables
 
       def add_studs_beam(length, spread)
         begin
           length = length.to_f
-          p "length is #{length.to_f}"
-          p "spread is #{spread}"
           max_dist_from_hss_end = spread*0.75
 
           file_path = Sketchup.find_support_file "#{COMPONENT_PATH}/#{HLF_INCH_STD}", "Plugins"
           @half_inch_stud = @definition_list.load file_path
           copies = (length/spread).to_i - 1
-          p "copies are #{copies}"
           start_dist = (length - (copies * spread))/2
-
-          p start_dist
 
           if @east_stud_selct
             e_stud = @hss_outer_group.entities.add_instance @half_inch_stud, @center_of_column.position
@@ -842,18 +930,15 @@ module EA_Extensions623
 
             rot = Geom::Transformation.rotation(@center_of_column.position, X_AXIS, 90.degrees)
             @hss_outer_group.entities.transform_entities rot, s_stud
-            # s_stud.move! rot
 
             vec = Geom::Vector3d.new(0,-@h/2,0)
             slide1 = Geom::Transformation.translation(vec)
             @hss_outer_group.entities.transform_entities slide1, s_stud
-            # s_stud.move! slide1
 
             vec2 = Geom::Vector3d.new(0,0,start_dist)
             slide_to_start = Geom::Transformation.translation(vec2)
 
             @hss_outer_group.entities.transform_entities slide_to_start, s_stud
-            # s_stud.move! slide_to_start
 
             copy_dist = vec2.clone
             copy_dist.length = spread
@@ -863,7 +948,6 @@ module EA_Extensions623
               stud_copy = s_stud.copy
 
               @hss_outer_group.entities.transform_entities trans, stud_copy
-              # stud_copy.move! trans
               copy_dist.length += spread
             end
           end
@@ -1019,7 +1103,7 @@ module EA_Extensions623
 
       def create_geometry(pt1, pt2, view)
         model = view.model
-        model.start_operation("Draw TS", true)
+        # model.start_operation("Draw TS", true)
 
         vec = pt2 - pt1
         if( vec.length < 2 )
@@ -1032,7 +1116,7 @@ module EA_Extensions623
 
         draw_tube(vec)
 
-        model.commit_operation
+        # model.commit_operation
       end
 
       def onMouseMove(flags, x, y, view)
