@@ -345,12 +345,11 @@ module EA_Extensions623
             extrude_length.length = vec.length
           end
           extrude_tube(extrude_length, main_face)
-          # add_name_label(vec)
+          add_name_label(vec)
           add_studs_beam(extrude_length.length, @@stud_spacing)
           add_hss_beam_labels(vec)
-          # cap = draw_beam_caps(extrude_length) if @hss_has_cap
+          cap = draw_beam_caps(extrude_length) if @hss_has_cap
           align_tube(vec, @hss_outer_group)
-          #add_cap plates
 
         end
       end
@@ -461,7 +460,7 @@ module EA_Extensions623
 
           if @east_stud_selct
             e_stud = @hss_outer_group.entities.add_instance @half_inch_stud, @center_of_column.position
-
+            color_by_thickness(e_stud, 0.5)
             rot = Geom::Transformation.rotation(@center_of_column.position, Y_AXIS, 90.degrees)
             @hss_outer_group.entities.transform_entities rot, e_stud
 
@@ -481,6 +480,7 @@ module EA_Extensions623
             copies.times do |c|
               trans = Geom::Transformation.translation(copy_dist)
               stud_copy = e_stud.copy
+              color_by_thickness(stud_copy, 0.5)
 
               @hss_outer_group.entities.transform_entities trans, stud_copy
               copy_dist.length += spread
@@ -489,6 +489,7 @@ module EA_Extensions623
 
           if @west_stud_selct
             w_stud = @hss_outer_group.entities.add_instance @half_inch_stud, @center_of_column.position
+            color_by_thickness(w_stud, 0.5)
 
             rot = Geom::Transformation.rotation(@center_of_column.position, Y_AXIS, 270.degrees)
             @hss_outer_group.entities.transform_entities rot, w_stud
@@ -508,6 +509,7 @@ module EA_Extensions623
             copies.times do |c|
               trans = Geom::Transformation.translation(copy_dist)
               stud_copy = w_stud.copy
+              color_by_thickness(stud_copy, 0.5)
 
               @hss_outer_group.entities.transform_entities trans, stud_copy
               copy_dist.length += spread
@@ -516,6 +518,7 @@ module EA_Extensions623
 
           if @north_stud_selct
             n_stud = @hss_outer_group.entities.add_instance @half_inch_stud, @center_of_column.position
+            color_by_thickness(n_stud, 0.5)
 
             rot = Geom::Transformation.rotation(@center_of_column.position, X_AXIS, 270.degrees)
             @hss_outer_group.entities.transform_entities rot, n_stud
@@ -543,6 +546,7 @@ module EA_Extensions623
 
           if @south_stud_selct
             s_stud = @hss_outer_group.entities.add_instance @half_inch_stud, @center_of_column.position
+            color_by_thickness(s_stud, 0.5)
 
             rot = Geom::Transformation.rotation(@center_of_column.position, X_AXIS, 90.degrees)
             @hss_outer_group.entities.transform_entities rot, s_stud
@@ -565,6 +569,7 @@ module EA_Extensions623
             copies.times do |c|
               trans = Geom::Transformation.translation(copy_dist)
               stud_copy = s_stud.copy
+              color_by_thickness(stud_copy, 0.5)
 
               @hss_outer_group.entities.transform_entities trans, stud_copy
               # stud_copy.move! trans
@@ -846,7 +851,7 @@ module EA_Extensions623
 
           if @east_stud_selct
             e_stud = @hss_outer_group.entities.add_instance @half_inch_stud, @center_of_column.position
-
+            color_by_thickness(e_stud, 0.5)
             rot = Geom::Transformation.rotation(@center_of_column.position, Y_AXIS, 90.degrees)
             @hss_outer_group.entities.transform_entities rot, e_stud
 
@@ -865,6 +870,7 @@ module EA_Extensions623
             copies.times do |c|
               trans = Geom::Transformation.translation(copy_dist)
               stud_copy = e_stud.copy
+              color_by_thickness(stud_copy, 0.5)
 
               @hss_outer_group.entities.transform_entities trans, stud_copy
               copy_dist.length += spread
@@ -873,6 +879,7 @@ module EA_Extensions623
 
           if @west_stud_selct
             w_stud = @hss_outer_group.entities.add_instance @half_inch_stud, @center_of_column.position
+            color_by_thickness(w_stud, 0.5)
 
             rot = Geom::Transformation.rotation(@center_of_column.position, Y_AXIS, 270.degrees)
             @hss_outer_group.entities.transform_entities rot, w_stud
@@ -892,6 +899,7 @@ module EA_Extensions623
             copies.times do |c|
               trans = Geom::Transformation.translation(copy_dist)
               stud_copy = w_stud.copy
+              color_by_thickness(stud_copy, 0.5)
 
               @hss_outer_group.entities.transform_entities trans, stud_copy
               copy_dist.length += spread
@@ -900,6 +908,7 @@ module EA_Extensions623
 
           if @north_stud_selct
             n_stud = @hss_outer_group.entities.add_instance @half_inch_stud, @center_of_column.position
+            color_by_thickness(n_stud, 0.5)
 
             rot = Geom::Transformation.rotation(@center_of_column.position, X_AXIS, 270.degrees)
             @hss_outer_group.entities.transform_entities rot, n_stud
@@ -919,6 +928,7 @@ module EA_Extensions623
             copies.times do |c|
               trans = Geom::Transformation.translation(copy_dist)
               stud_copy = n_stud.copy
+              color_by_thickness(stud_copy, 0.5)
 
               @hss_outer_group.entities.transform_entities trans, stud_copy
               copy_dist.length += spread
@@ -927,6 +937,7 @@ module EA_Extensions623
 
           if @south_stud_selct
             s_stud = @hss_outer_group.entities.add_instance @half_inch_stud, @center_of_column.position
+            color_by_thickness(s_stud, 0.5)
 
             rot = Geom::Transformation.rotation(@center_of_column.position, X_AXIS, 90.degrees)
             @hss_outer_group.entities.transform_entities rot, s_stud
@@ -946,6 +957,7 @@ module EA_Extensions623
             copies.times do |c|
               trans = Geom::Transformation.translation(copy_dist)
               stud_copy = s_stud.copy
+              color_by_thickness(stud_copy, 0.5)
 
               @hss_outer_group.entities.transform_entities trans, stud_copy
               copy_dist.length += spread
@@ -1103,7 +1115,7 @@ module EA_Extensions623
 
       def create_geometry(pt1, pt2, view)
         model = view.model
-        # model.start_operation("Draw TS", true)
+        model.start_operation("Draw TS", true)
 
         vec = pt2 - pt1
         if( vec.length < 2 )
@@ -1116,7 +1128,7 @@ module EA_Extensions623
 
         draw_tube(vec)
 
-        # model.commit_operation
+        model.commit_operation
       end
 
       def onMouseMove(flags, x, y, view)

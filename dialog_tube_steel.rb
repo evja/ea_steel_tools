@@ -102,7 +102,7 @@ module EA_Extensions623
         hss_type_select = SKUI::Listbox.new(@hss_types)
         hss_type_select.position(300, 25)
         hss_type_select.width = 68
-        @@hss_type.empty? ? @@hss_type = (hss_type_select.value = @hss_types.last) : (hss_type_select.value = @@hss_type)
+        @@hss_type.empty? ? @@hss_type = (hss_type_select.value = @hss_types.first) : (hss_type_select.value = @@hss_type)
         @group1.add_control(hss_type_select)
 
 
@@ -319,8 +319,6 @@ module EA_Extensions623
           bottom_stud_selct.visible = when_beam
           right_stud_selct.visible = when_beam
           left_stud_selct.visible = when_beam
-
-
         }
 
 ############################################################################
@@ -336,6 +334,16 @@ module EA_Extensions623
           @@east_stud_selct = control.checked?
           west_stud_selct.checked = control.checked?
           @@west_stud_selct = control.checked?
+
+
+          top_stud_selct.checked = control.checked?
+          @@top_stud_selct = control.checked?
+          bottom_stud_selct.checked = control.checked?
+          @@bottom_stud_selct = control.checked?
+          right_stud_selct.checked = control.checked?
+          @@right_stud_selct = control.checked?
+          left_stud_selct.checked = control.checked?
+          @@left_stud_selct = control.checked?
         }
 
 
