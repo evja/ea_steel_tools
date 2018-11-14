@@ -39,7 +39,7 @@ module EA_Extensions623
     cmd.menu_text = "Wide Flange Steel"
     toolbar = toolbar.add_item cmd
 
-    cmd1 = UI::Command.new("Rolled") {
+    cmd1 = UI::Command.new("Rolled Wide Flange") {
      Sketchup.active_model.select_tool @two = EASteelTools::RolledDialog.new
     }
     @@EA_tools_menu.add_item cmd1
@@ -50,15 +50,8 @@ module EA_Extensions623
     cmd1.menu_text = "Wide Rolled Flange Steel"
     toolbar = toolbar.add_item cmd1
 
-    cmd2 = UI::Command.new("Steel Tool Settings") {
-      Sketchup.active_model.select_tool EASteelTools::BreakoutSettings.open
-    }
-    @@EA_tools_menu.add_item cmd2
-
-    @@EA_tools_menu.add_separator
-    @@EA_tools_menu.add_item( 'Check for updates' ) { EASteelTools::ToolUpdater.update_tool }
-
-    cmd3 = UI::Command.new("Tube Steel") {
+    
+    cmd3 = UI::Command.new("HSS Steel") {
      Sketchup.active_model.select_tool(EASteelTools::HssDialog.new)
     }
     @@EA_tools_menu.add_item cmd3
@@ -68,6 +61,16 @@ module EA_Extensions623
     cmd3.status_bar_text = "Draw Tube Steel Members"
     cmd3.menu_text = "Tube Steel"
     toolbar = toolbar.add_item cmd3
+
+    @@EA_tools_menu.add_separator
+
+    cmd2 = UI::Command.new("Steel Tool Settings") {
+      Sketchup.active_model.select_tool EASteelTools::BreakoutSettings.open
+    }
+    @@EA_tools_menu.add_item cmd2
+
+    @@EA_tools_menu.add_item( 'Check for updates' ) { EASteelTools::ToolUpdater.update_tool }
+
 
     toolbar.show
 

@@ -12,7 +12,7 @@ module EA_Extensions623
         @model = Sketchup.active_model
         @materials = @model.materials
         @material_names = @materials.map {|color| color.name}
-
+  
         view = @model.active_view
         @ip1 = nil
         @ip2 = nil
@@ -32,70 +32,6 @@ module EA_Extensions623
         @@stiff_thickness   = data[:stiff_thickness]    #String '1/4' or '3/8' or '1/2'
         @@shearpl_thickness = data[:shearpl_thickness]  #String '1/4' or '3/8' or '1/2'
         @@force_studs       = data[:force_studs]
-
-        case @@stiff_thickness
-        when '1/4'
-          @stiff_scale = 2
-          clr1 = STEEL_COLORS[:purple][:name]
-          rgb  = STEEL_COLORS[:purple][:rgb]
-        when '5/16'
-          @stiff_scale = 2.5
-          clr1 = STEEL_COLORS[:indigo][:name]
-          rgb  = STEEL_COLORS[:indigo][:rgb]
-        when '3/8'
-          @stiff_scale = 3
-          clr1 = STEEL_COLORS[:blue][:name]
-          rgb  = STEEL_COLORS[:blue][:rgb]
-        when '1/2'
-          @stiff_scale = 4
-          clr1 = STEEL_COLORS[:green][:name]
-          rgb  = STEEL_COLORS[:green][:rgb]
-        when '5/8'
-          @stiff_scale = 5
-          clr1 = STEEL_COLORS[:yellow][:name]
-          rgb  = STEEL_COLORS[:yellow][:rgb]
-        when '3/4'
-          @stiff_scale = 6
-          clr1 = STEEL_COLORS[:orange][:name]
-          rgb  = STEEL_COLORS[:orange][:rgb]
-        end
-
-        if @material_names.include? clr1
-          @stiff_color = clr1
-        else
-          @stiff_color = @materials.add clr1
-          @stiff_color.color = rgb
-        end
-
-        case @@shearpl_thickness
-        when '1/4'
-          @shear_scale = 2
-          clr2 = STEEL_COLORS[:purple][:name]
-          rgb2  = STEEL_COLORS[:purple][:rgb]
-        when '3/8'
-          @shear_scale = 3
-          clr2 = STEEL_COLORS[:blue][:name]
-          rgb2  = STEEL_COLORS[:blue][:rgb]
-        when '1/2'
-          @shear_scale = 4
-          clr2 = STEEL_COLORS[:green][:name]
-          rgb2  = STEEL_COLORS[:green][:rgb]
-        when '5/8'
-          @shear_scale = 5
-          clr2 = STEEL_COLORS[:yellow][:name]
-          rgb2  = STEEL_COLORS[:yellow][:rgb]
-        when '3/4'
-          @shear_scale = 6
-          clr2 = STEEL_COLORS[:orange][:name]
-          rgb2  = STEEL_COLORS[:orange][:rgb]
-        end
-
-        if @material_names.include? clr2
-          @shear_color = clr2
-        else
-          @shear_color = @materials.add clr2
-          @shear_color.color = rgb2
-        end
 
         values = data[:data]
         @hc    = data[:height_class].split('W').last.to_i #this gets just the number in the height class
@@ -449,7 +385,7 @@ module EA_Extensions623
 
           #load the 1/2" studs ready for placing
           file_path_stud = Sketchup.find_support_file "#{COMPONENT_PATH}/#{HLF_INCH_STD}", "Plugins/"
-          half_inch_stud = @definition_list.load file_path_stud
+          half_inch_stud = @definition_list.load file_path_stud if @@force_studs
 
           @@force_studs ? element = half_inch_stud : element = nine_sixteenths_hole
 
@@ -525,9 +461,6 @@ module EA_Extensions623
           # Load the 9/16" holes from the collection
           file_path1 = Sketchup.find_support_file "#{COMPONENT_PATH}/#{NN_SXTNTHS_HOLE}", "Plugins/"
           nine_sixteenths_hole = @definition_list.load file_path1
-          #load the 1/2" studs ready for placing
-          file_path_stud = Sketchup.find_support_file "#{COMPONENT_PATH}/#{HLF_INCH_STD}", "Plugins/"
-          half_inch_stud = @definition_list.load file_path_stud
 
 
           #initialize some variables
@@ -562,6 +495,9 @@ module EA_Extensions623
                 @nine_sixteenths_holes.push hole
               end
             else # Adds the 1/2" Studs where holes could go if the flange was less than 3/4"
+              #load the 1/2" studs ready for placing
+              file_path_stud = Sketchup.find_support_file "#{COMPONENT_PATH}/#{HLF_INCH_STD}", "Plugins/"
+              half_inch_stud = @definition_list.load file_path_stud
               #puts studs on the beam if the flange thickness is thicker than 3/4"
 
               inst1 = @outer_group.entities.add_instance half_inch_stud, [fhpX, y, @h] unless stagger && count.odd?
@@ -1210,6 +1146,78 @@ module EA_Extensions623
           add_9_16_flange_holes(length) if @@has_holes
           add_9_16_web_holes(length) if @@has_holes
 
+                  case @@stiff_thickness
+        when '1/4'
+          @stiff_scale = 2
+          clr1 = STEEL_COLORS[:purple][:name]
+          rgb  = STEEL_COLORS[:purple][:rgb]
+        when '5/16'
+          @stiff_scale = 2.5
+          clr1 = STEEL_COLORS[:indigo][:name]
+          rgb  = STEEL_COLORS[:indigo][:rgb]
+        when '3/8'
+          @stiff_scale = 3
+          clr1 = STEEL_COLORS[:blue][:name]
+          rgb  = STEEL_COLORS[:blue][:rgb]
+        when '1/2'
+          @stiff_scale = 4
+          clr1 = STEEL_COLORS[:green][:name]
+          rgb  = STEEL_COLORS[:green][:rgb]
+        when '5/8'
+          @stiff_scale = 5
+          clr1 = STEEL_COLORS[:yellow][:name]
+          rgb  = STEEL_COLORS[:yellow][:rgb]
+        when '3/4'
+          @stiff_scale = 6
+          clr1 = STEEL_COLORS[:orange][:name]
+          rgb  = STEEL_COLORS[:orange][:rgb]
+        end
+
+        if @material_names.include? clr1
+          @stiff_color = @materials[clr1]
+          @material_names << clr1
+          p 'found color'
+        else
+          p 'didnt find color'
+          @stiff_color = @materials.add clr1
+          @stiff_color.color = rgb
+          @material_names << clr1
+        end
+
+        p @material_names
+
+        case @@shearpl_thickness
+        when '1/4'
+          @shear_scale = 2
+          clr2 = STEEL_COLORS[:purple][:name]
+          rgb2  = STEEL_COLORS[:purple][:rgb]
+        when '3/8'
+          @shear_scale = 3
+          clr2 = STEEL_COLORS[:blue][:name]
+          rgb2  = STEEL_COLORS[:blue][:rgb]
+        when '1/2'
+          @shear_scale = 4
+          clr2 = STEEL_COLORS[:green][:name]
+          rgb2  = STEEL_COLORS[:green][:rgb]
+        when '5/8'
+          @shear_scale = 5
+          clr2 = STEEL_COLORS[:yellow][:name]
+          rgb2  = STEEL_COLORS[:yellow][:rgb]
+        when '3/4'
+          @shear_scale = 6
+          clr2 = STEEL_COLORS[:orange][:name]
+          rgb2  = STEEL_COLORS[:orange][:rgb]
+        end
+
+        if @material_names.include? clr2
+          @shear_color = @materials[clr2]
+          @material_names << clr2
+        else
+          @shear_color = @materials.add clr2
+          @shear_color.color = rgb2
+          @material_names << clr2
+        end
+
           #insert all labels in the beam and column, insert 13/16" if it is a beam
           if vec.parallel? Z_AXIS
             column = true
@@ -1232,6 +1240,7 @@ module EA_Extensions623
 
           if not @all_studs.empty?
             @all_studs.each {|stud| stud.layer = @steel_layer }
+            @all_studs.each {|stud| color_by_thickness(stud, 0.5)}
           end
 
           # #insert stiffener plates in the beam

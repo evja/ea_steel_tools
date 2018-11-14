@@ -47,8 +47,8 @@ body
 
 body, body.platform-windows
 {
-  color: #ddd;
-  background: #444;
+  color: #ddd ;
+  background: #808080;
 }
 
 /* Windows 8.1 (Or IE11?), or setting text scaling will cause text to appear
@@ -180,7 +180,8 @@ body, body.platform-windows
 {
   width: 100%;
   height: 100%;
-  color: #333;
+  color: #ddd;
+  background: #bf1e2e;
 }
 
 
@@ -217,7 +218,8 @@ body, body.platform-windows
 .control-textbox input,
 .control-textbox textarea
 {
-  color: black;
+  color: #ddd;
   width: 100%;
   height: 100%;
+  background: #bf1e2e;
 }

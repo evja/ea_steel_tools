@@ -1,7 +1,7 @@
 module EA_Extensions623
   module EASteelTools
 
-    class TubeTool
+    class TubeTool < Control
 
       # The activate method is called by SketchUp when the tool is first selected.
       # it is a good place to put most of your initialization
@@ -27,9 +27,15 @@ module EA_Extensions623
         @start_tolerance = data[:start_tolerance].to_f
         @end_tolerance = data[:end_tolerance].to_f
 
+        @hss_type = data[:hss_type]
+        @cap_thickness = data[:cap_thickness]
+        @hss_has_cap = data[:hss_has_cap]
+
         @h = values[:h].to_f #height of the tube
         @w = values[:b].to_f #width of the tube
 
+
+        # This rotates the orientation of the hss if it is a rectangle and you want the long side facing 90° rotation
         if @hss_is_rotated
           @h, @w = @w, @h
         end
@@ -38,24 +44,30 @@ module EA_Extensions623
           @square_tube = true
         end
 
+        if @hss_type == 'Column'
+          @is_column = true
+        else
+          @is_column = false
+        end
+
         case data[:wall_thickness]
-        when '1/8'
+        when '1/8"'
           @tw = 0.125
-        when '3/16'
+        when '3/16"'
           @tw = 0.1875
-        when '1/4'
+        when '1/4"'
           @tw = 0.25
-        when '5/16'
+        when '5/16"'
           @tw = 0.3125
-        when '3/8'
+        when '3/8"'
           @tw = 0.375
-        when '1/2'
+        when '1/2"'
           @tw = 0.5
-        when '5/8'
+        when '5/8"'
           @tw = 0.625
-        when '3/4'
+        when '3/4"'
           @tw = 0.75
-        when '7/8'
+        when '7/8"'
           @tw = 0.875
         else
           @tw = 0.25
@@ -90,11 +102,6 @@ module EA_Extensions623
         Sketchup::set_status_text ("Length"), SB_VCB_LABEL
       end
 
-      # def get_cham(a, b)
-      #   c = Math.sqrt(a**2 + b**2)
-      #   return c
-      # end
-
       def onSetCursor
         cursor_path = Sketchup.find_support_file ROOT_FILE_PATH+"/icons/ts_cursor1.png", "Plugins/"
         cursor_id = UI.create_cursor(cursor_path, 0, 0)
@@ -124,6 +131,59 @@ module EA_Extensions623
         end
       end #Draw
 
+      def draw_beam_caps(length)
+        cap = @hss_outer_group.entities.add_group
+        if @tw > 0.375
+          pts = [
+            pt1 = [0,0,0],
+            pt2 = [@w - (MINIMUM_WELD_OVERHANG*2), 0,0],
+            pt3 = [@w - (MINIMUM_WELD_OVERHANG*2), @h - (MINIMUM_WELD_OVERHANG*2), 0],
+            pt4 = [0, @h - (MINIMUM_WELD_OVERHANG*2), 0]
+          ]
+          set_dist = MINIMUM_WELD_OVERHANG
+        else
+          pts = [
+            pt1 = [0,0,0],
+            pt2 = [@w - @tw,0,0],
+            pt3 = [@w - @tw,@h - @tw,0],
+            pt4 = [0,@h - @tw,0]
+          ]
+          set_dist = @tw/2
+        end
+
+        cap_face = cap.entities.add_face pts
+        cap_face.reverse!
+        cap_face.pushpull @cap_thickness
+
+        v1 = X_AXIS.clone
+        v2 = Y_AXIS.clone
+
+        v1.length = set_dist
+        v2.length = set_dist
+
+
+        tr1 = Geom::Transformation.new(v1)
+        tr2 = Geom::Transformation.new(v2)
+
+        @hss_outer_group.entities.transform_entities tr1*tr2, cap
+
+        v3 = Z_AXIS.clone
+        v3.length = -@cap_thickness
+
+        sld = Geom::Transformation.new(v3)
+        @hss_outer_group.entities.transform_entities sld, cap
+
+        cap2 = cap.copy
+
+        v3.length = length.length + @cap_thickness
+        copy_away = Geom::Transformation.new(v3.reverse!)
+        @hss_outer_group.entities.transform_entities copy_away, cap2
+
+        color_by_thickness(cap, @cap_thickness)
+        cap2.material = cap.material
+        # color_by_thickness(cap2, @cap_thickness)
+      end
+
       def draw_control_line(pts, view)
         view.line_width = 2
         view.line_stipple = "."
@@ -147,7 +207,7 @@ module EA_Extensions623
 
         @hss_inner_group = @hss_outer_group.entities.add_group
         @hss_inner_group.name = @tube_name
-
+        @hss_inner_group.definition.behavior.no_scale_mask = 123
       end
 
       def clear_groups
@@ -236,8 +296,10 @@ module EA_Extensions623
         face_to_delete = ents[0].common_face ents[1]
         face_to_delete.erase! if face_to_delete
 
+        centerpoint_group = @hss_outer_group.entities.add_group
         main_face = @hss_inner_group.entities.select{|e| e.is_a? Sketchup::Face}[0].reverse!
-        @center_of_column = @hss_outer_group.entities.add_cpoint(@hss_outer_group.bounds.center)
+        @center_of_column = centerpoint_group.entities.add_cpoint(@hss_outer_group.bounds.center)
+        centerpoint_group.locked = true
 
         slide_face = Geom::Transformation.translation(Geom::Vector3d.new(0,-@h, 0))
 
@@ -255,31 +317,270 @@ module EA_Extensions623
         mv_prof_to_c = sld_t_cx * sld_t_cy
 
         @entities.transform_entities mv_prof_to_c, @hss_outer_group
-
-
-        extrude_length = vec.clone
-        extrude_length.length = (vec.length - (@base_thickness*2)) - (@start_tolerance+@end_tolerance) #This thickness is accouting for bot top and bottom plate. if the top plates thickness is controlled it will need to be accounted for if it varies from the base thickness
-        extrude_tube(extrude_length, main_face)
-        add_name_label(vec)
-        add_studs(extrude_length.length, @@stud_spacing)
-        add_up_arrow(extrude_length.length, @@stud_spacing)
-        add_direction_labels()
-
-
-        align_tube(vec, @hss_outer_group)
-
         @material_names = @materials.map {|color| color.name}
 
-        if @material_names.include? STEEL_COLORS[:orange][:name]
-          @base_plate_color = STEEL_COLORS[:orange][:rgb]
+        extrude_length = vec.clone
+        if @is_column
+          extrude_length.length = (vec.length - (@base_thickness*2)) - (@start_tolerance+@end_tolerance) #This thickness is accouting for bot top and bottom plate. if the top plates thickness is controlled it will need to be accounted for if it varies from the base thickness
+          extrude_tube(extrude_length, main_face)
+          add_studs(extrude_length.length, @@stud_spacing)
+          add_up_arrow(extrude_length.length, @@stud_spacing)
+          add_name_label(vec)
+          add_direction_labels()
+          align_tube(vec, @hss_outer_group)
+
+          if @material_names.include? STEEL_COLORS[:orange][:name]
+            @base_plate_color = STEEL_COLORS[:orange][:rgb]
+          else
+            @base_plate_color = @materials.add STEEL_COLORS[:orange][:name]
+            @base_plate_color.color = STEEL_COLORS[:orange][:rgb]
+          end
+
+          insert_base_plates(@base_type, @center_of_column.position)
+          insert_top_plate(@center_of_column.position, extrude_length)
         else
-          @base_plate_color = @materials.add STEEL_COLORS[:orange][:name]
-          @base_plate_color.color = STEEL_COLORS[:orange][:rgb]
+          if @hss_has_cap
+            extrude_length.length = (vec.length - (@cap_thickness*2))
+          else
+            extrude_length.length = vec.length
+          end
+          extrude_tube(extrude_length, main_face)
+          add_name_label(vec)
+          add_studs_beam(extrude_length.length, @@stud_spacing)
+          add_hss_beam_labels(vec)
+          cap = draw_beam_caps(extrude_length) if @hss_has_cap
+          align_tube(vec, @hss_outer_group)
+
+        end
+      end
+
+      def add_hss_beam_labels(vec)
+        start_direction_group = @hss_outer_group.entities.add_group
+        start_ents = start_direction_group.entities
+        end_direction_group = @hss_outer_group.entities.add_group
+        end_ents = end_direction_group.entities
+        up_direction_group = @hss_outer_group.entities.add_group
+        up_ents = up_direction_group.entities
+
+        beam_direction = vec
+        p vec
+        heading = Geom::Vector3d.new beam_direction
+        heading[2] = 0
+        angle = heading.angle_between NORTH
+
+        #Sets the direction labels according to the beam vec
+        #Single Directions
+        case angle
+        when (0.degrees)..(30.degrees)
+          direction1 = 'N'
+          direction2 = 'S'
+        when (60.degrees)..(120.degrees)
+          if vec[0] >= 0
+          direction1 = 'E'
+          direction2 = 'W'
+        else
+          direction1 = 'W'
+          direction2 = 'E'
+        end
+        when (150.degrees)..(180.degrees)
+          direction1 = 'S'
+          direction2 = 'N'
+        #Compound Directions
+        when (30.degrees)..(60.degrees)
+          if vec[0] >= 0
+            direction1 = 'NE'
+            direction2 = 'SW'
+          else
+            direction1 = 'NW'
+            direction2 = 'SE'
+          end
+        when (120.degrees)..(150.degrees)
+          if vec[0] >= 0
+            direction1 = 'SE'
+            direction2 = 'NW'
+          else
+            direction1 = 'SW'
+            direction2 = 'NE'
+          end
         end
 
-        insert_base_plates(@base_type, @center_of_column.position)
-        insert_top_plate(@center_of_column.position, extrude_length)
+        #Gets the file paths for the labels
+        file_path1 = Sketchup.find_support_file "#{COMPONENT_PATH}/#{direction1}.skp", "Plugins/"
+        end_direction = @definition_list.load file_path1
+        file_path2 = Sketchup.find_support_file "#{COMPONENT_PATH}/#{direction2}.skp", "Plugins/"
+        start_direction = @definition_list.load file_path2
 
+        start_dir_beam1 = start_direction_group.entities.add_instance start_direction, @center_of_column.position
+        start_dir_beam2 = start_direction_group.entities.add_instance start_direction, @center_of_column.position
+        end_dir_beam1 = end_direction_group.entities.add_instance end_direction, @center_of_column.position
+        end_dir_beam2 = end_direction_group.entities.add_instance end_direction, @center_of_column.position
+
+        rot = Geom::Transformation.rotation(@center_of_column.position, Y_AXIS, 90.degrees)
+        @hss_outer_group.entities.transform_entities rot, start_dir_beam1
+        @hss_outer_group.entities.transform_entities rot, end_dir_beam1
+
+        vec_slide1 = Geom::Vector3d.new(@w/2,0,0)
+        slide1 = Geom::Transformation.translation(vec_slide1)
+        @hss_outer_group.entities.transform_entities slide1, start_dir_beam1
+        @hss_outer_group.entities.transform_entities slide1, end_dir_beam1
+
+        vec2 = Geom::Vector3d.new(0,0,6)
+        p vec2
+        slide_to_start = Geom::Transformation.translation(vec2)
+
+        rot = Geom::Transformation.rotation(@center_of_column.position, Y_AXIS, 270.degrees)
+        @hss_outer_group.entities.transform_entities rot, start_dir_beam2
+        @hss_outer_group.entities.transform_entities rot, end_dir_beam2
+
+        vec_slide2 = Geom::Vector3d.new(-@w/2,0,0)
+        slide1 = Geom::Transformation.translation(vec_slide2)
+        @hss_outer_group.entities.transform_entities slide1, start_dir_beam2
+        @hss_outer_group.entities.transform_entities slide1, end_dir_beam2
+
+        vec2 = Geom::Vector3d.new(0,0,6)
+
+        @hss_outer_group.entities.transform_entities slide_to_start, start_direction_group
+
+        vec3 = Geom::Vector3d.new(0,0,(vec.length)-6)
+        slide_to_end = Geom::Transformation.translation(vec3)
+        @hss_outer_group.entities.transform_entities slide_to_end, end_direction_group
+
+
+      end #hss beam lables
+
+      def add_studs_beam(length, spread)
+        begin
+          length = length.to_f
+          max_dist_from_hss_end = spread*0.75
+
+          file_path = Sketchup.find_support_file "#{COMPONENT_PATH}/#{HLF_INCH_STD}", "Plugins"
+          @half_inch_stud = @definition_list.load file_path
+          copies = (length/spread).to_i - 1
+          start_dist = (length - (copies * spread))/2
+
+          if @east_stud_selct
+            e_stud = @hss_outer_group.entities.add_instance @half_inch_stud, @center_of_column.position
+            color_by_thickness(e_stud, 0.5)
+            rot = Geom::Transformation.rotation(@center_of_column.position, Y_AXIS, 90.degrees)
+            @hss_outer_group.entities.transform_entities rot, e_stud
+
+            vec = Geom::Vector3d.new(@w/2,0,0)
+            slide1 = Geom::Transformation.translation(vec)
+            @hss_outer_group.entities.transform_entities slide1, e_stud
+
+            vec2 = Geom::Vector3d.new(0,0,start_dist)
+            p vec2
+            slide_to_start = Geom::Transformation.translation(vec2)
+
+            @hss_outer_group.entities.transform_entities slide_to_start, e_stud
+
+            copy_dist = vec2.clone
+            copy_dist.length = spread
+
+            copies.times do |c|
+              trans = Geom::Transformation.translation(copy_dist)
+              stud_copy = e_stud.copy
+              color_by_thickness(stud_copy, 0.5)
+
+              @hss_outer_group.entities.transform_entities trans, stud_copy
+              copy_dist.length += spread
+            end
+          end
+
+          if @west_stud_selct
+            w_stud = @hss_outer_group.entities.add_instance @half_inch_stud, @center_of_column.position
+            color_by_thickness(w_stud, 0.5)
+
+            rot = Geom::Transformation.rotation(@center_of_column.position, Y_AXIS, 270.degrees)
+            @hss_outer_group.entities.transform_entities rot, w_stud
+
+            vec = Geom::Vector3d.new(-@w/2,0,0)
+            slide1 = Geom::Transformation.translation(vec)
+            @hss_outer_group.entities.transform_entities slide1, w_stud
+
+            vec2 = Geom::Vector3d.new(0,0,start_dist)
+            slide_to_start = Geom::Transformation.translation(vec2)
+
+            @hss_outer_group.entities.transform_entities slide_to_start, w_stud
+
+            copy_dist = vec2.clone
+            copy_dist.length = spread
+
+            copies.times do |c|
+              trans = Geom::Transformation.translation(copy_dist)
+              stud_copy = w_stud.copy
+              color_by_thickness(stud_copy, 0.5)
+
+              @hss_outer_group.entities.transform_entities trans, stud_copy
+              copy_dist.length += spread
+            end
+          end
+
+          if @north_stud_selct
+            n_stud = @hss_outer_group.entities.add_instance @half_inch_stud, @center_of_column.position
+            color_by_thickness(n_stud, 0.5)
+
+            rot = Geom::Transformation.rotation(@center_of_column.position, X_AXIS, 270.degrees)
+            @hss_outer_group.entities.transform_entities rot, n_stud
+
+            vec = Geom::Vector3d.new(0,@h/2,0)
+            slide1 = Geom::Transformation.translation(vec)
+            @hss_outer_group.entities.transform_entities slide1, n_stud
+
+            vec2 = Geom::Vector3d.new(0,0,start_dist)
+            slide_to_start = Geom::Transformation.translation(vec2)
+
+            @hss_outer_group.entities.transform_entities slide_to_start, n_stud
+
+            copy_dist = vec2.clone
+            copy_dist.length = spread
+
+            copies.times do |c|
+              trans = Geom::Transformation.translation(copy_dist)
+              stud_copy = n_stud.copy
+
+              @hss_outer_group.entities.transform_entities trans, stud_copy
+              copy_dist.length += spread
+            end
+          end
+
+          if @south_stud_selct
+            s_stud = @hss_outer_group.entities.add_instance @half_inch_stud, @center_of_column.position
+            color_by_thickness(s_stud, 0.5)
+
+            rot = Geom::Transformation.rotation(@center_of_column.position, X_AXIS, 90.degrees)
+            @hss_outer_group.entities.transform_entities rot, s_stud
+            # s_stud.move! rot
+
+            vec = Geom::Vector3d.new(0,-@h/2,0)
+            slide1 = Geom::Transformation.translation(vec)
+            @hss_outer_group.entities.transform_entities slide1, s_stud
+            # s_stud.move! slide1
+
+            vec2 = Geom::Vector3d.new(0,0,start_dist)
+            slide_to_start = Geom::Transformation.translation(vec2)
+
+            @hss_outer_group.entities.transform_entities slide_to_start, s_stud
+            # s_stud.move! slide_to_start
+
+            copy_dist = vec2.clone
+            copy_dist.length = spread
+
+            copies.times do |c|
+              trans = Geom::Transformation.translation(copy_dist)
+              stud_copy = s_stud.copy
+              color_by_thickness(stud_copy, 0.5)
+
+              @hss_outer_group.entities.transform_entities trans, stud_copy
+              # stud_copy.move! trans
+              copy_dist.length += spread
+            end
+          end
+        rescue Exception => e
+          puts e.message
+          puts e.backtrace.inspect
+          UI.messagebox("There was a problem inserting the half_inch_stud into the model")
+        end
       end
 
       def insert_top_plate(center, vec)
@@ -341,7 +642,7 @@ module EA_Extensions623
           if file_path1
             @base_plate = @definition_list.load file_path1
 
-            slide_vec = Geom::Vector3d.new(@w/2, @h/2, 0) 
+            slide_vec = Geom::Vector3d.new(@w/2, @h/2, 0)
             slide_base = Geom::Transformation.translation(slide_vec)
             @bp = @hss_outer_group.entities.add_instance @base_plate, center
             @bp.material = @base_plate_color
@@ -535,7 +836,6 @@ module EA_Extensions623
 
       def add_studs(length, spread)
         begin
-
           max_dist_from_hss_end = spread*0.75
 
           file_path = Sketchup.find_support_file "#{COMPONENT_PATH}/#{HLF_INCH_STD}", "Plugins"
@@ -551,7 +851,7 @@ module EA_Extensions623
 
           if @east_stud_selct
             e_stud = @hss_outer_group.entities.add_instance @half_inch_stud, @center_of_column.position
-
+            color_by_thickness(e_stud, 0.5)
             rot = Geom::Transformation.rotation(@center_of_column.position, Y_AXIS, 90.degrees)
             @hss_outer_group.entities.transform_entities rot, e_stud
 
@@ -570,6 +870,7 @@ module EA_Extensions623
             copies.times do |c|
               trans = Geom::Transformation.translation(copy_dist)
               stud_copy = e_stud.copy
+              color_by_thickness(stud_copy, 0.5)
 
               @hss_outer_group.entities.transform_entities trans, stud_copy
               copy_dist.length += spread
@@ -578,6 +879,7 @@ module EA_Extensions623
 
           if @west_stud_selct
             w_stud = @hss_outer_group.entities.add_instance @half_inch_stud, @center_of_column.position
+            color_by_thickness(w_stud, 0.5)
 
             rot = Geom::Transformation.rotation(@center_of_column.position, Y_AXIS, 270.degrees)
             @hss_outer_group.entities.transform_entities rot, w_stud
@@ -597,6 +899,7 @@ module EA_Extensions623
             copies.times do |c|
               trans = Geom::Transformation.translation(copy_dist)
               stud_copy = w_stud.copy
+              color_by_thickness(stud_copy, 0.5)
 
               @hss_outer_group.entities.transform_entities trans, stud_copy
               copy_dist.length += spread
@@ -605,6 +908,7 @@ module EA_Extensions623
 
           if @north_stud_selct
             n_stud = @hss_outer_group.entities.add_instance @half_inch_stud, @center_of_column.position
+            color_by_thickness(n_stud, 0.5)
 
             rot = Geom::Transformation.rotation(@center_of_column.position, X_AXIS, 270.degrees)
             @hss_outer_group.entities.transform_entities rot, n_stud
@@ -624,6 +928,7 @@ module EA_Extensions623
             copies.times do |c|
               trans = Geom::Transformation.translation(copy_dist)
               stud_copy = n_stud.copy
+              color_by_thickness(stud_copy, 0.5)
 
               @hss_outer_group.entities.transform_entities trans, stud_copy
               copy_dist.length += spread
@@ -632,21 +937,19 @@ module EA_Extensions623
 
           if @south_stud_selct
             s_stud = @hss_outer_group.entities.add_instance @half_inch_stud, @center_of_column.position
+            color_by_thickness(s_stud, 0.5)
 
             rot = Geom::Transformation.rotation(@center_of_column.position, X_AXIS, 90.degrees)
             @hss_outer_group.entities.transform_entities rot, s_stud
-            # s_stud.move! rot
 
             vec = Geom::Vector3d.new(0,-@h/2,0)
             slide1 = Geom::Transformation.translation(vec)
             @hss_outer_group.entities.transform_entities slide1, s_stud
-            # s_stud.move! slide1
 
             vec2 = Geom::Vector3d.new(0,0,start_dist)
             slide_to_start = Geom::Transformation.translation(vec2)
 
             @hss_outer_group.entities.transform_entities slide_to_start, s_stud
-            # s_stud.move! slide_to_start
 
             copy_dist = vec2.clone
             copy_dist.length = spread
@@ -654,9 +957,9 @@ module EA_Extensions623
             copies.times do |c|
               trans = Geom::Transformation.translation(copy_dist)
               stud_copy = s_stud.copy
+              color_by_thickness(stud_copy, 0.5)
 
               @hss_outer_group.entities.transform_entities trans, stud_copy
-              # stud_copy.move! trans
               copy_dist.length += spread
             end
           end
@@ -782,21 +1085,28 @@ module EA_Extensions623
       def align_tube(vec, group)
         group.transform! @trans #Fixed this so the column is not scaled
         adjustment_vec = vec.clone
-        adjustment_vec.length = (@base_thickness+@start_tolerance) #this ,ight also need to account for the height from slab (1 1/2")
+        if @is_column
+          adjustment_vec.length = (@base_thickness+@start_tolerance) #this ,ight also need to account for the height from slab (1 1/2")
+        else
+          if @hss_has_cap
+            adjustment_vec.length = @cap_thickness #this ,ight also need to account for the height from slab (1 1/2")
+          else
+            adjustment_vec.length = 0 #this ,ight also need to account for the height from slab (1 1/2")
+          end
+        end
         slide_up = Geom::Transformation.translation(adjustment_vec)
         @entities.transform_entities(slide_up, group)
 
-        width_vec = X_AXIS.clone
-        height_vec = Y_AXIS.clone
-
-        width_vec.length = -@w/2
-        height_vec.length = @h/2
-
-        # slide_center_width = Geom::Transformation.translation (width_vec)
-        # slide_center_height = Geom::Transformation.translation (height_vec)
-
-        # group.transform! (width_vec)
-        # group.transform! (height_vec)
+        if vec[2] < 0 && @is_column
+          if vec.parallel? Z_AXIS
+            rot_vec = X_AXIS
+          else
+            rot_vec = vec.cross(Z_AXIS)
+          end
+          rot_upright = Geom::Transformation.rotation(@vec_center, rot_vec, 180.degrees)
+          group.transform! rot_upright
+          p 'FLIPPED'
+        end
       end
 
       def extrude_tube(vec, face)
@@ -804,29 +1114,24 @@ module EA_Extensions623
       end
 
       def create_geometry(pt1, pt2, view)
-          model = view.model
-          model.start_operation("Draw TS", true)
+        model = view.model
+        model.start_operation("Draw TS", true)
 
-          vec = pt2 - pt1
-          if( vec.length < 2 )
-              UI.beep
-              UI.messagebox("Please draw a HSS longer than 2")
-              return
-          end
-
-          if vec.parallel? Z_AXIS
-            @is_column = true
-          else
-            @is_column = false
-          end
-
-          draw_tube(vec)
-
-          model.commit_operation
-
+        vec = pt2 - pt1
+        if( vec.length < 2 )
+            UI.beep
+            UI.messagebox("Please draw a HSS longer than 2")
+            return
         end
 
-        def onMouseMove(flags, x, y, view)
+        @vec_center = Geom::Point3d.new((pt1[0]+pt2[0])/2,(pt1[1]+pt2[1])/2,(pt1[2]+pt2[2])/2)
+
+        draw_tube(vec)
+
+        model.commit_operation
+      end
+
+      def onMouseMove(flags, x, y, view)
         @vx = Geom::Vector3d.new 1,0,0
         @vy = Geom::Vector3d.new 0,1,0
         @vz = Geom::Vector3d.new 0,0,1
