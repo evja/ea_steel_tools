@@ -389,7 +389,7 @@ module EA_Extensions623
         @hss_outer_group.entities.transform_entities(r_to_o_side, up_arrow1_copy)
 
         rot_direct = 90 - Z_AXIS.angle_between(vec).radians
-        p rot_direct.degrees
+        # p rot_direct.degrees
         rot_vert = Geom::Transformation.rotation(@center_of_column.position, X_AXIS, rot_direct.degrees)
         @hss_outer_group.entities.transform_entities(rot_vert, up_group)
 
@@ -408,7 +408,7 @@ module EA_Extensions623
         up_ents = up_direction_group.entities
 
         beam_direction = vec
-        p vec
+        # p vec
         heading = Geom::Vector3d.new beam_direction
         heading[2] = 0
         angle = heading.angle_between NORTH
@@ -701,6 +701,8 @@ module EA_Extensions623
             slide_base = Geom::Transformation.translation(slide_vec)
             @bp = @hss_outer_group.entities.add_instance @base_plate, center
             @bp.material = STEEL_COLORS[:pink][:rgb]
+            @bp.make_unique
+            # @bp.make_group
           end
 
 
@@ -1150,7 +1152,7 @@ module EA_Extensions623
           end
           rot_upright = Geom::Transformation.rotation(@vec_center, rot_vec, 180.degrees)
           group.transform! rot_upright
-          p 'FLIPPED'
+          # p 'FLIPPED'
         end
       end
 
@@ -1160,7 +1162,7 @@ module EA_Extensions623
 
       def create_geometry(pt1, pt2, view)
         model = view.model
-        # model.start_operation("Draw TS", true)
+        model.start_operation("Draw TS", true)
 
         vec = pt2 - pt1
         if( vec.length < 2 )
@@ -1173,7 +1175,7 @@ module EA_Extensions623
 
         draw_tube(vec)
 
-        # model.commit_operation
+        model.commit_operation
       end
 
       def onMouseMove(flags, x, y, view)
