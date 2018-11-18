@@ -29,7 +29,7 @@ module EA_Extensions623
     toolbar = UI::Toolbar.new " EA Steel Tools"
 
     cmd = UI::Command.new("Wide Flange") {
-      Sketchup.active_model.select_tool EASteelTools::Window.new
+      @@wide_flange_tool = Sketchup.active_model.select_tool EASteelTools::Window.new
     }
     @@EA_tools_menu.add_item cmd
     cmd.small_icon = "icons/wfs_icon1.png"
@@ -40,7 +40,7 @@ module EA_Extensions623
     toolbar = toolbar.add_item cmd
 
     cmd1 = UI::Command.new("Rolled Wide Flange") {
-     Sketchup.active_model.select_tool @two = EASteelTools::RolledDialog.new
+     @@rolled_flange_tool = Sketchup.active_model.select_tool @two = EASteelTools::RolledDialog.new
     }
     @@EA_tools_menu.add_item cmd1
     cmd1.small_icon = "icons/wfs_icon_rolled_easy.png"
@@ -50,9 +50,10 @@ module EA_Extensions623
     cmd1.menu_text = "Wide Rolled Flange Steel"
     toolbar = toolbar.add_item cmd1
 
-    
+
     cmd3 = UI::Command.new("HSS Steel") {
-     Sketchup.active_model.select_tool(EASteelTools::HssDialog.new)
+     Sketchup.active_model.abort_operation
+     @@hss_tool = Sketchup.active_model.select_tool(EASteelTools::HssDialog.new)
     }
     @@EA_tools_menu.add_item cmd3
     cmd3.small_icon = "icons/ts_icon1.png"

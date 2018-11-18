@@ -16,6 +16,7 @@ module EA_Extensions623
     NN_SXTNTHS_HOLE    = "9_16 Hole Set.skp"
     THRTN_SXTNTHS_HOLE = "13_16 Hole Set.skp"
     UP_DRCTN           = "UP.skp"
+    UP_DRCTN_SM           = "UP_SM.skp"
     HLF_INCH_STD       = "2_Studs.skp"
     STEEL_FONT         = "1CamBam_Stick_7"
     NORTH_LABEL        = "N.skp"

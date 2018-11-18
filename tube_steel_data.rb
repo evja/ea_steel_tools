@@ -323,6 +323,7 @@ module EA_Extensions623
         if @is_column
           extrude_length.length = (vec.length - (@base_thickness*2)) - (@start_tolerance+@end_tolerance) #This thickness is accouting for bot top and bottom plate. if the top plates thickness is controlled it will need to be accounted for if it varies from the base thickness
           extrude_tube(extrude_length, main_face)
+          add_reference_cross(inside_points, extrude_length)
           add_studs(extrude_length.length, @@stud_spacing)
           add_up_arrow(extrude_length.length, @@stud_spacing)
           add_name_label(vec)
@@ -345,16 +346,60 @@ module EA_Extensions623
             extrude_length.length = vec.length
           end
           extrude_tube(extrude_length, main_face)
-          add_name_label(vec)
+          add_reference_cross(inside_points, extrude_length)
+          add_name_label(extrude_length)
           add_studs_beam(extrude_length.length, @@stud_spacing)
-          add_hss_beam_labels(vec)
+          add_hss_beam_direction_labels(extrude_length)
+          add_beam_up_arrow(vec, extrude_length)
           cap = draw_beam_caps(extrude_length) if @hss_has_cap
           align_tube(vec, @hss_outer_group)
 
         end
       end
 
-      def add_hss_beam_labels(vec)
+      def add_reference_cross(pts, seperation_dist)
+        #draw the x in the middle of the tube, top & bottom
+        reference_cross = @hss_inner_group.entities.add_group
+        cl1 = reference_cross.entities.add_line(pts[0], pts[2])
+        cl2 = reference_cross.entities.add_line(pts[1], pts[3])
+
+        reference_cross2 = reference_cross.copy
+        v = Z_AXIS.clone
+        v.length = seperation_dist.length
+        @hss_inner_group.entities.transform_entities(v, reference_cross2)
+      end
+
+      def add_beam_up_arrow(vec, length)
+        up_group = @hss_outer_group.entities.add_group()
+
+        file_path = Sketchup.find_support_file "#{COMPONENT_PATH}/#{UP_DRCTN_SM}", "Plugins/"
+        up_direction = @definition_list.load file_path
+
+        up_arrow1 = up_group.entities.add_instance(up_direction, @center_of_column.position)
+
+        rot = Geom::Transformation.rotation(@center_of_column.position, Y_AXIS, 90.degrees )
+        sld_vec = X_AXIS.clone
+        sld_vec.length = @w/2
+        slide = Geom::Transformation.translation(sld_vec)
+        @hss_outer_group.entities.transform_entities(rot, up_arrow1)
+        @hss_outer_group.entities.transform_entities(slide, up_arrow1)
+
+        up_arrow1_copy = up_arrow1.copy
+        r_to_o_side = Geom::Transformation.rotation(@center_of_column.position, Y_AXIS, 180.degrees)
+        @hss_outer_group.entities.transform_entities(r_to_o_side, up_arrow1_copy)
+
+        rot_direct = 90 - Z_AXIS.angle_between(vec).radians
+        p rot_direct.degrees
+        rot_vert = Geom::Transformation.rotation(@center_of_column.position, X_AXIS, rot_direct.degrees)
+        @hss_outer_group.entities.transform_entities(rot_vert, up_group)
+
+        sld_vec = Z_AXIS.clone
+        sld_vec.length = vec.length * 0.75
+        slide_to_pos = Geom::Transformation.translation(sld_vec)
+        @hss_outer_group.entities.transform_entities(slide_to_pos, up_group)
+      end
+
+      def add_hss_beam_direction_labels(vec)
         start_direction_group = @hss_outer_group.entities.add_group
         start_ents = start_direction_group.entities
         end_direction_group = @hss_outer_group.entities.add_group
@@ -1115,7 +1160,7 @@ module EA_Extensions623
 
       def create_geometry(pt1, pt2, view)
         model = view.model
-        model.start_operation("Draw TS", true)
+        # model.start_operation("Draw TS", true)
 
         vec = pt2 - pt1
         if( vec.length < 2 )
@@ -1128,7 +1173,7 @@ module EA_Extensions623
 
         draw_tube(vec)
 
-        model.commit_operation
+        # model.commit_operation
       end
 
       def onMouseMove(flags, x, y, view)

@@ -12,6 +12,7 @@ module EA_Extensions623
       @@state = 0
 
       def initialize
+        Sketchup.active_model.start_operation('hss tool modal')
         if @@state == 0
           @@tube_data             = {}   #Hash   {:h=>4, :b=>4}
           @@height_class          = '4'
@@ -44,11 +45,20 @@ module EA_Extensions623
         ####################################################
 
 
-
-
-
         ####################################################
         ####################################################
+
+
+
+
+        ######################################################################
+        # WORKING BELOW
+        ######################################################################
+
+
+        ######################################################################
+        # WORKING ABOVE
+        ######################################################################
 
 
         @label_font = SKUI::Font.new( 'Comic Sans MS', 8, true )
@@ -70,7 +80,6 @@ module EA_Extensions623
         }
 
         window = SKUI::Window.new( options )
-        # p window.theme
         @window1 = window
 
         set_groups(@window1) # <- Method
@@ -102,7 +111,7 @@ module EA_Extensions623
         hss_type_select = SKUI::Listbox.new(@hss_types)
         hss_type_select.position(300, 25)
         hss_type_select.width = 68
-        @@hss_type.empty? ? @@hss_type = (hss_type_select.value = @hss_types.first) : (hss_type_select.value = @@hss_type)
+        @@hss_type.empty? ? @@hss_type = (hss_type_select.value = @hss_types.last) : (hss_type_select.value = @@hss_type)
         @group1.add_control(hss_type_select)
 
 
@@ -186,8 +195,6 @@ module EA_Extensions623
         @group2.add_control stud_toggle
 
 
-
-
         north_stud_selct = SKUI::Checkbox.new('N')
         north_stud_selct.font = @label_font
         north_stud_selct.position(232+ss_x,20+ss_y)
@@ -235,11 +242,6 @@ module EA_Extensions623
         }
 
         @group2.add_control(west_stud_selct)
-
-
-######################################################################
-# WORKING BELOW
-######################################################################
 
         top_stud_selct = SKUI::Checkbox.new('T')
         top_stud_selct.font = @label_font
@@ -289,10 +291,6 @@ module EA_Extensions623
 
         @group2.add_control(left_stud_selct)
 
-
-######################################################################
-# WORKING ABOVE
-######################################################################
 
 
 ############################################################################
@@ -517,7 +515,7 @@ module EA_Extensions623
       def add_control_buttons(window)
         btn_ok = SKUI::Button.new( 'OK' ) { |control|
           @@beam_data = find_tube(@@height_class, @@width_class)
-          data = {
+          @data = {
             height_class:      @@height_class,
             width_class:       @@width_class,
             wall_thickness:    @@wall_thickness,
@@ -537,8 +535,9 @@ module EA_Extensions623
             hss_has_cap:       @@hss_has_cap
           }
           # p "rotated rectangle = #{@@hss_is_rotated}"
+          Sketchup.active_model.commit_operation
           control.window.close
-          Sketchup.active_model.select_tool EASteelTools::TubeTool.new(data)
+          Sketchup.active_model.select_tool EASteelTools::TubeTool.new(@data)
         }
 
         btn_ok.position( 5, -5 )
@@ -565,6 +564,10 @@ module EA_Extensions623
       end
 
       def onKeyDown(key, repeat, flags, view)
+        # puts "onKeyDown: key = #{key}"
+        # puts "        repeat = #{repeat}"
+        # puts "         flags = #{flags}"
+        # puts "          view = #{view}"
         if key == 27
           clean_images([@sq_image, @rec_image, @rec_image_rot])
           @window1.release
@@ -629,6 +632,10 @@ module EA_Extensions623
 
       def self.close
         @window1.release
+      end
+
+      def self.window
+        return @window1
       end
 
       # def deactivate(view)

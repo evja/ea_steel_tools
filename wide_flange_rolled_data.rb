@@ -221,7 +221,7 @@ module EA_Extensions623
           wc = var.join('.')
         end
         stiffener_plate = "PL #{@@height_class}(#{wc}) Stiffener"
-        
+
         file_path1 = Sketchup.find_support_file "#{COMPONENT_PATH}/#{NN_SXTNTHS_HOLE}", "Plugins"
         file_path2 = Sketchup.find_support_file "#{COMPONENT_PATH}/#{THRTN_SXTNTHS_HOLE}", "Plugins"
         file_path3 = Sketchup.find_support_file "#{COMPONENT_PATH}/#{HLF_INCH_STD}", "Plugins"
@@ -961,6 +961,7 @@ module EA_Extensions623
           move = Geom::Transformation.translation v
           @centergroup.entities.transform_entities move, other_center
           cline = @centergroup.entities.add_line centerpoint, other_center.position
+          @centergroup.locked = true
           cline.hidden = true
         end
         percent = angle2/360.degrees
