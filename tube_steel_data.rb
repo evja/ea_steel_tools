@@ -324,10 +324,10 @@ module EA_Extensions623
           extrude_length.length = (vec.length - (@base_thickness*2)) - (@start_tolerance+@end_tolerance) #This thickness is accouting for bot top and bottom plate. if the top plates thickness is controlled it will need to be accounted for if it varies from the base thickness
           extrude_tube(extrude_length, main_face)
           add_reference_cross(inside_points, extrude_length)
-          add_studs(extrude_length.length, @@stud_spacing)
-          add_up_arrow(extrude_length.length, @@stud_spacing)
-          add_name_label(vec)
-          add_direction_labels()
+          # add_studs(extrude_length.length, @@stud_spacing)
+          # add_up_arrow(extrude_length.length, @@stud_spacing)
+          # add_name_label(vec)
+          # add_direction_labels()
           align_tube(vec, @hss_outer_group)
 
           if @material_names.include? STEEL_COLORS[:orange][:name]
@@ -656,6 +656,72 @@ module EA_Extensions623
 
       end
 
+      def draw_parametric_baseplate(pts)
+        temp_faces = []
+        temp_edges = []
+        temp_groups = []
+        arcs = []
+
+        @baseplate_group = @hss_outer_group.entities.add_group
+        face = @baseplate_group.entities.add_face pts
+        vec = @center_of_column.position - @baseplate_group.bounds.center
+        center = Geom::Transformation.translation(vec)
+        @hss_outer_group.entities.transform_entities(center, @baseplate_group)
+
+        #chamfer the corner
+        crnr = face.vertices[-1]
+        crn_pos = crnr.position
+        # p crn_pos
+        gr = @baseplate_group.entities.add_group
+        arc1 = gr.entities.add_arc([crn_pos[0]-0.5, crn_pos[1]-0.5, crn_pos[2]], X_AXIS, Z_AXIS, BOTTOM_PLATE_CORNER_RADIUS, 0.degrees ,90.degrees)
+        # arc1.faces
+
+        dg = 90.degrees
+
+        3.times do |t|
+          grc = gr.copy
+          rot = Geom::Transformation.rotation(ORIGIN, Z_AXIS, dg)
+          @baseplate_group.entities.transform_entities(rot, grc)
+          dg += 90.degrees
+          arcs << grc.explode
+        end
+        pcs = gr.explode
+
+        @baseplate_group.entities.each do |e|
+          if e.class == Sketchup::Edge
+            if e.length == BOTTOM_PLATE_CORNER_RADIUS
+              e.erase!
+            end
+          else
+            next
+          end
+        end
+        pcs.each do |pc|
+          if pc.class == Sketchup::Edge
+            face = pc.faces[0]
+            break
+          end
+        end
+
+        face.pushpull 0.75
+
+        @baseplate_group.entities.each do |e|
+          if e.class == Sketchup::Edge
+            if e.length == 0.75
+              e.soft = true
+              e.smooth = true
+            else
+              next
+            end
+          else
+            next
+          end
+        end
+
+        color_by_thickness(@baseplate_group, 0.75)
+
+      end
+
       def insert_base_plates(type, center)
         begin
 
@@ -678,34 +744,37 @@ module EA_Extensions623
             base_type = "#{h[-1].to_i}_ DL"
           when 'DI'
             base_type = "#{h[-1].to_i}_ DI"
+          else
+            draw_parametric_baseplate(sq_plate(@w, @h))
           end
           # p base_type
+          if base_type
+            file_path1 = Sketchup.find_support_file "ea_steel_tools/Beam Components/#{base_type}.skp", "Plugins"
+            # p file_path1
+            @base_group = @hss_outer_group.entities.add_group
 
-          file_path1 = Sketchup.find_support_file "ea_steel_tools/Beam Components/#{base_type}.skp", "Plugins"
-          # p file_path1
+            if file_path1
+              @base_plate = @definition_list.load file_path1
 
-          if file_path1
-            @base_plate = @definition_list.load file_path1
+              slide_vec = Geom::Vector3d.new(@w/2, @h/2, 0)
+              slide_base = Geom::Transformation.translation(slide_vec)
+              @bp = @base_group.entities.add_instance @base_plate, center
+              @bp.material = @base_plate_color
+            else
+              #insert generic baseplate
+              backup_baseplate = "4_ SQ"
+              file_path_backup = Sketchup.find_support_file "ea_steel_tools/Beam Components/#{backup_baseplate}.skp", "Plugins"
+              @base_plate = @definition_list.load file_path_backup
 
-            slide_vec = Geom::Vector3d.new(@w/2, @h/2, 0)
-            slide_base = Geom::Transformation.translation(slide_vec)
-            @bp = @hss_outer_group.entities.add_instance @base_plate, center
-            @bp.material = @base_plate_color
-          else
-            #insert generic baseplate
-            backup_baseplate = "4_ SQ"
-            file_path_backup = Sketchup.find_support_file "ea_steel_tools/Beam Components/#{backup_baseplate}.skp", "Plugins"
-            @base_plate = @definition_list.load file_path_backup
-
-            slide_vec = Geom::Vector3d.new(@w/2, @h/2, 0)
-            slide_base = Geom::Transformation.translation(slide_vec)
-            @bp = @hss_outer_group.entities.add_instance @base_plate, center
-            @bp.material = STEEL_COLORS[:pink][:rgb]
-            @bp.make_unique
-            # @bp.make_group
+              slide_vec = Geom::Vector3d.new(@w/2, @h/2, 0)
+              slide_base = Geom::Transformation.translation(slide_vec)
+              @bp = @base_group.entities.add_instance @base_plate, center
+              @bp.material = STEEL_COLORS[:pink][:rgb]
+              # @bp.make_unique
+              # @bp.make_group
+            end
+              @bp.explode
           end
-
-
           #NEEDS#
 
           #Conditions if the hss is different sizes
@@ -718,18 +787,7 @@ module EA_Extensions623
         end
       end
 
-      # BASEPLATES = ["SQ","OC","IL","IC","EX","DR","DL","DI"]
-      # DI = Door Inline
-      # DL = Door Left
-      # DR = Door Right
-      # EX = Exterior
-      # IC = Inside Corner
-      # IL = Inline
-      # OC = Outside Corner
-      # SQ = Square
-
-
-      def sq_plate(w, h, c)
+      def sq_plate(w, h)
         points = [
           p1 = [(-(w/2)-STANDARD_BASE_MARGIN), (-(h/2)-STANDARD_BASE_MARGIN), 0],
           p2 = [((w/2)+STANDARD_BASE_MARGIN), (-(h/2)-STANDARD_BASE_MARGIN), 0],
@@ -737,75 +795,6 @@ module EA_Extensions623
           p4 = [(-(w/2)-STANDARD_BASE_MARGIN), ((h/2)+STANDARD_BASE_MARGIN), 0]
         ]
         return points
-      end
-
-      def oc_plate(w,h,c)
-        points = [
-          pt1 = [-(w/2)-BASEPLATE_MINIMUM_WELD_OVERHANG, -(h/2)-BASEPLATE_MINIMUM_WELD_OVERHANG, 0],
-          pt2 = [(w/2)+ STANDARD_BASE_MARGIN, -(h/2)-BASEPLATE_MINIMUM_WELD_OVERHANG,0],
-          pt3 = [(w/2)+ STANDARD_BASE_MARGIN, (h/2)+STANDARD_WELD_OVERHANG, 0],
-          pt4 = [(w/2)+ STANDARD_WELD_OVERHANG, (h/2)+STANDARD_WELD_OVERHANG, 0 ],
-          pt5 = [(w/2)+ STANDARD_WELD_OVERHANG, (h/2)+STANDARD_BASE_MARGIN, 0],
-          pt6 = [-(w/2)-BASEPLATE_MINIMUM_WELD_OVERHANG, (h/2)+STANDARD_BASE_MARGIN, 0]
-        ]
-        return points
-      end
-
-      def il_plate(w,h,c)
-        points = [
-          p1 = [-(w/2)-STANDARD_BASE_MARGIN, -(h/2)-BASEPLATE_MINIMUM_WELD_OVERHANG, 0],
-          p2 = [(w/2)+ STANDARD_BASE_MARGIN, -(h/2)-BASEPLATE_MINIMUM_WELD_OVERHANG, 0],
-          p3 = [(w/2)+ STANDARD_BASE_MARGIN,  (h/2)+BASEPLATE_MINIMUM_WELD_OVERHANG, 0],
-          p4 = [-(w/2)-STANDARD_BASE_MARGIN,  (h/2)+BASEPLATE_MINIMUM_WELD_OVERHANG, 0]
-        ]
-      end
-
-      def ic_plate(w,h,c)
-        points = [
-          pt1 = [-(w/2)-STANDARD_WELD_OVERHANG, -(h/2)-STANDARD_WELD_OVERHANG, 0],
-          pt2 = [(w/2)+ STANDARD_BASE_MARGIN, -(h/2)-STANDARD_WELD_OVERHANG,0],
-          pt3 = [(w/2)+ STANDARD_BASE_MARGIN, (h/2)+BASEPLATE_MINIMUM_WELD_OVERHANG, 0],
-          pt4 = [(w/2)+ BASEPLATE_MINIMUM_WELD_OVERHANG, (h/2)+BASEPLATE_MINIMUM_WELD_OVERHANG, 0 ],
-          pt5 = [(w/2)+ BASEPLATE_MINIMUM_WELD_OVERHANG, (h/2)+STANDARD_BASE_MARGIN, 0],
-          pt6 = [-(w/2)-STANDARD_WELD_OVERHANG, (h/2)+STANDARD_BASE_MARGIN, 0]
-        ]
-        return points
-      end
-
-      def ex_plate(w,h,c)
-        points = [
-          p1 = [-(w/2)-STANDARD_BASE_MARGIN, -(h/2)-STANDARD_WELD_OVERHANG, 0],
-          p2 = [(w/2)+ STANDARD_BASE_MARGIN, -(h/2)-STANDARD_WELD_OVERHANG, 0],
-          p3 = [(w/2)+ STANDARD_BASE_MARGIN,  (h/2)+BASEPLATE_MINIMUM_WELD_OVERHANG, 0],
-          p4 = [-(w/2)-STANDARD_BASE_MARGIN,  (h/2)+BASEPLATE_MINIMUM_WELD_OVERHANG, 0]
-        ]
-      end
-
-      def dr_plate(w,h,c)
-        points = [
-          p1 = [-(w/2)-BASEPLATE_MINIMUM_WELD_OVERHANG, -(h/2)-STANDARD_WELD_OVERHANG,0],
-          p2 = [(w/2)+(STANDARD_BASE_MARGIN*2), -(h/2)-STANDARD_WELD_OVERHANG,0 ],
-          p3 = [(w/2)+(STANDARD_BASE_MARGIN*2), (h/2)+BASEPLATE_MINIMUM_WELD_OVERHANG,0 ],
-          p4 = [-(w/2)-BASEPLATE_MINIMUM_WELD_OVERHANG, (h/2)+BASEPLATE_MINIMUM_WELD_OVERHANG,0]
-        ]
-      end
-
-      def dl_plate(w,h,c)
-        points = [
-          p1 = [-(w/2)-(STANDARD_BASE_MARGIN*2), -(h/2)-STANDARD_WELD_OVERHANG,0],
-          p2 = [(w/2)+BASEPLATE_MINIMUM_WELD_OVERHANG, -(h/2)-STANDARD_WELD_OVERHANG,0 ],
-          p3 = [(w/2)+BASEPLATE_MINIMUM_WELD_OVERHANG, (h/2)+BASEPLATE_MINIMUM_WELD_OVERHANG,0 ],
-          p4 = [-(w/2)-(STANDARD_BASE_MARGIN*2), (h/2)+BASEPLATE_MINIMUM_WELD_OVERHANG,0]
-        ]
-      end
-
-      def di_plate(w,h,c)
-        points = [
-          p1 = [-(w/2)-BASEPLATE_MINIMUM_WELD_OVERHANG, -(h/2)-BASEPLATE_MINIMUM_WELD_OVERHANG,0],
-          p2 = [(w/2)+(STANDARD_BASE_MARGIN*2), -(h/2)-BASEPLATE_MINIMUM_WELD_OVERHANG,0 ],
-          p3 = [(w/2)+(STANDARD_BASE_MARGIN*2), (h/2)+BASEPLATE_MINIMUM_WELD_OVERHANG,0 ],
-          p4 = [-(w/2)-BASEPLATE_MINIMUM_WELD_OVERHANG, (h/2)+BASEPLATE_MINIMUM_WELD_OVERHANG,0]
-        ]
       end
 
       def add_name_label(vec)
@@ -1162,7 +1151,7 @@ module EA_Extensions623
 
       def create_geometry(pt1, pt2, view)
         model = view.model
-        model.start_operation("Draw TS", true)
+        # model.start_operation("Draw TS", true)
 
         vec = pt2 - pt1
         if( vec.length < 2 )
@@ -1175,7 +1164,7 @@ module EA_Extensions623
 
         draw_tube(vec)
 
-        model.commit_operation
+        # model.commit_operation
       end
 
       def onMouseMove(flags, x, y, view)
