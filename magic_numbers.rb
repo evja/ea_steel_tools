@@ -74,6 +74,7 @@ module EA_Extensions623
     MINIMUM_STUD_DIST_FROM_HSS_ENDS = 7.25
     HSS_BEAM_CAP_THICK = 0 # needs to be whatever the standard cap plates are
     BOTTOM_PLATE_CORNER_RADIUS = 0.5
+    STANDARD_BASE_PLATE_THICKNESS = 0.75
 
     BASETYPES = ["SQ","OC","IL","IC","EX","DR","DL","DI", "Bryceplate"]
 

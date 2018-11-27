@@ -656,70 +656,119 @@ module EA_Extensions623
 
       end
 
+      def etch_plate(plate)
+        ents = plate.entities
+        etch_group = ents.add_group
+        ege = etch_group.entities
+        etch_length = @tw
+        ege.add_line([@w/2, @h/2, 0], [@w/2, (@h/2)-etch_length])
+      end
+
       def draw_parametric_baseplate(pts)
-        temp_faces = []
-        temp_edges = []
-        temp_groups = []
-        arcs = []
+        begin
+          temp_faces = []
+          temp_edges = []
+          temp_groups = []
+          arcs = []
 
-        @baseplate_group = @hss_outer_group.entities.add_group
-        face = @baseplate_group.entities.add_face pts
-        vec = @center_of_column.position - @baseplate_group.bounds.center
-        center = Geom::Transformation.translation(vec)
-        @hss_outer_group.entities.transform_entities(center, @baseplate_group)
+          @baseplate_group = @hss_outer_group.entities.add_group
+          face = @baseplate_group.entities.add_face pts
+          vec = @center_of_column.position - @baseplate_group.bounds.center
+          center = Geom::Transformation.translation(vec)
+          @hss_outer_group.entities.transform_entities(center, @baseplate_group)
 
-        #chamfer the corner
-        crnr = face.vertices[-1]
-        crn_pos = crnr.position
-        # p crn_pos
-        gr = @baseplate_group.entities.add_group
-        arc1 = gr.entities.add_arc([crn_pos[0]-0.5, crn_pos[1]-0.5, crn_pos[2]], X_AXIS, Z_AXIS, BOTTOM_PLATE_CORNER_RADIUS, 0.degrees ,90.degrees)
-        # arc1.faces
+          #chamfer the corner
+          crnr1 = face.vertices[-1]
+          crnr2 = face.vertices[0]
+          crn_pos1 = crnr1.position
+          crn_pos2 = crnr2.position
+          # p crn_pos1
+          gr = @baseplate_group.entities.add_group
+          arc1 = gr.entities.add_arc([crn_pos1[0]-0.5, crn_pos1[1]-0.5, crn_pos1[2]], X_AXIS, Z_AXIS, BOTTOM_PLATE_CORNER_RADIUS, 0.degrees ,90.degrees)
+          arc1 = gr.entities.add_arc([crn_pos2[0]-0.5, crn_pos2[1]+0.5, crn_pos2[2]], Y_AXIS.reverse, Z_AXIS, BOTTOM_PLATE_CORNER_RADIUS, 0.degrees ,90.degrees)
+          # arc1.faces
 
-        dg = 90.degrees
+          dg = 180.degrees
 
-        3.times do |t|
-          grc = gr.copy
-          rot = Geom::Transformation.rotation(ORIGIN, Z_AXIS, dg)
-          @baseplate_group.entities.transform_entities(rot, grc)
-          dg += 90.degrees
-          arcs << grc.explode
-        end
-        pcs = gr.explode
-
-        @baseplate_group.entities.each do |e|
-          if e.class == Sketchup::Edge
-            if e.length == BOTTOM_PLATE_CORNER_RADIUS
-              e.erase!
-            end
-          else
-            next
+          1.times do |t|
+            grc = gr.copy
+            rot = Geom::Transformation.rotation(ORIGIN, Z_AXIS, dg)
+            @baseplate_group.entities.transform_entities(rot, grc)
+            arcs << grc.explode
           end
-        end
-        pcs.each do |pc|
-          if pc.class == Sketchup::Edge
-            face = pc.faces[0]
-            break
-          end
-        end
+          pcs = gr.explode
 
-        face.pushpull 0.75
-
-        @baseplate_group.entities.each do |e|
-          if e.class == Sketchup::Edge
-            if e.length == 0.75
-              e.soft = true
-              e.smooth = true
+          @baseplate_group.entities.each do |e|
+            if e.class == Sketchup::Edge
+              if e.length == BOTTOM_PLATE_CORNER_RADIUS
+                e.erase!
+              end
             else
               next
             end
-          else
-            next
           end
+          pcs.each do |pc|
+            if pc.class == Sketchup::Edge
+              face = pc.faces[0]
+              break
+            end
+          end
+
+          face.pushpull STANDARD_BASE_PLATE_THICKNESS
+
+          @baseplate_group.entities.each do |e|
+            if e.class == Sketchup::Edge
+              if e.length == 0.75
+                e.soft = true
+                e.smooth = true
+              else
+                next
+              end
+            else
+              next
+            end
+          end
+
+          color_by_thickness(@baseplate_group, 0.75)
+
+          bh_file = Sketchup.find_support_file("#{COMPONENT_PATH}/#{THRTN_SXTNTHS_HOLE}", "Plugins")
+          bh_def = @definition_list.load bh_file
+
+          big_hole = @baseplate_group.entities.add_instance bh_def, ORIGIN
+
+          v1 = X_AXIS.clone
+          v2 = Y_AXIS.clone
+
+          v1.length = (@w/2)+(STANDARD_BASE_MARGIN.to_f/2)
+          v2.length = (@h/2)+(STANDARD_BASE_MARGIN.to_f/2)
+          tr1 = Geom::Transformation.translation(v1)
+          tr2 = Geom::Transformation.translation(v2)
+          scl_hole = Geom::Transformation.scaling(ORIGIN, 1,1,STANDARD_BASE_PLATE_THICKNESS/2)
+          @baseplate_group.entities.transform_entities scl_hole, big_hole
+
+          @baseplate_group.entities.transform_entities tr1, big_hole
+          bh2 = big_hole.copy
+          @baseplate_group.entities.transform_entities tr2, big_hole
+
+          tr1 = Geom::Transformation.translation(v2.reverse)
+          @baseplate_group.entities.transform_entities tr1, bh2
+
+          bh3 = bh2.copy
+          bh4 = big_hole.copy
+
+          v3 = v1.clone.reverse
+          v3.length = @w+STANDARD_BASE_MARGIN
+
+          tr3 = Geom::Transformation.translation(v3)
+
+          @baseplate_group.entities.transform_entities tr3, [bh3, bh4]
+
+          return @baseplate_group
+        rescue Exception => e
+          puts e.message
+          puts e.backtrace.inspect
+          UI.messagebox("There was a problem inserting the base plate")
         end
-
-        color_by_thickness(@baseplate_group, 0.75)
-
       end
 
       def insert_base_plates(type, center)
@@ -745,7 +794,7 @@ module EA_Extensions623
           when 'DI'
             base_type = "#{h[-1].to_i}_ DI"
           else
-            draw_parametric_baseplate(sq_plate(@w, @h))
+            plate = draw_parametric_baseplate(sq_plate(@w, @h))
           end
           # p base_type
           if base_type
@@ -760,6 +809,8 @@ module EA_Extensions623
               slide_base = Geom::Transformation.translation(slide_vec)
               @bp = @base_group.entities.add_instance @base_plate, center
               @bp.material = @base_plate_color
+              # @bp.explode
+              # etch_plate(@base_group)
             else
               #insert generic baseplate
               backup_baseplate = "4_ SQ"
@@ -770,10 +821,11 @@ module EA_Extensions623
               slide_base = Geom::Transformation.translation(slide_vec)
               @bp = @base_group.entities.add_instance @base_plate, center
               @bp.material = STEEL_COLORS[:pink][:rgb]
-              # @bp.make_unique
-              # @bp.make_group
+              # @bp.explode
+              # etch_plate(@base_group)
             end
-              @bp.explode
+          else
+            etch_plate(plate)
           end
           #NEEDS#
 
