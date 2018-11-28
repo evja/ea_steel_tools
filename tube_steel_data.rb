@@ -133,39 +133,16 @@ module EA_Extensions623
 
       def draw_beam_caps(length)
         cap = @hss_outer_group.entities.add_group
-        if @tw > 0.375
-          pts = [
-            pt1 = [0,0,0],
-            pt2 = [@w - (MINIMUM_WELD_OVERHANG*2), 0,0],
-            pt3 = [@w - (MINIMUM_WELD_OVERHANG*2), @h - (MINIMUM_WELD_OVERHANG*2), 0],
-            pt4 = [0, @h - (MINIMUM_WELD_OVERHANG*2), 0]
-          ]
-          set_dist = MINIMUM_WELD_OVERHANG
-        else
-          pts = [
-            pt1 = [0,0,0],
-            pt2 = [@w - @tw,0,0],
-            pt3 = [@w - @tw,@h - @tw,0],
-            pt4 = [0,@h - @tw,0]
-          ]
-          set_dist = @tw/2
-        end
+        pts = [
+          pt1 = [0,0,0],
+          pt2 = [@w, 0,0],
+          pt3 = [@w, @h, 0],
+          pt4 = [0, @h, 0]
+        ]
 
         cap_face = cap.entities.add_face pts
         cap_face.reverse!
         cap_face.pushpull @cap_thickness
-
-        v1 = X_AXIS.clone
-        v2 = Y_AXIS.clone
-
-        v1.length = set_dist
-        v2.length = set_dist
-
-
-        tr1 = Geom::Transformation.new(v1)
-        tr2 = Geom::Transformation.new(v2)
-
-        @hss_outer_group.entities.transform_entities tr1*tr2, cap
 
         v3 = Z_AXIS.clone
         v3.length = -@cap_thickness
@@ -324,10 +301,10 @@ module EA_Extensions623
           extrude_length.length = (vec.length - (@base_thickness*2)) - (@start_tolerance+@end_tolerance) #This thickness is accouting for bot top and bottom plate. if the top plates thickness is controlled it will need to be accounted for if it varies from the base thickness
           extrude_tube(extrude_length, main_face)
           add_reference_cross(inside_points, extrude_length)
-          # add_studs(extrude_length.length, @@stud_spacing)
-          # add_up_arrow(extrude_length.length, @@stud_spacing)
-          # add_name_label(vec)
-          # add_direction_labels()
+          add_studs(extrude_length.length, @@stud_spacing)
+          add_up_arrow(extrude_length.length, @@stud_spacing)
+          add_name_label(vec)
+          add_direction_labels()
           align_tube(vec, @hss_outer_group)
 
           if @material_names.include? STEEL_COLORS[:orange][:name]
@@ -394,7 +371,7 @@ module EA_Extensions623
         @hss_outer_group.entities.transform_entities(rot_vert, up_group)
 
         sld_vec = Z_AXIS.clone
-        sld_vec.length = vec.length * 0.75
+        sld_vec.length = (length.length/2) + 24
         slide_to_pos = Geom::Transformation.translation(sld_vec)
         @hss_outer_group.entities.transform_entities(slide_to_pos, up_group)
       end
@@ -643,10 +620,17 @@ module EA_Extensions623
             @top_plate_group.entities.transform_entities slide_tpl_up, @tp
 
             @tp.material = @base_plate_color
-
+            etch_plate(@tp, @hss_inner_group)
             @tp.explode
           else
-            #Need to insert a dynami  top plate that grows to the size of the tube.
+            top_plate = draw_parametric_plate(sq_plate(@w, @h))
+            slide_tpl_up = Geom::Transformation.translation(Geom::Vector3d.new(0,0,vec.length+STANDARD_BASE_PLATE_THICKNESS))
+            @hss_outer_group.entities.transform_entities slide_tpl_up, top_plate
+
+            rot = Geom::Transformation.rotation(top_plate.bounds.center, Y_AXIS, 180.degrees)
+            top_plate.transform! rot
+            top_plate.material = @base_plate_color
+            etch_plate(top_plate, @hss_inner_group)
           end
         rescue Exception => e
           puts e.message
@@ -656,15 +640,44 @@ module EA_Extensions623
 
       end
 
-      def etch_plate(plate)
-        ents = plate.entities
+      def etch_plate(plate, hss)
+        ents = plate.definition.entities
         etch_group = ents.add_group
+        etch_group.name = 'etch'
         ege = etch_group.entities
-        etch_length = @tw
-        ege.add_line([@w/2, @h/2, 0], [@w/2, (@h/2)-etch_length])
+        temp_etch_group = ege.add_group
+
+        col_corner = hss.bounds.min
+        col_corner[2] = 0
+
+        p1a = [0,0,0]
+        p2a = [ETCH_LINE,0,0]
+        p3a = [0,ETCH_LINE,0]
+
+        p1b = [@w, 0,0]
+        p2b = [@w-ETCH_LINE,0,0]
+        p3b = [@w, ETCH_LINE,0]
+
+        temp_etch_group.entities.add_line(p1a, p2a)
+        temp_etch_group.entities.add_line(p1a, p3a)
+        temp_etch_group.entities.add_line(p1b, p2b)
+        temp_etch_group.entities.add_line(p1b, p3b)
+
+        temp_group_copy = temp_etch_group.copy
+        rot = Geom::Transformation.rotation([@w/2, @h/2, 0], Z_AXIS, 180.degrees)
+        ege.transform_entities(rot, temp_group_copy)
+
+        temp_etch_group.explode
+        temp_group_copy.explode
+
+        tp1 = etch_group.definition.bounds.center
+        tp2 = hss.definition.bounds.min
+        v = tp2 - tp1
+        place_etch = Geom::Transformation.translation(v)
+        @entities.transform_entities place_etch, etch_group
       end
 
-      def draw_parametric_baseplate(pts)
+      def draw_parametric_plate(pts)
         begin
           temp_faces = []
           temp_edges = []
@@ -672,6 +685,7 @@ module EA_Extensions623
           arcs = []
 
           @baseplate_group = @hss_outer_group.entities.add_group
+          @baseplate_group.name = 'Bottom Plate'
           face = @baseplate_group.entities.add_face pts
           vec = @center_of_column.position - @baseplate_group.bounds.center
           center = Geom::Transformation.translation(vec)
@@ -794,14 +808,14 @@ module EA_Extensions623
           when 'DI'
             base_type = "#{h[-1].to_i}_ DI"
           else
-            plate = draw_parametric_baseplate(sq_plate(@w, @h))
+            plate = draw_parametric_plate(sq_plate(@w, @h))
           end
           # p base_type
           if base_type
             file_path1 = Sketchup.find_support_file "ea_steel_tools/Beam Components/#{base_type}.skp", "Plugins"
             # p file_path1
             @base_group = @hss_outer_group.entities.add_group
-
+            @base_group.name = 'Base Plate'
             if file_path1
               @base_plate = @definition_list.load file_path1
 
@@ -809,8 +823,8 @@ module EA_Extensions623
               slide_base = Geom::Transformation.translation(slide_vec)
               @bp = @base_group.entities.add_instance @base_plate, center
               @bp.material = @base_plate_color
-              # @bp.explode
-              # etch_plate(@base_group)
+              etch_plate(@bp, @hss_inner_group)
+              @bp.explode
             else
               #insert generic baseplate
               backup_baseplate = "4_ SQ"
@@ -821,11 +835,11 @@ module EA_Extensions623
               slide_base = Geom::Transformation.translation(slide_vec)
               @bp = @base_group.entities.add_instance @base_plate, center
               @bp.material = STEEL_COLORS[:pink][:rgb]
-              # @bp.explode
-              # etch_plate(@base_group)
+              etch_plate(@bp, @hss_inner_group)
+              @bp.explode
             end
           else
-            etch_plate(plate)
+            etch_plate(plate, @hss_inner_group)
           end
           #NEEDS#
 
@@ -1203,7 +1217,7 @@ module EA_Extensions623
 
       def create_geometry(pt1, pt2, view)
         model = view.model
-        # model.start_operation("Draw TS", true)
+        model.start_operation("Draw TS", true)
 
         vec = pt2 - pt1
         if( vec.length < 2 )
@@ -1216,7 +1230,7 @@ module EA_Extensions623
 
         draw_tube(vec)
 
-        # model.commit_operation
+        model.commit_operation
       end
 
       def onMouseMove(flags, x, y, view)
