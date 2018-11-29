@@ -10,6 +10,7 @@ module EA_Extensions623
         # Activates the @model @entities for use
         @entities = @model.active_entities
         @selection = @model.selection
+        @model_view = @model.active_view
         @definition_list = @model.definitions
         @materials = @model.materials
         @state = 0
@@ -100,6 +101,39 @@ module EA_Extensions623
         @z_blue = Geom::Vector3d.new 0,0,1
         # This sets the label for the VCB
         Sketchup::set_status_text ("Length"), SB_VCB_LABEL
+        check_for_preselect(@selection, @model_view)
+      end
+
+      def check_for_preselect(*args, view)
+        if args[0].nil?
+          p 'no selection'
+          return false
+        else
+          selection = args[0]
+          selection.each do |ent|
+            if ent.is_a? Sketchup::ConstructionLine
+              #extract the start and end point of the ConstructionLine
+              pt1 = ent.start
+              pt2 = ent.end
+            elsif ent.is_a? Sketchup::Edge
+              #extract the start and end point of the Edge
+              pt1 = ent.start.position
+              pt2 = ent.end.position
+            end
+            @vy = pt1.vector_to pt2
+            not_a_zero_vec = @vy.length > 0
+            @vx = @vy.axes[0] if not_a_zero_vec
+            @vz = @vy.axes[1] if not_a_zero_vec
+
+            @trans = Geom::Transformation.axes pt1, @vx, @vy, @vz.reverse
+            @trans2 = Geom::Transformation.axes pt2, @vx, @vy, @vz.reverse
+
+            # Create the member in Sketchup
+            self.create_geometry(pt1, pt2, view)
+            self.reset(view)
+            # Sketchup.send_action "selectSelectionTool:" #Mabes Babes
+          end
+        end
       end
 
       def onSetCursor
