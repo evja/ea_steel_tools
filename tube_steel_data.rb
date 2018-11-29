@@ -330,7 +330,6 @@ module EA_Extensions623
           add_beam_up_arrow(vec, extrude_length)
           cap = draw_beam_caps(extrude_length) if @hss_has_cap
           align_tube(vec, @hss_outer_group)
-
         end
       end
 
@@ -447,7 +446,6 @@ module EA_Extensions623
         @hss_outer_group.entities.transform_entities slide1, end_dir_beam1
 
         vec2 = Geom::Vector3d.new(0,0,6)
-        p vec2
         slide_to_start = Geom::Transformation.translation(vec2)
 
         rot = Geom::Transformation.rotation(@center_of_column.position, Y_AXIS, 270.degrees)
@@ -466,7 +464,6 @@ module EA_Extensions623
         vec3 = Geom::Vector3d.new(0,0,(vec.length)-6)
         slide_to_end = Geom::Transformation.translation(vec3)
         @hss_outer_group.entities.transform_entities slide_to_end, end_direction_group
-
 
       end #hss beam lables
 
@@ -491,7 +488,6 @@ module EA_Extensions623
             @hss_outer_group.entities.transform_entities slide1, e_stud
 
             vec2 = Geom::Vector3d.new(0,0,start_dist)
-            p vec2
             slide_to_start = Geom::Transformation.translation(vec2)
 
             @hss_outer_group.entities.transform_entities slide_to_start, e_stud
@@ -610,7 +606,7 @@ module EA_Extensions623
           @top_plate_group = @hss_outer_group.entities.add_group
 
           if @w <= STANDARD_TOP_PLATE_SIZE
-            file_path2 = Sketchup.find_support_file "ea_steel_tools/Beam Components/Top Plate.skp", "Plugins"
+            file_path2 = Sketchup.find_support_file "#{COMPONENT_PATH}/Top Plate.skp", "Plugins"
 
             @top_plate = @definition_list.load file_path2
 
@@ -623,21 +619,30 @@ module EA_Extensions623
             etch_plate(@tp, @hss_inner_group)
             @tp.explode
           else
-            top_plate = draw_parametric_plate(sq_plate(@w, @h))
+            @top_plate = draw_parametric_plate(sq_plate(@w, @h))
             slide_tpl_up = Geom::Transformation.translation(Geom::Vector3d.new(0,0,vec.length+STANDARD_BASE_PLATE_THICKNESS))
-            @hss_outer_group.entities.transform_entities slide_tpl_up, top_plate
+            @hss_outer_group.entities.transform_entities slide_tpl_up, @top_plate
 
-            rot = Geom::Transformation.rotation(top_plate.bounds.center, Y_AXIS, 180.degrees)
-            top_plate.transform! rot
-            top_plate.material = @base_plate_color
-            etch_plate(top_plate, @hss_inner_group)
+            rot = Geom::Transformation.rotation(@top_plate.bounds.center, Y_AXIS, 180.degrees)
+            @top_plate.transform! rot
+            @top_plate.material = @base_plate_color
+            etch_plate(@top_plate, @hss_inner_group)
+            add_plate_compass(@top_plate, ORIGIN)
           end
         rescue Exception => e
           puts e.message
           puts e.backtrace.inspect
           UI.messagebox("There was a problem inserting the top plate")
         end
+      end
 
+      def add_plate_compass(plate, center)
+        compass_group = plate.entities.add_group()
+        file_path = Sketchup.find_support_file "#{COMPONENT_PATH}/PlateCompass.skp", "Plugins"
+        compass_def = @definition_list.load file_path
+        compass = compass_group.entities.add_instance compass_def, center
+
+        compass.explode
       end
 
       def etch_plate(plate, hss)
@@ -840,6 +845,7 @@ module EA_Extensions623
             end
           else
             etch_plate(plate, @hss_inner_group)
+            add_plate_compass(plate, ORIGIN)
           end
           #NEEDS#
 

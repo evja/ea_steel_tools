@@ -70,7 +70,7 @@ module EA_Extensions623
     HOLE_OFFSET = 1.5
     BASEPLATE_RADIUS = 0.5
     RADIUS_SEGMENT = 6
-    STANDARD_TOP_PLATE_SIZE = 7
+    STANDARD_TOP_PLATE_SIZE = 5
     MINIMUM_STUD_DIST_FROM_HSS_ENDS = 7.25
     HSS_BEAM_CAP_THICK = 0 # needs to be whatever the standard cap plates are
     BOTTOM_PLATE_CORNER_RADIUS = 0.5

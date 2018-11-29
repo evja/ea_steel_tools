@@ -12,7 +12,7 @@ module EA_Extensions623
         @model = Sketchup.active_model
         @materials = @model.materials
         @material_names = @materials.map {|color| color.name}
-  
+
         view = @model.active_view
         @ip1 = nil
         @ip2 = nil
@@ -1176,15 +1176,11 @@ module EA_Extensions623
         if @material_names.include? clr1
           @stiff_color = @materials[clr1]
           @material_names << clr1
-          p 'found color'
         else
-          p 'didnt find color'
           @stiff_color = @materials.add clr1
           @stiff_color.color = rgb
           @material_names << clr1
         end
-
-        p @material_names
 
         case @@shearpl_thickness
         when '1/4'
