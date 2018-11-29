@@ -10,15 +10,19 @@ module EA_Extensions623
 
         #returns the avtive model material list
         @model = Sketchup.active_model
+        @entities = @model.active_entities
+        @selection = @model.selection
+        @definition_list = @model.definitions
         @materials = @model.materials
         @material_names = @materials.map {|color| color.name}
+        @steel_layer = @model.layers.add " Steel"
+        @labels_layer = @model.layers.add " Labels"
 
         view = @model.active_view
         @ip1 = nil
         @ip2 = nil
         @xdown = 0
         @ydown = 0
-
 
         @@beam_name         = data[:name]               #String 'W(height_class)X(weight_per_foot)'
         @@height_class      = data[:height_class]       #String 'W(number)'
@@ -70,8 +74,40 @@ module EA_Extensions623
         @z_blue = Geom::Vector3d.new 0,0,1
 
         @nine_sixteenths_holes = []
-
+        check_for_preselect(@selection, @model.active_view)
         self.reset(nil)
+      end
+
+      def check_for_preselect(*args, view)
+        if args[0].nil?
+          p 'no selection'
+          return false
+        else
+          selection = args[0]
+          selection.each do |ent|
+            if ent.is_a? Sketchup::ConstructionLine
+              #extract the start and end point of the ConstructionLine
+              pt1 = ent.start
+              pt2 = ent.end
+            elsif ent.is_a? Sketchup::Edge
+              #extract the start and end point of the Edge
+              pt1 = ent.start.position
+              pt2 = ent.end.position
+            end
+            @vy = pt1.vector_to pt2
+            not_a_zero_vec = @vy.length > 0
+            @vx = @vy.axes[0] if not_a_zero_vec
+            @vz = @vy.axes[1] if not_a_zero_vec
+
+            @trans = Geom::Transformation.axes pt1, @vx, @vy, @vz.reverse
+            @trans2 = Geom::Transformation.axes pt2, @vx, @vy, @vz.reverse
+
+            # Create the member in Sketchup
+            self.create_geometry(pt1, pt2, view)
+            self.reset(view)
+            # Sketchup.send_action "selectSelectionTool:" #Mabes Babes
+          end
+        end
       end
 
       def onSetCursor
@@ -82,7 +118,6 @@ module EA_Extensions623
 
       # Draw the geometry
       def draw_ghost(pt1, pt2, view)
-
         vec = pt1 - pt2
 
         if vec.parallel? @x_red
@@ -229,13 +264,6 @@ module EA_Extensions623
       # The activate method is called by SketchUp when the tool is first selected.
       # it is a good place to put most of your initialization
       def activate
-        @steel_layer = @model.layers.add " Steel"
-        @labels_layer = @model.layers.add " Labels"
-        # Activates the @model @entities for use
-        @entities = @model.active_entities
-        #Sets The Definiton list of components
-        @definition_list = @model.definitions
-
         clear_groups # clears the groups so new ones can be made on the next instance
 
         # The Sketchup::InputPoint class is used to get 3D points from screen
@@ -1146,73 +1174,73 @@ module EA_Extensions623
           add_9_16_flange_holes(length) if @@has_holes
           add_9_16_web_holes(length) if @@has_holes
 
-                  case @@stiff_thickness
-        when '1/4'
-          @stiff_scale = 2
-          clr1 = STEEL_COLORS[:purple][:name]
-          rgb  = STEEL_COLORS[:purple][:rgb]
-        when '5/16'
-          @stiff_scale = 2.5
-          clr1 = STEEL_COLORS[:indigo][:name]
-          rgb  = STEEL_COLORS[:indigo][:rgb]
-        when '3/8'
-          @stiff_scale = 3
-          clr1 = STEEL_COLORS[:blue][:name]
-          rgb  = STEEL_COLORS[:blue][:rgb]
-        when '1/2'
-          @stiff_scale = 4
-          clr1 = STEEL_COLORS[:green][:name]
-          rgb  = STEEL_COLORS[:green][:rgb]
-        when '5/8'
-          @stiff_scale = 5
-          clr1 = STEEL_COLORS[:yellow][:name]
-          rgb  = STEEL_COLORS[:yellow][:rgb]
-        when '3/4'
-          @stiff_scale = 6
-          clr1 = STEEL_COLORS[:orange][:name]
-          rgb  = STEEL_COLORS[:orange][:rgb]
-        end
+          case @@stiff_thickness
+          when '1/4'
+            @stiff_scale = 2
+            clr1 = STEEL_COLORS[:purple][:name]
+            rgb  = STEEL_COLORS[:purple][:rgb]
+          when '5/16'
+            @stiff_scale = 2.5
+            clr1 = STEEL_COLORS[:indigo][:name]
+            rgb  = STEEL_COLORS[:indigo][:rgb]
+          when '3/8'
+            @stiff_scale = 3
+            clr1 = STEEL_COLORS[:blue][:name]
+            rgb  = STEEL_COLORS[:blue][:rgb]
+          when '1/2'
+            @stiff_scale = 4
+            clr1 = STEEL_COLORS[:green][:name]
+            rgb  = STEEL_COLORS[:green][:rgb]
+          when '5/8'
+            @stiff_scale = 5
+            clr1 = STEEL_COLORS[:yellow][:name]
+            rgb  = STEEL_COLORS[:yellow][:rgb]
+          when '3/4'
+            @stiff_scale = 6
+            clr1 = STEEL_COLORS[:orange][:name]
+            rgb  = STEEL_COLORS[:orange][:rgb]
+          end
 
-        if @material_names.include? clr1
-          @stiff_color = @materials[clr1]
-          @material_names << clr1
-        else
-          @stiff_color = @materials.add clr1
-          @stiff_color.color = rgb
-          @material_names << clr1
-        end
+          if @material_names.include? clr1
+            @stiff_color = @materials[clr1]
+            @material_names << clr1
+          else
+            @stiff_color = @materials.add clr1
+            @stiff_color.color = rgb
+            @material_names << clr1
+          end
 
-        case @@shearpl_thickness
-        when '1/4'
-          @shear_scale = 2
-          clr2 = STEEL_COLORS[:purple][:name]
-          rgb2  = STEEL_COLORS[:purple][:rgb]
-        when '3/8'
-          @shear_scale = 3
-          clr2 = STEEL_COLORS[:blue][:name]
-          rgb2  = STEEL_COLORS[:blue][:rgb]
-        when '1/2'
-          @shear_scale = 4
-          clr2 = STEEL_COLORS[:green][:name]
-          rgb2  = STEEL_COLORS[:green][:rgb]
-        when '5/8'
-          @shear_scale = 5
-          clr2 = STEEL_COLORS[:yellow][:name]
-          rgb2  = STEEL_COLORS[:yellow][:rgb]
-        when '3/4'
-          @shear_scale = 6
-          clr2 = STEEL_COLORS[:orange][:name]
-          rgb2  = STEEL_COLORS[:orange][:rgb]
-        end
+          case @@shearpl_thickness
+          when '1/4'
+            @shear_scale = 2
+            clr2 = STEEL_COLORS[:purple][:name]
+            rgb2  = STEEL_COLORS[:purple][:rgb]
+          when '3/8'
+            @shear_scale = 3
+            clr2 = STEEL_COLORS[:blue][:name]
+            rgb2  = STEEL_COLORS[:blue][:rgb]
+          when '1/2'
+            @shear_scale = 4
+            clr2 = STEEL_COLORS[:green][:name]
+            rgb2  = STEEL_COLORS[:green][:rgb]
+          when '5/8'
+            @shear_scale = 5
+            clr2 = STEEL_COLORS[:yellow][:name]
+            rgb2  = STEEL_COLORS[:yellow][:rgb]
+          when '3/4'
+            @shear_scale = 6
+            clr2 = STEEL_COLORS[:orange][:name]
+            rgb2  = STEEL_COLORS[:orange][:rgb]
+          end
 
-        if @material_names.include? clr2
-          @shear_color = @materials[clr2]
-          @material_names << clr2
-        else
-          @shear_color = @materials.add clr2
-          @shear_color.color = rgb2
-          @material_names << clr2
-        end
+          if @material_names.include? clr2
+            @shear_color = @materials[clr2]
+            @material_names << clr2
+          else
+            @shear_color = @materials.add clr2
+            @shear_color.color = rgb2
+            @material_names << clr2
+          end
 
           #insert all labels in the beam and column, insert 13/16" if it is a beam
           if vec.parallel? Z_AXIS

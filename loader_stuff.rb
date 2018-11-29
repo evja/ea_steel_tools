@@ -6,36 +6,46 @@ model = Sketchup.active_model
 ents = model.entities
 sel = model.selection
 scenes = model.pages
+#CONSTANT LIBRARY
 load 'ea_steel_tools/magic_numbers.rb'
 
-
-load 'ea_steel_tools/steel_tools_menus.rb'
+#HSS Files
 load 'ea_steel_tools/tube_steel_data.rb'
 load 'ea_steel_tools/dialog_tube_steel.rb'
 load 'ea_steel_tools/hss_library.rb'
 
-
+#Rolled Flange Tool Files
 load 'ea_steel_tools/wide_flange_rolled_data.rb'
 load 'ea_steel_tools/dialog_rolled.rb'
+
+
+#Main Files
+load 'ea_steel_tools/steel_tools_menus.rb'
 load 'ea_steel_tools/control.rb'
 
-
-
+#Flange Tool Files
 load 'ea_steel_tools/wide_flange_data.rb'
 load 'ea_steel_tools/dialog.rb'
 
-
+#Layout Files (Under Construction)
 load 'ea_steel_tools/layout_send.rb'
 
+
+#Breakout Files
 load 'ea_steel_tools/breakout_setup.rb'
 load 'ea_steel_tools/breakout.rb'
 load 'ea_steel_tools/breakout_send.rb'
 load 'ea_steel_tools/dialog_rolled.rb'
 
 
+#Guide Tools Files (Depricated)
 load 'ea_guide_tools/ea_guide_tools.rb'
 load 'ea_steel_tools_loader.rb'
 load 'ea_steel_tools/Updater/updater.rb'
+
+
+
+#Test Crap, not sure why i have these here,
 dialog = UI::HtmlDialog.new(
 {
   :dialog_title => "Dialog Example",
