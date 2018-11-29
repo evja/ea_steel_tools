@@ -213,7 +213,7 @@ module EA_Extensions623
         materials = Sketchup.active_model.materials
         materials_names = materials.map{|m| m.name}
         thickness = thickness.to_s.to_r.to_f
-   
+
         case thickness
          when 0.25
            color = STEEL_COLORS[:purple][:rgb]
@@ -236,7 +236,7 @@ module EA_Extensions623
          else
            color = STEEL_COLORS[:red][:rgb]
            clr_name = STEEL_COLORS[:red][:name]
-         end 
+         end
 
           if materials_names.include? clr_name
             obj.material = materials[clr_name]

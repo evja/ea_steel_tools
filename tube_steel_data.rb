@@ -10,6 +10,7 @@ module EA_Extensions623
         # Activates the @model @entities for use
         @entities = @model.active_entities
         @selection = @model.selection
+        @model_view = @model.active_view
         @definition_list = @model.definitions
         @materials = @model.materials
         @state = 0
@@ -100,6 +101,39 @@ module EA_Extensions623
         @z_blue = Geom::Vector3d.new 0,0,1
         # This sets the label for the VCB
         Sketchup::set_status_text ("Length"), SB_VCB_LABEL
+        check_for_preselect(@selection, @model_view)
+      end
+
+      def check_for_preselect(*args, view)
+        if args[0].nil?
+          p 'no selection'
+          return false
+        else
+          selection = args[0]
+          selection.each do |ent|
+            if ent.is_a? Sketchup::ConstructionLine
+              #extract the start and end point of the ConstructionLine
+              pt1 = ent.start
+              pt2 = ent.end
+            elsif ent.is_a? Sketchup::Edge
+              #extract the start and end point of the Edge
+              pt1 = ent.start.position
+              pt2 = ent.end.position
+            end
+            @vy = pt1.vector_to pt2
+            not_a_zero_vec = @vy.length > 0
+            @vx = @vy.axes[0] if not_a_zero_vec
+            @vz = @vy.axes[1] if not_a_zero_vec
+
+            @trans = Geom::Transformation.axes pt1, @vx, @vy, @vz.reverse
+            @trans2 = Geom::Transformation.axes pt2, @vx, @vy, @vz.reverse
+
+            # Create the member in Sketchup
+            self.create_geometry(pt1, pt2, view)
+            self.reset(view)
+            # Sketchup.send_action "selectSelectionTool:" #Mabes Babes
+          end
+        end
       end
 
       def onSetCursor
@@ -133,39 +167,16 @@ module EA_Extensions623
 
       def draw_beam_caps(length)
         cap = @hss_outer_group.entities.add_group
-        if @tw > 0.375
-          pts = [
-            pt1 = [0,0,0],
-            pt2 = [@w - (MINIMUM_WELD_OVERHANG*2), 0,0],
-            pt3 = [@w - (MINIMUM_WELD_OVERHANG*2), @h - (MINIMUM_WELD_OVERHANG*2), 0],
-            pt4 = [0, @h - (MINIMUM_WELD_OVERHANG*2), 0]
-          ]
-          set_dist = MINIMUM_WELD_OVERHANG
-        else
-          pts = [
-            pt1 = [0,0,0],
-            pt2 = [@w - @tw,0,0],
-            pt3 = [@w - @tw,@h - @tw,0],
-            pt4 = [0,@h - @tw,0]
-          ]
-          set_dist = @tw/2
-        end
+        pts = [
+          pt1 = [0,0,0],
+          pt2 = [@w, 0,0],
+          pt3 = [@w, @h, 0],
+          pt4 = [0, @h, 0]
+        ]
 
         cap_face = cap.entities.add_face pts
         cap_face.reverse!
         cap_face.pushpull @cap_thickness
-
-        v1 = X_AXIS.clone
-        v2 = Y_AXIS.clone
-
-        v1.length = set_dist
-        v2.length = set_dist
-
-
-        tr1 = Geom::Transformation.new(v1)
-        tr2 = Geom::Transformation.new(v2)
-
-        @hss_outer_group.entities.transform_entities tr1*tr2, cap
 
         v3 = Z_AXIS.clone
         v3.length = -@cap_thickness
@@ -353,7 +364,6 @@ module EA_Extensions623
           add_beam_up_arrow(vec, extrude_length)
           cap = draw_beam_caps(extrude_length) if @hss_has_cap
           align_tube(vec, @hss_outer_group)
-
         end
       end
 
@@ -394,7 +404,7 @@ module EA_Extensions623
         @hss_outer_group.entities.transform_entities(rot_vert, up_group)
 
         sld_vec = Z_AXIS.clone
-        sld_vec.length = vec.length * 0.75
+        sld_vec.length = (length.length/2) + 24
         slide_to_pos = Geom::Transformation.translation(sld_vec)
         @hss_outer_group.entities.transform_entities(slide_to_pos, up_group)
       end
@@ -470,7 +480,6 @@ module EA_Extensions623
         @hss_outer_group.entities.transform_entities slide1, end_dir_beam1
 
         vec2 = Geom::Vector3d.new(0,0,6)
-        p vec2
         slide_to_start = Geom::Transformation.translation(vec2)
 
         rot = Geom::Transformation.rotation(@center_of_column.position, Y_AXIS, 270.degrees)
@@ -489,7 +498,6 @@ module EA_Extensions623
         vec3 = Geom::Vector3d.new(0,0,(vec.length)-6)
         slide_to_end = Geom::Transformation.translation(vec3)
         @hss_outer_group.entities.transform_entities slide_to_end, end_direction_group
-
 
       end #hss beam lables
 
@@ -514,7 +522,6 @@ module EA_Extensions623
             @hss_outer_group.entities.transform_entities slide1, e_stud
 
             vec2 = Geom::Vector3d.new(0,0,start_dist)
-            p vec2
             slide_to_start = Geom::Transformation.translation(vec2)
 
             @hss_outer_group.entities.transform_entities slide_to_start, e_stud
@@ -633,7 +640,7 @@ module EA_Extensions623
           @top_plate_group = @hss_outer_group.entities.add_group
 
           if @w <= STANDARD_TOP_PLATE_SIZE
-            file_path2 = Sketchup.find_support_file "ea_steel_tools/Beam Components/Top Plate.skp", "Plugins"
+            file_path2 = Sketchup.find_support_file "#{COMPONENT_PATH}/Top Plate.skp", "Plugins"
 
             @top_plate = @definition_list.load file_path2
 
@@ -643,17 +650,178 @@ module EA_Extensions623
             @top_plate_group.entities.transform_entities slide_tpl_up, @tp
 
             @tp.material = @base_plate_color
-
+            etch_plate(@tp, @hss_inner_group)
             @tp.explode
           else
-            #Need to insert a dynami  top plate that grows to the size of the tube.
+            @top_plate = draw_parametric_plate(sq_plate(@w, @h))
+            slide_tpl_up = Geom::Transformation.translation(Geom::Vector3d.new(0,0,vec.length+STANDARD_BASE_PLATE_THICKNESS))
+            @hss_outer_group.entities.transform_entities slide_tpl_up, @top_plate
+
+            rot = Geom::Transformation.rotation(@top_plate.bounds.center, Y_AXIS, 180.degrees)
+            @top_plate.transform! rot
+            @top_plate.material = @base_plate_color
+            etch_plate(@top_plate, @hss_inner_group)
+            add_plate_compass(@top_plate, ORIGIN)
           end
         rescue Exception => e
           puts e.message
           puts e.backtrace.inspect
           UI.messagebox("There was a problem inserting the top plate")
         end
+      end
 
+      def add_plate_compass(plate, center)
+        compass_group = plate.entities.add_group()
+        file_path = Sketchup.find_support_file "#{COMPONENT_PATH}/PlateCompass.skp", "Plugins"
+        compass_def = @definition_list.load file_path
+        compass = compass_group.entities.add_instance compass_def, center
+
+        compass.explode
+      end
+
+      def etch_plate(plate, hss)
+        ents = plate.definition.entities
+        etch_group = ents.add_group
+        etch_group.name = 'etch'
+        ege = etch_group.entities
+        temp_etch_group = ege.add_group
+
+        col_corner = hss.bounds.min
+        col_corner[2] = 0
+
+        p1a = [0,0,0]
+        p2a = [ETCH_LINE,0,0]
+        p3a = [0,ETCH_LINE,0]
+
+        p1b = [@w, 0,0]
+        p2b = [@w-ETCH_LINE,0,0]
+        p3b = [@w, ETCH_LINE,0]
+
+        temp_etch_group.entities.add_line(p1a, p2a)
+        temp_etch_group.entities.add_line(p1a, p3a)
+        temp_etch_group.entities.add_line(p1b, p2b)
+        temp_etch_group.entities.add_line(p1b, p3b)
+
+        temp_group_copy = temp_etch_group.copy
+        rot = Geom::Transformation.rotation([@w/2, @h/2, 0], Z_AXIS, 180.degrees)
+        ege.transform_entities(rot, temp_group_copy)
+
+        temp_etch_group.explode
+        temp_group_copy.explode
+
+        tp1 = etch_group.definition.bounds.center
+        tp2 = hss.definition.bounds.min
+        v = tp2 - tp1
+        place_etch = Geom::Transformation.translation(v)
+        @entities.transform_entities place_etch, etch_group
+      end
+
+      def draw_parametric_plate(pts)
+        begin
+          temp_faces = []
+          temp_edges = []
+          temp_groups = []
+          arcs = []
+
+          @baseplate_group = @hss_outer_group.entities.add_group
+          @baseplate_group.name = 'Bottom Plate'
+          face = @baseplate_group.entities.add_face pts
+          vec = @center_of_column.position - @baseplate_group.bounds.center
+          center = Geom::Transformation.translation(vec)
+          @hss_outer_group.entities.transform_entities(center, @baseplate_group)
+
+          #chamfer the corner
+          crnr1 = face.vertices[-1]
+          crnr2 = face.vertices[0]
+          crn_pos1 = crnr1.position
+          crn_pos2 = crnr2.position
+          # p crn_pos1
+          gr = @baseplate_group.entities.add_group
+          arc1 = gr.entities.add_arc([crn_pos1[0]-0.5, crn_pos1[1]-0.5, crn_pos1[2]], X_AXIS, Z_AXIS, BOTTOM_PLATE_CORNER_RADIUS, 0.degrees ,90.degrees)
+          arc1 = gr.entities.add_arc([crn_pos2[0]-0.5, crn_pos2[1]+0.5, crn_pos2[2]], Y_AXIS.reverse, Z_AXIS, BOTTOM_PLATE_CORNER_RADIUS, 0.degrees ,90.degrees)
+          # arc1.faces
+
+          dg = 180.degrees
+
+          1.times do |t|
+            grc = gr.copy
+            rot = Geom::Transformation.rotation(ORIGIN, Z_AXIS, dg)
+            @baseplate_group.entities.transform_entities(rot, grc)
+            arcs << grc.explode
+          end
+          pcs = gr.explode
+
+          @baseplate_group.entities.each do |e|
+            if e.class == Sketchup::Edge
+              if e.length == BOTTOM_PLATE_CORNER_RADIUS
+                e.erase!
+              end
+            else
+              next
+            end
+          end
+          pcs.each do |pc|
+            if pc.class == Sketchup::Edge
+              face = pc.faces[0]
+              break
+            end
+          end
+
+          face.pushpull STANDARD_BASE_PLATE_THICKNESS
+
+          @baseplate_group.entities.each do |e|
+            if e.class == Sketchup::Edge
+              if e.length == 0.75
+                e.soft = true
+                e.smooth = true
+              else
+                next
+              end
+            else
+              next
+            end
+          end
+
+          color_by_thickness(@baseplate_group, 0.75)
+
+          bh_file = Sketchup.find_support_file("#{COMPONENT_PATH}/#{THRTN_SXTNTHS_HOLE}", "Plugins")
+          bh_def = @definition_list.load bh_file
+
+          big_hole = @baseplate_group.entities.add_instance bh_def, ORIGIN
+
+          v1 = X_AXIS.clone
+          v2 = Y_AXIS.clone
+
+          v1.length = (@w/2)+(STANDARD_BASE_MARGIN.to_f/2)
+          v2.length = (@h/2)+(STANDARD_BASE_MARGIN.to_f/2)
+          tr1 = Geom::Transformation.translation(v1)
+          tr2 = Geom::Transformation.translation(v2)
+          scl_hole = Geom::Transformation.scaling(ORIGIN, 1,1,STANDARD_BASE_PLATE_THICKNESS/2)
+          @baseplate_group.entities.transform_entities scl_hole, big_hole
+
+          @baseplate_group.entities.transform_entities tr1, big_hole
+          bh2 = big_hole.copy
+          @baseplate_group.entities.transform_entities tr2, big_hole
+
+          tr1 = Geom::Transformation.translation(v2.reverse)
+          @baseplate_group.entities.transform_entities tr1, bh2
+
+          bh3 = bh2.copy
+          bh4 = big_hole.copy
+
+          v3 = v1.clone.reverse
+          v3.length = @w+STANDARD_BASE_MARGIN
+
+          tr3 = Geom::Transformation.translation(v3)
+
+          @baseplate_group.entities.transform_entities tr3, [bh3, bh4]
+
+          return @baseplate_group
+        rescue Exception => e
+          puts e.message
+          puts e.backtrace.inspect
+          UI.messagebox("There was a problem inserting the base plate")
+        end
       end
 
       def insert_base_plates(type, center)
@@ -678,34 +846,41 @@ module EA_Extensions623
             base_type = "#{h[-1].to_i}_ DL"
           when 'DI'
             base_type = "#{h[-1].to_i}_ DI"
+          else
+            plate = draw_parametric_plate(sq_plate(@w, @h))
           end
           # p base_type
+          if base_type
+            file_path1 = Sketchup.find_support_file "ea_steel_tools/Beam Components/#{base_type}.skp", "Plugins"
+            # p file_path1
+            @base_group = @hss_outer_group.entities.add_group
+            @base_group.name = 'Base Plate'
+            if file_path1
+              @base_plate = @definition_list.load file_path1
 
-          file_path1 = Sketchup.find_support_file "ea_steel_tools/Beam Components/#{base_type}.skp", "Plugins"
-          # p file_path1
+              slide_vec = Geom::Vector3d.new(@w/2, @h/2, 0)
+              slide_base = Geom::Transformation.translation(slide_vec)
+              @bp = @base_group.entities.add_instance @base_plate, center
+              @bp.material = @base_plate_color
+              etch_plate(@bp, @hss_inner_group)
+              @bp.explode
+            else
+              #insert generic baseplate
+              backup_baseplate = "4_ SQ"
+              file_path_backup = Sketchup.find_support_file "ea_steel_tools/Beam Components/#{backup_baseplate}.skp", "Plugins"
+              @base_plate = @definition_list.load file_path_backup
 
-          if file_path1
-            @base_plate = @definition_list.load file_path1
-
-            slide_vec = Geom::Vector3d.new(@w/2, @h/2, 0)
-            slide_base = Geom::Transformation.translation(slide_vec)
-            @bp = @hss_outer_group.entities.add_instance @base_plate, center
-            @bp.material = @base_plate_color
+              slide_vec = Geom::Vector3d.new(@w/2, @h/2, 0)
+              slide_base = Geom::Transformation.translation(slide_vec)
+              @bp = @base_group.entities.add_instance @base_plate, center
+              @bp.material = STEEL_COLORS[:pink][:rgb]
+              etch_plate(@bp, @hss_inner_group)
+              @bp.explode
+            end
           else
-            #insert generic baseplate
-            backup_baseplate = "4_ SQ"
-            file_path_backup = Sketchup.find_support_file "ea_steel_tools/Beam Components/#{backup_baseplate}.skp", "Plugins"
-            @base_plate = @definition_list.load file_path_backup
-
-            slide_vec = Geom::Vector3d.new(@w/2, @h/2, 0)
-            slide_base = Geom::Transformation.translation(slide_vec)
-            @bp = @hss_outer_group.entities.add_instance @base_plate, center
-            @bp.material = STEEL_COLORS[:pink][:rgb]
-            @bp.make_unique
-            # @bp.make_group
+            etch_plate(plate, @hss_inner_group)
+            add_plate_compass(plate, ORIGIN)
           end
-
-
           #NEEDS#
 
           #Conditions if the hss is different sizes
@@ -718,18 +893,7 @@ module EA_Extensions623
         end
       end
 
-      # BASEPLATES = ["SQ","OC","IL","IC","EX","DR","DL","DI"]
-      # DI = Door Inline
-      # DL = Door Left
-      # DR = Door Right
-      # EX = Exterior
-      # IC = Inside Corner
-      # IL = Inline
-      # OC = Outside Corner
-      # SQ = Square
-
-
-      def sq_plate(w, h, c)
+      def sq_plate(w, h)
         points = [
           p1 = [(-(w/2)-STANDARD_BASE_MARGIN), (-(h/2)-STANDARD_BASE_MARGIN), 0],
           p2 = [((w/2)+STANDARD_BASE_MARGIN), (-(h/2)-STANDARD_BASE_MARGIN), 0],
@@ -737,75 +901,6 @@ module EA_Extensions623
           p4 = [(-(w/2)-STANDARD_BASE_MARGIN), ((h/2)+STANDARD_BASE_MARGIN), 0]
         ]
         return points
-      end
-
-      def oc_plate(w,h,c)
-        points = [
-          pt1 = [-(w/2)-BASEPLATE_MINIMUM_WELD_OVERHANG, -(h/2)-BASEPLATE_MINIMUM_WELD_OVERHANG, 0],
-          pt2 = [(w/2)+ STANDARD_BASE_MARGIN, -(h/2)-BASEPLATE_MINIMUM_WELD_OVERHANG,0],
-          pt3 = [(w/2)+ STANDARD_BASE_MARGIN, (h/2)+STANDARD_WELD_OVERHANG, 0],
-          pt4 = [(w/2)+ STANDARD_WELD_OVERHANG, (h/2)+STANDARD_WELD_OVERHANG, 0 ],
-          pt5 = [(w/2)+ STANDARD_WELD_OVERHANG, (h/2)+STANDARD_BASE_MARGIN, 0],
-          pt6 = [-(w/2)-BASEPLATE_MINIMUM_WELD_OVERHANG, (h/2)+STANDARD_BASE_MARGIN, 0]
-        ]
-        return points
-      end
-
-      def il_plate(w,h,c)
-        points = [
-          p1 = [-(w/2)-STANDARD_BASE_MARGIN, -(h/2)-BASEPLATE_MINIMUM_WELD_OVERHANG, 0],
-          p2 = [(w/2)+ STANDARD_BASE_MARGIN, -(h/2)-BASEPLATE_MINIMUM_WELD_OVERHANG, 0],
-          p3 = [(w/2)+ STANDARD_BASE_MARGIN,  (h/2)+BASEPLATE_MINIMUM_WELD_OVERHANG, 0],
-          p4 = [-(w/2)-STANDARD_BASE_MARGIN,  (h/2)+BASEPLATE_MINIMUM_WELD_OVERHANG, 0]
-        ]
-      end
-
-      def ic_plate(w,h,c)
-        points = [
-          pt1 = [-(w/2)-STANDARD_WELD_OVERHANG, -(h/2)-STANDARD_WELD_OVERHANG, 0],
-          pt2 = [(w/2)+ STANDARD_BASE_MARGIN, -(h/2)-STANDARD_WELD_OVERHANG,0],
-          pt3 = [(w/2)+ STANDARD_BASE_MARGIN, (h/2)+BASEPLATE_MINIMUM_WELD_OVERHANG, 0],
-          pt4 = [(w/2)+ BASEPLATE_MINIMUM_WELD_OVERHANG, (h/2)+BASEPLATE_MINIMUM_WELD_OVERHANG, 0 ],
-          pt5 = [(w/2)+ BASEPLATE_MINIMUM_WELD_OVERHANG, (h/2)+STANDARD_BASE_MARGIN, 0],
-          pt6 = [-(w/2)-STANDARD_WELD_OVERHANG, (h/2)+STANDARD_BASE_MARGIN, 0]
-        ]
-        return points
-      end
-
-      def ex_plate(w,h,c)
-        points = [
-          p1 = [-(w/2)-STANDARD_BASE_MARGIN, -(h/2)-STANDARD_WELD_OVERHANG, 0],
-          p2 = [(w/2)+ STANDARD_BASE_MARGIN, -(h/2)-STANDARD_WELD_OVERHANG, 0],
-          p3 = [(w/2)+ STANDARD_BASE_MARGIN,  (h/2)+BASEPLATE_MINIMUM_WELD_OVERHANG, 0],
-          p4 = [-(w/2)-STANDARD_BASE_MARGIN,  (h/2)+BASEPLATE_MINIMUM_WELD_OVERHANG, 0]
-        ]
-      end
-
-      def dr_plate(w,h,c)
-        points = [
-          p1 = [-(w/2)-BASEPLATE_MINIMUM_WELD_OVERHANG, -(h/2)-STANDARD_WELD_OVERHANG,0],
-          p2 = [(w/2)+(STANDARD_BASE_MARGIN*2), -(h/2)-STANDARD_WELD_OVERHANG,0 ],
-          p3 = [(w/2)+(STANDARD_BASE_MARGIN*2), (h/2)+BASEPLATE_MINIMUM_WELD_OVERHANG,0 ],
-          p4 = [-(w/2)-BASEPLATE_MINIMUM_WELD_OVERHANG, (h/2)+BASEPLATE_MINIMUM_WELD_OVERHANG,0]
-        ]
-      end
-
-      def dl_plate(w,h,c)
-        points = [
-          p1 = [-(w/2)-(STANDARD_BASE_MARGIN*2), -(h/2)-STANDARD_WELD_OVERHANG,0],
-          p2 = [(w/2)+BASEPLATE_MINIMUM_WELD_OVERHANG, -(h/2)-STANDARD_WELD_OVERHANG,0 ],
-          p3 = [(w/2)+BASEPLATE_MINIMUM_WELD_OVERHANG, (h/2)+BASEPLATE_MINIMUM_WELD_OVERHANG,0 ],
-          p4 = [-(w/2)-(STANDARD_BASE_MARGIN*2), (h/2)+BASEPLATE_MINIMUM_WELD_OVERHANG,0]
-        ]
-      end
-
-      def di_plate(w,h,c)
-        points = [
-          p1 = [-(w/2)-BASEPLATE_MINIMUM_WELD_OVERHANG, -(h/2)-BASEPLATE_MINIMUM_WELD_OVERHANG,0],
-          p2 = [(w/2)+(STANDARD_BASE_MARGIN*2), -(h/2)-BASEPLATE_MINIMUM_WELD_OVERHANG,0 ],
-          p3 = [(w/2)+(STANDARD_BASE_MARGIN*2), (h/2)+BASEPLATE_MINIMUM_WELD_OVERHANG,0 ],
-          p4 = [-(w/2)-BASEPLATE_MINIMUM_WELD_OVERHANG, (h/2)+BASEPLATE_MINIMUM_WELD_OVERHANG,0]
-        ]
       end
 
       def add_name_label(vec)

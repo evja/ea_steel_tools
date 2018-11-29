@@ -184,6 +184,45 @@ module EA_Extensions623
         ]
       end
 
+      def color_by_thickness(obj, thickness)
+        materials = Sketchup.active_model.materials
+        materials_names = materials.map{|m| m.name}
+        thickness = thickness.to_s.to_r.to_f
+
+        case thickness
+         when 0.25
+           color = STEEL_COLORS[:purple][:rgb]
+           clr_name = STEEL_COLORS[:purple][:name]
+         when 0.3125
+           color = STEEL_COLORS[:indigo][:rgb]
+           clr_name = STEEL_COLORS[:indigo][:name]
+         when 0.375
+           color = STEEL_COLORS[:blue][:rgb]
+           clr_name = STEEL_COLORS[:blue][:name]
+         when 0.5
+           color = STEEL_COLORS[:green][:rgb]
+           clr_name = STEEL_COLORS[:green][:name]
+         when 0.625
+           color = STEEL_COLORS[:yellow][:rgb]
+           clr_name = STEEL_COLORS[:yellow][:name]
+         when 0.75
+           color = STEEL_COLORS[:orange][:rgb]
+           clr_name = STEEL_COLORS[:orange][:name]
+         else
+           color = STEEL_COLORS[:red][:rgb]
+           clr_name = STEEL_COLORS[:red][:name]
+         end
+
+        if materials_names.include? clr_name
+          obj.material = materials[clr_name]
+        else
+          new_mat = materials.add clr_name
+          new_mat.color = color
+          obj.material = new_mat
+        end
+        return obj
+      end
+
       def activate()
         model = @model
         model.start_operation("Roll Steel", true)
@@ -328,7 +367,7 @@ module EA_Extensions623
             @shear_holes.each(&@explode)
             @guage_holes.each(&@explode)
           end
-          @studs.each {|st| st.layer = @steel_layer} if !@studs.empty?
+          @studs.each {|st| st.layer = @steel_layer; color_by_thickness(st, 0.5)} if !@studs.empty?
           # @stiff_plates.each {|stp| st.layer = @steel_layer} if !@stiff_plates.empty?
           # @sh_plates.each {|shp| st.layer = @steel_layer} if !@sh_plates.empty?
           rescue Exception => e
