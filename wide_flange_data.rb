@@ -36,6 +36,7 @@ module EA_Extensions623
         @@stiff_thickness   = data[:stiff_thickness]    #String '1/4' or '3/8' or '1/2'
         @@shearpl_thickness = data[:shearpl_thickness]  #String '1/4' or '3/8' or '1/2'
         @@force_studs       = data[:force_studs]
+        @@flange_type       = data[:flange_type]
 
         values = data[:data]
         @hc    = data[:height_class].split('W').last.to_i #this gets just the number in the height class
@@ -76,6 +77,11 @@ module EA_Extensions623
         @nine_sixteenths_holes = []
         check_for_preselect(@selection, @model.active_view)
         self.reset(nil)
+      end
+
+      def add_column_baseplate()
+        #create a parametric baseplate engine for the flange tool
+
       end
 
       def check_for_preselect(*args, view)
@@ -1243,7 +1249,7 @@ module EA_Extensions623
           end
 
           #insert all labels in the beam and column, insert 13/16" if it is a beam
-          if vec.parallel? Z_AXIS
+          if @@flange_type == 'Column'
             column = true
             all_labels = add_labels_column(vec, length)
           else
