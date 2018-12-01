@@ -433,7 +433,21 @@ module EA_Extensions623
 
             if count.even? && @tw <= 0.75
               #Adds in the top row of web holes
-              placement1 = [fhpX, (0.5*@tw), @hc >= 14 ? @h-(@tf+3) : (0.5*@h)+(0.25*@hc)]
+              if @hc >= 14
+                topz = @h-(@tf+3)
+                bottz = @h-(@tf+9)
+              elsif @hc == 6
+                topz = (0.5*@h)+(1)
+                bottz = (0.5*@h)-(1)
+              elsif @hc <= 5
+                topz = (0.5*@h)
+                bottz = topz
+              else
+                topz = (0.5*@h)+(0.25*@hc)
+                bottz = (0.5*@h)-(0.25*@hc)
+              end
+
+              placement1 = [fhpX, (0.5*@tw), topz]
               inst = @inner_group.entities.add_instance element, placement1
               t = Geom::Transformation.rotation placement1, [1,0,0], 270.degrees
               inst.transform! t
@@ -443,7 +457,7 @@ module EA_Extensions623
               break if shpX > length
 
               #Adds in the bottom row of web holes
-              placement2 = [shpX, (0.5*@tw), @hc >= 14 ? @h-(@tf+9) : (0.5*@h)-(0.25*@hc)]
+              placement2 = [shpX, (0.5*@tw), bottz]
               inst = @inner_group.entities.add_instance element, placement2
               t = Geom::Transformation.rotation placement2, [1,0,0], 270.degrees
               inst.transform! t
@@ -937,6 +951,14 @@ module EA_Extensions623
 
           rot_up = Geom::Transformation.rotation loc1, [0,1,0], 90.degrees
           up_ents.transform_entities rot_up, up_direction_group
+
+          rot_direct = 360 - Z_AXIS.angle_between(vec).radians
+
+          p rot_direct
+
+          # p rot_direct.degrees
+          rot_vert = Geom::Transformation.rotation(up_direction_group.bounds.center, Y_AXIS, rot_direct.degrees)
+          up_ents.transform_entities(rot_vert, up_direction_group)
 
           all_labels.push up_direction_group, orientation1_group, orientation2_group, beam_label_group
 

@@ -43,8 +43,8 @@ module EA_Extensions623
         # These events doesn't trigger correctly when Firebug Lite
         # is active because it introduces frames that interfere with
         # the focus notifications.
-        window.on( :focus )  { puts 'Window Focus' }
-        window.on( :blur )   { puts 'Window Blur' }
+        # window.on( :focus )  { puts 'Window Focus' }
+        # window.on( :blur )   { puts 'Window Blur' }
         window.on( :resize ) { |window, width, height|
           # puts "Window Resize(#{width}, #{height})"
         }
