@@ -7,7 +7,6 @@ module EA_Extensions623
       # This is the standard Ruby initialize method that is called when you create
       # a new object.
       def initialize(data)
-
         #returns the avtive model material list
         @model = Sketchup.active_model
         @entities = @model.active_entities
@@ -85,6 +84,7 @@ module EA_Extensions623
       end
 
       def check_for_preselect(*args, view)
+        @bad_selections = []
         if args[0].nil?
           p 'no selection'
           return false
@@ -99,20 +99,30 @@ module EA_Extensions623
               #extract the start and end point of the Edge
               pt1 = ent.start.position
               pt2 = ent.end.position
+            else
+              @bad_selections << ent
             end
-            @vy = pt1.vector_to pt2
-            not_a_zero_vec = @vy.length > 0
-            @vx = @vy.axes[0] if not_a_zero_vec
-            @vz = @vy.axes[1] if not_a_zero_vec
+            if pt1 && pt2
+              @vy = pt1.vector_to pt2
+              not_a_zero_vec = @vy.length > 0
+              @vx = @vy.axes[0] if not_a_zero_vec
+              @vz = @vy.axes[1] if not_a_zero_vec
 
-            @trans = Geom::Transformation.axes pt1, @vx, @vy, @vz.reverse
-            @trans2 = Geom::Transformation.axes pt2, @vx, @vy, @vz.reverse
+              @trans = Geom::Transformation.axes pt1, @vx, @vy, @vz.reverse
+              @trans2 = Geom::Transformation.axes pt2, @vx, @vy, @vz.reverse
 
-            # Create the member in Sketchup
-            self.create_geometry(pt1, pt2, view)
-            self.reset(view)
-            # Sketchup.send_action "selectSelectionTool:" #Mabes Babes
+              # Create the member in Sketchup
+              self.create_geometry(pt1, pt2, view)
+              self.reset(view)
+              # Sketchup.send_action "selectSelectionTool:" #Mabes Babes
+            end
           end
+        end
+        if @bad_selections.any?
+          UI.beep
+          Sketchup.status_text = "There were #{@bad_selections.count} selections that do not work with the tool"
+        else
+          p 'no bad selections'
         end
       end
 

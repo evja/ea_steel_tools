@@ -101,10 +101,11 @@ module EA_Extensions623
         @z_blue = Geom::Vector3d.new 0,0,1
         # This sets the label for the VCB
         Sketchup::set_status_text ("Length"), SB_VCB_LABEL
-        check_for_preselect(@selection, @model_view)
+        selections = check_for_preselect(@selection, @model_view)
       end
 
       def check_for_preselect(*args, view)
+        @bad_selections = []
         if args[0].nil?
           p 'no selection'
           return false
@@ -119,20 +120,29 @@ module EA_Extensions623
               #extract the start and end point of the Edge
               pt1 = ent.start.position
               pt2 = ent.end.position
+            else
+              @bad_selections << ent
             end
-            @vy = pt1.vector_to pt2
-            not_a_zero_vec = @vy.length > 0
-            @vx = @vy.axes[0] if not_a_zero_vec
-            @vz = @vy.axes[1] if not_a_zero_vec
+            if pt1 && pt2
+              @vy = pt1.vector_to pt2
+              not_a_zero_vec = @vy.length > 0
+              @vx = @vy.axes[0] if not_a_zero_vec
+              @vz = @vy.axes[1] if not_a_zero_vec
 
-            @trans = Geom::Transformation.axes pt1, @vx, @vy, @vz.reverse
-            @trans2 = Geom::Transformation.axes pt2, @vx, @vy, @vz.reverse
+              @trans = Geom::Transformation.axes pt1, @vx, @vy, @vz.reverse
+              @trans2 = Geom::Transformation.axes pt2, @vx, @vy, @vz.reverse
 
-            # Create the member in Sketchup
-            self.create_geometry(pt1, pt2, view)
-            self.reset(view)
-            # Sketchup.send_action "selectSelectionTool:" #Mabes Babes
+              # Create the member in Sketchup
+              self.create_geometry(pt1, pt2, view)
+              self.reset(view)
+            end
           end
+        end
+        if @bad_selections.any?
+          UI.beep
+          Sketchup.status_text = "There were #{@bad_selections.count} selections that do not work with the tool"
+        # else
+        #   p 'no bad selections'
         end
       end
 
@@ -942,17 +952,68 @@ module EA_Extensions623
         slide_to_center = Geom::Transformation.translation(y_copy)
         hss_name_label.transform! slide_to_center
 
+        if @hss_is_rotated
+          #set to wide face of hss
+          rot_again = Geom::Transformation.rotation(@center_of_column.position, Z_AXIS, 90.degrees)
+          hss_name_label.transform! rot_again
+          vctr = Y_AXIS.clone.reverse
+          vctr.length = (@h - @w)/2
+          p vctr
+          adjust = Geom::Transformation.translation(vctr)
+          hss_name_label.transform! adjust
+        end
+
         labels = []
-        if @h == @w
-          # p "four labels"
-          for n in 1..3
+        if @is_column
+          if @h == @w #square column
+            for n in 1..3
+              labels.push hss_name_label.copy
+              rotation_incrememnts = 90.degrees
+            end
+          elsif @w >= 3 && !@hss_is_rotated
+            label2 = hss_name_label.copy
+            labels.push label2
+            rot1 = Geom::Transformation.rotation @center_of_column.position, Z_AXIS, 90.degrees
+            @name_label_group.entities.transform_entities rot1, label2
+
+            dist = (@h-@w)/2
+
+            sld = Geom::Transformation.translation Geom::Vector3d.new(0,-dist,0)
+            @name_label_group.entities.transform_entities sld, label2
+            rotation_incrememnts = 180.degrees
+            labels.push hss_name_label
             labels.push hss_name_label.copy
-            rotation_incrememnts = 90.degrees
+            label2.copy
+          elsif @w < 3 && @hss_is_rotated
+            labelcop = hss_name_label.copy
+            labels.push labelcop
+
+            rot_again = Geom::Transformation.rotation(@center_of_column.position, Z_AXIS, 90.degrees)
+            rot_cop = hss_name_label.copy
+            rot_cop.transform! rot_again
+            vctr = Y_AXIS.clone.reverse
+            vctr.length = (@h - @w)/2
+            p vctr
+            adjust = Geom::Transformation.translation(vctr)
+            rot_cop.transform! adjust
+
+          else
+            labels.push hss_name_label.copy
+            rotation_incrememnts = 180.degrees
           end
-        else
-          # p 'two labels'
-          labels.push hss_name_label.copy
+        else #hss is a beam so only do 2 labels
+          name_copy =  hss_name_label.copy
+          labels.push name_copy
           rotation_incrememnts = 180.degrees
+
+          flip1 = Geom::Transformation.rotation(hss_name_label.bounds.center, Z_AXIS, 180.degrees)
+          flip2 = Geom::Transformation.rotation(hss_name_label.bounds.center, Y_AXIS, 180.degrees)
+          if @hss_is_rotated
+            flip = flip2
+          else
+            flip = flip1 * flip2
+          end
+          @name_label_group.entities.transform_entities flip, name_copy
         end
 
         labels.each_with_index do |l,i|
@@ -1108,7 +1169,7 @@ module EA_Extensions623
         rescue Exception => e
           puts e.message
           puts e.backtrace.inspect
-          UI.messagebox("There was a problem inserting the #{@half_inch_stud} into the model")
+          UI.messagebox("There was a problem inserting the @half_inch_stud into the model")
         end
       end # end add_studs
 
