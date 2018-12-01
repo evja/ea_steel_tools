@@ -26,6 +26,7 @@ module EA_Extensions623
           @@shearpl_thickness = '1/2'          #String '3/8' or '1/2' or '3/4'
           @@force_studs       = false          #Boolean
           @@state = 1
+          @@flange_type = '' #Beam or Column Options
         end
 
         options = {
@@ -42,8 +43,8 @@ module EA_Extensions623
         # These events doesn't trigger correctly when Firebug Lite
         # is active because it introduces frames that interfere with
         # the focus notifications.
-        window.on( :focus )  { puts 'Window Focus' }
-        window.on( :blur )   { puts 'Window Blur' }
+        # window.on( :focus )  { puts 'Window Focus' }
+        # window.on( :blur )   { puts 'Window Blur' }
         window.on( :resize ) { |window, width, height|
           # puts "Window Resize(#{width}, #{height})"
         }
@@ -56,24 +57,24 @@ module EA_Extensions623
         window.add_control( group )
 
         hc_list_label = SKUI::Label.new('Height Class')
-        hc_list_label.position(10,25)
+        hc_list_label.position(10,27)
 
         beam_size_label = SKUI::Label.new('Beam Size')
-        beam_size_label.position(10,55)
+        beam_size_label.position(10,57)
         group.add_control( hc_list_label )
         group.add_control( beam_size_label )
 
         list = all_height_classes
         height_class_dropdown = SKUI::Listbox.new( list )
         @@height_class.empty? ? @@height_class = (height_class_dropdown.value = height_class_dropdown.items.sample) : height_class_dropdown.value = height_class_dropdown.items.grep(@@height_class).first.to_s
-        height_class_dropdown.position( 115, 25 )
-        height_class_dropdown.width = 170
+        height_class_dropdown.position( 105, 25 )
+        height_class_dropdown.width = 140
 
         list = all_beams_in(@@height_class)
         beam_size_dropdown = SKUI::Listbox.new( list )
         @@beam_name.empty? ? @@beam_name = (beam_size_dropdown.value = beam_size_dropdown.items.first) : @@beam_name = (beam_size_dropdown.value = beam_size_dropdown.items.grep(@@beam_name).first.to_s)
-        beam_size_dropdown.position( 115, 55 )
-        beam_size_dropdown.width = 170
+        beam_size_dropdown.position( 105, 55 )
+        beam_size_dropdown.width = 140
 
         group.add_control( beam_size_dropdown )
 
@@ -101,10 +102,25 @@ module EA_Extensions623
         chk_force_studs.position( 300, 20 )
         chk_force_studs.checked = @@force_studs
         chk_force_studs.on( :change ) { |control|
-          @@force_studs                = control.checked?
+          @@force_studs = control.checked?
         }
         group.add_control( chk_force_studs )
-        
+
+        flange_type_label = SKUI::Label.new('Type')
+        flange_type_label.position(270,59)
+        group.add_control( flange_type_label )
+
+        @flange_types = ["Beam", "Column"]
+        flange_type_select = SKUI::Listbox.new(@flange_types)
+        flange_type_select.position(310, 55)
+        flange_type_select.width = 68
+        @@flange_type.empty? ? @@flange_type = (flange_type_select.value = @flange_types.first) : (flange_type_select.value = @@flange_type)
+
+        flange_type_select.on(:change) {|control|
+          @@flange_type = control.value
+        }
+        group.add_control(flange_type_select)
+
         ##################################################################################
         ##################################################################################
 
@@ -335,7 +351,8 @@ module EA_Extensions623
             shearplates:       @@has_shearplates,
             stiff_thickness:   @@stiff_thickness,
             shearpl_thickness: @@shearpl_thickness,
-            force_studs:       @@force_studs
+            force_studs:       @@force_studs,
+            flange_type:       @@flange_type
           }
           control.window.close
           Sketchup.active_model.select_tool EASteelTools::FlangeTool.new(data)

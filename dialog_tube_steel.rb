@@ -119,7 +119,7 @@ module EA_Extensions623
         baseselect.position(80,30)
         baseselect.width = 50
         baseselect.visible = @@hss_type == 'Column'
-        @@basetype.empty? ? @@basetype = (baseselect.value = BASETYPES.last) : baseselect.value = @@basetype
+        @@basetype.empty? ? @@basetype = (baseselect.value = BASETYPES.first) : baseselect.value = @@basetype
         baseselect.on(:change) { |control, value|
           @@basetype = control.value
         }
