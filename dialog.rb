@@ -83,8 +83,8 @@ module EA_Extensions623
           list = all_beams_in(control.value)
           beam_size_dropdown = SKUI::Listbox.new( list )
           @@beam_name = beam_size_dropdown.value = beam_size_dropdown.items.first
-          beam_size_dropdown.position( 115, 55 )
-          beam_size_dropdown.width = 170
+          beam_size_dropdown.position( 105, 55 )
+          beam_size_dropdown.width = 140
           group.add_control( beam_size_dropdown )
           beam_size_dropdown.on( :change ) { |control, value|
             @@beam_name = control.value
