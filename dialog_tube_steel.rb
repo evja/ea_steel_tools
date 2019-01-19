@@ -17,7 +17,7 @@ module EA_Extensions623
           @@tube_data             = {}   #Hash   {:h=>4, :b=>4}
           @@height_class          = '4'
           @@width_class           = '4'
-          @@wall_thickness        = '1/4"'
+          @@wall_thickness        = ''
           @@basetype              = ''
           @@basethick             = 0.75
           @@start_plate_thickness = ''
@@ -393,7 +393,7 @@ module EA_Extensions623
         list3 = all_guage_options_in(@@height_class, @@width_class)
         # p list3
         wall_thickness_dropdown = SKUI::Listbox.new( list3 )
-        @@wall_thickness.empty? ? @@wall_thickness = (@@wall_thickness = wall_thickness_dropdown.items[1]) : (@@wall_thickness)
+        @@wall_thickness.empty? ? (@@wall_thickness = (wall_thickness_dropdown.items.include?('1/4"') ? '1/4"' : wall_thickness_dropdown.items.first)) : (@@wall_thickness)
         wall_thickness_dropdown.value = @@wall_thickness
         wall_thickness_dropdown.position( 190, 25 )
         wall_thickness_dropdown.width = 50

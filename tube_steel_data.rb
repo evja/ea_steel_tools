@@ -743,6 +743,8 @@ module EA_Extensions623
           v = tp2 - tp1
           place_etch = Geom::Transformation.translation(v)
           @entities.transform_entities place_etch, etch_group
+
+
         rescue Exception => e
           puts e.message
           puts e.backtrace.inspect
@@ -858,9 +860,18 @@ module EA_Extensions623
         end
       end
 
+      def getExtents
+        bb = @model.bounds
+        bbp1 = Geom::Point3d.new(1000,1000,0)
+        bbp2 = Geom::Point3d.new(1000,-1000,0)
+        bbp3 = Geom::Point3d.new(-1000,1000,0)
+        bbp4 = Geom::Point3d.new(-1000,-1000,0)
+        bb.add(bbp1, bbp2, bbp3, bbp4)
+        return bb
+      end
+
       def insert_base_plates(type, center)
         begin
-
           # UI.messagebox("@h is #{@h}, @w is #{@w}")
           h = [@h,@w].sort
           case type
@@ -883,35 +894,27 @@ module EA_Extensions623
           else
             plate = draw_parametric_plate(sq_plate(@w, @h))
           end
-          # p base_type
-          if base_type
-            file_path1 = Sketchup.find_support_file "ea_steel_tools/Beam Components/#{base_type}.skp", "Plugins"
-            # p file_path1
+          # p plate
+          p "Base Type is #{base_type}"
+          file_path1 = Sketchup.find_support_file "#{COMPONENT_PATH}/#{base_type}.skp", "Plugins"
+          # p file_path1
+          if file_path1
             @base_group = @hss_outer_group.entities.add_group
             @base_group.name = 'Base Plate'
-            if file_path1
-              @base_plate = @definition_list.load file_path1
 
-              slide_vec = Geom::Vector3d.new(@w/2, @h/2, 0)
-              slide_base = Geom::Transformation.translation(slide_vec)
-              @bp = @base_group.entities.add_instance @base_plate, center
-              @bp.material = @base_plate_color
-              etch_plate(@bp, @hss_inner_group)
-              @bp.explode
-            else
-              #insert generic baseplate
-              backup_baseplate = "4_ SQ"
-              file_path_backup = Sketchup.find_support_file "ea_steel_tools/Beam Components/#{backup_baseplate}.skp", "Plugins"
-              @base_plate = @definition_list.load file_path_backup
+            @base_plate = @definition_list.load file_path1
 
-              slide_vec = Geom::Vector3d.new(@w/2, @h/2, 0)
-              slide_base = Geom::Transformation.translation(slide_vec)
-              @bp = @base_group.entities.add_instance @base_plate, center
-              @bp.material = STEEL_COLORS[:pink][:rgb]
-              etch_plate(@bp, @hss_inner_group)
-              @bp.explode
-            end
-          else
+            slide_vec = Geom::Vector3d.new(@w/2, @h/2, 0)
+            slide_base = Geom::Transformation.translation(slide_vec)
+            @bp = @base_group.entities.add_instance @base_plate, center
+            @bp.material = @base_plate_color
+            etch_plate(@bp, @hss_inner_group)
+            @bp.explode
+
+          elsif plate.nil?
+            # p 'drawing parametric baseplate'
+            #insert generic baseplate
+            plate = draw_parametric_plate(sq_plate(@w, @h))
             etch_plate(plate, @hss_inner_group)
             add_plate_compass(plate, ORIGIN)
           end

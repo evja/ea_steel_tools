@@ -73,11 +73,6 @@ module EA_Extensions623
         self.reset(nil)
       end
 
-      def add_column_baseplate()
-        #create a parametric baseplate engine for the flange tool
-
-      end
-
       def check_for_preselect(*args, view)
         @bad_selections = []
         if args[0].nil?
