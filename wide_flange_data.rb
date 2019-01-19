@@ -1342,7 +1342,7 @@ module EA_Extensions623
       def create_geometry(pt1, pt2, view)
         begin
           model = view.model
-          # model.start_operation("Create Beam", true)
+          model.start_operation("Create Beam", true)
           set_groups(model)
 
           vec = pt2 - pt1
