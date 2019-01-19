@@ -68,11 +68,6 @@ module EA_Extensions623
           pt16= [0,0,@tf]
         ]
 
-
-        @x_red = Geom::Vector3d.new 1,0,0
-        @y_green = Geom::Vector3d.new 0,1,0
-        @z_blue = Geom::Vector3d.new 0,0,1
-
         @nine_sixteenths_holes = []
         check_for_preselect(@selection, @model.active_view)
         self.reset(nil)
@@ -136,11 +131,11 @@ module EA_Extensions623
       def draw_ghost(pt1, pt2, view)
         vec = pt1 - pt2
 
-        if vec.parallel? @x_red
+        if vec.parallel? @model.axes.axes[0]
           ghost_color = "Red"
-        elsif vec.parallel? @y_green
+        elsif vec.parallel? @model.axes.axes[1]
           ghost_color = "Lime"
-        elsif vec.parallel? @z_blue
+        elsif vec.parallel? @model.axes.axes[2]
           ghost_color = "Blue"
         elsif pt1[0] == pt2[0] || pt1[1] == pt2[1] || pt1[2] == pt2[2]
           ghost_color = "Yellow"
@@ -149,9 +144,9 @@ module EA_Extensions623
         end
 
         a = []
-        @ip1points.each {|p| a << p.transform(@trans)}
+        @ghostpoints.each {|p| a << p.transform(@trans)}
         b = []
-        @ip1points.each {|p| b << p.transform(@trans2)}
+        @ghostpoints.each {|p| b << p.transform(@trans2)}
 
         pts = a.zip(b).flatten
 
@@ -175,6 +170,16 @@ module EA_Extensions623
         view.line_width = 0.1
         view.drawing_color = ghost_color
         view.draw(GL_LINES, pts)
+      end
+
+      def getExtents
+        bb = @model.bounds
+        bbp1 = Geom::Point3d.new(1000,1000,0)
+        bbp2 = Geom::Point3d.new(1000,-1000,0)
+        bbp3 = Geom::Point3d.new(-1000,1000,0)
+        bbp4 = Geom::Point3d.new(-1000,-1000,0)
+        bb.add(bbp1, bbp2, bbp3, bbp4)
+        return bb
       end
 
       def draw_control_line(pts, view)
@@ -244,6 +249,8 @@ module EA_Extensions623
               o1 = Geom::Point3d.new(((-0.5*@tw)-@r), 0, @tf ),
               p1 = Geom::Point3d.new((-0.5*@w), 0, @tf)
             ]
+
+            @ghostpoints = @ip1points.map{|e| e.clone}
 
             Sketchup::set_status_text ("Select second end"), SB_PROMPT
             @xdown = x
