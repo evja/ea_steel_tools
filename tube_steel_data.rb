@@ -895,7 +895,7 @@ module EA_Extensions623
             plate = draw_parametric_plate(sq_plate(@w, @h))
           end
           # p plate
-          p "Base Type is #{base_type}"
+          # p "Base Type is #{base_type}"
           file_path1 = Sketchup.find_support_file "#{COMPONENT_PATH}/#{base_type}.skp", "Plugins"
           # p file_path1
           if file_path1

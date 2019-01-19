@@ -332,10 +332,10 @@ module EA_Extensions623
         poss_labs = ["N", "S", "E", "W", "X"]
         poss_labs.each do |lab|
           if @d_list[lab]
-            p "Found a direction in the list"
+            # p "Found a direction in the list"
             @d_list[lab].name = "Direction Label"
           else
-            p "not FOUND"
+            # p "not FOUND"
           end
         end
 
