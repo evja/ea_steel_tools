@@ -96,19 +96,14 @@ module EA_Extensions623
     UI.add_context_menu_handler do |menu|
       menu.add_separator
       menu.add_item("Send to Breakout") { EASteelTools::SendToBreakout.new }
+    end
+
+    UI.add_context_menu_handler do |menu|
+      menu.add_item("Breakout") {Sketchup.active_model.select_tool EASteelTools::Breakout.new }
       menu.add_separator
     end
 
     UI.add_context_menu_handler do |menu|
-      if( EASteelTools::BreakoutMod.qualify_model(Sketchup.active_model) )
-        menu.add_separator
-        menu.add_item("Breakout") {Sketchup.active_model.select_tool EASteelTools::Breakout.new }
-        menu.add_separator
-      end
-    end
-
-    UI.add_context_menu_handler do |menu|
-      menu.add_separator
       menu.add_item("Send to Layout") { EASteelTools::SendToLayout.new(Sketchup.active_model.selection[0], Sketchup.active_model.path) }
       menu.add_separator
     end
