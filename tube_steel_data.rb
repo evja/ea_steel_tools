@@ -96,15 +96,16 @@ module EA_Extensions623
         @xdown = 0
         @ydown = 0
 
-        @x_red = Geom::Vector3d.new 1,0,0
-        @y_green = Geom::Vector3d.new 0,1,0
-        @z_blue = Geom::Vector3d.new 0,0,1
+        @x_red = @model.axes.axes[0]
+        @y_green = @model.axes.axes[1]
+        @z_blue = @model.axes.axes[2]
         # This sets the label for the VCB
         Sketchup::set_status_text ("Length"), SB_VCB_LABEL
-        check_for_preselect(@selection, @model_view)
+        selections = check_for_preselect(@selection, @model_view)
       end
 
       def check_for_preselect(*args, view)
+        @bad_selections = []
         if args[0].nil?
           p 'no selection'
           return false
@@ -119,20 +120,29 @@ module EA_Extensions623
               #extract the start and end point of the Edge
               pt1 = ent.start.position
               pt2 = ent.end.position
+            else
+              @bad_selections << ent
             end
-            @vy = pt1.vector_to pt2
-            not_a_zero_vec = @vy.length > 0
-            @vx = @vy.axes[0] if not_a_zero_vec
-            @vz = @vy.axes[1] if not_a_zero_vec
+            if pt1 && pt2
+              @vy = pt1.vector_to pt2
+              not_a_zero_vec = @vy.length > 0
+              @vx = @vy.axes[0] if not_a_zero_vec
+              @vz = @vy.axes[1] if not_a_zero_vec
 
-            @trans = Geom::Transformation.axes pt1, @vx, @vy, @vz.reverse
-            @trans2 = Geom::Transformation.axes pt2, @vx, @vy, @vz.reverse
+              @trans = Geom::Transformation.axes pt1, @vx, @vy, @vz.reverse
+              @trans2 = Geom::Transformation.axes pt2, @vx, @vy, @vz.reverse
 
-            # Create the member in Sketchup
-            self.create_geometry(pt1, pt2, view)
-            self.reset(view)
-            # Sketchup.send_action "selectSelectionTool:" #Mabes Babes
+              # Create the member in Sketchup
+              self.create_geometry(pt1, pt2, view)
+              self.reset(view)
+            end
           end
+        end
+        if @bad_selections.any?
+          UI.beep
+          Sketchup.status_text = "There were #{@bad_selections.count} selections that do not work with the tool"
+        # else
+        #   p 'no bad selections'
         end
       end
 
@@ -166,33 +176,39 @@ module EA_Extensions623
       end #Draw
 
       def draw_beam_caps(length)
-        cap = @hss_outer_group.entities.add_group
-        pts = [
-          pt1 = [0,0,0],
-          pt2 = [@w, 0,0],
-          pt3 = [@w, @h, 0],
-          pt4 = [0, @h, 0]
-        ]
+        begin
+          cap = @hss_outer_group.entities.add_group
+          pts = [
+            pt1 = [0,0,0],
+            pt2 = [@w, 0,0],
+            pt3 = [@w, @h, 0],
+            pt4 = [0, @h, 0]
+          ]
 
-        cap_face = cap.entities.add_face pts
-        cap_face.reverse!
-        cap_face.pushpull @cap_thickness
+          cap_face = cap.entities.add_face pts
+          cap_face.reverse!
+          cap_face.pushpull @cap_thickness
 
-        v3 = Z_AXIS.clone
-        v3.length = -@cap_thickness
+          v3 = Z_AXIS.clone
+          v3.length = -@cap_thickness
 
-        sld = Geom::Transformation.new(v3)
-        @hss_outer_group.entities.transform_entities sld, cap
+          sld = Geom::Transformation.new(v3)
+          @hss_outer_group.entities.transform_entities sld, cap
 
-        cap2 = cap.copy
+          cap2 = cap.copy
 
-        v3.length = length.length + @cap_thickness
-        copy_away = Geom::Transformation.new(v3.reverse!)
-        @hss_outer_group.entities.transform_entities copy_away, cap2
+          v3.length = length.length + @cap_thickness
+          copy_away = Geom::Transformation.new(v3.reverse!)
+          @hss_outer_group.entities.transform_entities copy_away, cap2
 
-        color_by_thickness(cap, @cap_thickness)
-        cap2.material = cap.material
-        # color_by_thickness(cap2, @cap_thickness)
+          color_by_thickness(cap, @cap_thickness)
+          cap2.material = cap.material
+          # color_by_thickness(cap2, @cap_thickness)
+        rescue Exception => e
+          puts e.message
+          puts e.backtrace.inspect
+          UI.messagebox("There was a problem inserting the end caps")
+        end
       end
 
       def draw_control_line(pts, view)
@@ -380,125 +396,137 @@ module EA_Extensions623
       end
 
       def add_beam_up_arrow(vec, length)
-        up_group = @hss_outer_group.entities.add_group()
+        begin
+          up_group = @hss_outer_group.entities.add_group()
 
-        file_path = Sketchup.find_support_file "#{COMPONENT_PATH}/#{UP_DRCTN_SM}", "Plugins/"
-        up_direction = @definition_list.load file_path
+          file_path = Sketchup.find_support_file "#{COMPONENT_PATH}/#{UP_DRCTN_SM}", "Plugins/"
+          up_direction = @definition_list.load file_path
 
-        up_arrow1 = up_group.entities.add_instance(up_direction, @center_of_column.position)
+          up_arrow1 = up_group.entities.add_instance(up_direction, @center_of_column.position)
 
-        rot = Geom::Transformation.rotation(@center_of_column.position, Y_AXIS, 90.degrees )
-        sld_vec = X_AXIS.clone
-        sld_vec.length = @w/2
-        slide = Geom::Transformation.translation(sld_vec)
-        @hss_outer_group.entities.transform_entities(rot, up_arrow1)
-        @hss_outer_group.entities.transform_entities(slide, up_arrow1)
+          rot = Geom::Transformation.rotation(@center_of_column.position, Y_AXIS, 90.degrees )
+          sld_vec = X_AXIS.clone
+          sld_vec.length = @w/2
+          slide = Geom::Transformation.translation(sld_vec)
+          @hss_outer_group.entities.transform_entities(rot, up_arrow1)
+          @hss_outer_group.entities.transform_entities(slide, up_arrow1)
 
-        up_arrow1_copy = up_arrow1.copy
-        r_to_o_side = Geom::Transformation.rotation(@center_of_column.position, Y_AXIS, 180.degrees)
-        @hss_outer_group.entities.transform_entities(r_to_o_side, up_arrow1_copy)
+          up_arrow1_copy = up_arrow1.copy
+          r_to_o_side = Geom::Transformation.rotation(@center_of_column.position, Y_AXIS, 180.degrees)
+          @hss_outer_group.entities.transform_entities(r_to_o_side, up_arrow1_copy)
 
-        rot_direct = 90 - Z_AXIS.angle_between(vec).radians
-        # p rot_direct.degrees
-        rot_vert = Geom::Transformation.rotation(@center_of_column.position, X_AXIS, rot_direct.degrees)
-        @hss_outer_group.entities.transform_entities(rot_vert, up_group)
+          rot_direct = 90 - Z_AXIS.angle_between(vec).radians
+          # p rot_direct.degrees
+          rot_vert = Geom::Transformation.rotation(@center_of_column.position, X_AXIS, rot_direct.degrees)
+          @hss_outer_group.entities.transform_entities(rot_vert, up_group)
 
-        sld_vec = Z_AXIS.clone
-        sld_vec.length = (length.length/2) + 24
-        slide_to_pos = Geom::Transformation.translation(sld_vec)
-        @hss_outer_group.entities.transform_entities(slide_to_pos, up_group)
+          sld_vec = Z_AXIS.clone
+          sld_vec.length = (length.length/2) + 24
+          slide_to_pos = Geom::Transformation.translation(sld_vec)
+          @hss_outer_group.entities.transform_entities(slide_to_pos, up_group)
+        rescue Exception => e
+          puts e.message
+          puts e.backtrace.inspect
+          UI.messagebox("There was a problem inserting the up arrow on the hss beam")
+        end
       end
 
       def add_hss_beam_direction_labels(vec)
-        start_direction_group = @hss_outer_group.entities.add_group
-        start_ents = start_direction_group.entities
-        end_direction_group = @hss_outer_group.entities.add_group
-        end_ents = end_direction_group.entities
-        up_direction_group = @hss_outer_group.entities.add_group
-        up_ents = up_direction_group.entities
+        begin
 
-        beam_direction = vec
-        # p vec
-        heading = Geom::Vector3d.new beam_direction
-        heading[2] = 0
-        angle = heading.angle_between NORTH
+          start_direction_group = @hss_outer_group.entities.add_group
+          start_ents = start_direction_group.entities
+          end_direction_group = @hss_outer_group.entities.add_group
+          end_ents = end_direction_group.entities
+          up_direction_group = @hss_outer_group.entities.add_group
+          up_ents = up_direction_group.entities
 
-        #Sets the direction labels according to the beam vec
-        #Single Directions
-        case angle
-        when (0.degrees)..(30.degrees)
-          direction1 = 'N'
-          direction2 = 'S'
-        when (60.degrees)..(120.degrees)
-          if vec[0] >= 0
-          direction1 = 'E'
-          direction2 = 'W'
-        else
-          direction1 = 'W'
-          direction2 = 'E'
-        end
-        when (150.degrees)..(180.degrees)
-          direction1 = 'S'
-          direction2 = 'N'
-        #Compound Directions
-        when (30.degrees)..(60.degrees)
-          if vec[0] >= 0
-            direction1 = 'NE'
-            direction2 = 'SW'
+          beam_direction = vec
+          # p vec
+          heading = Geom::Vector3d.new beam_direction
+          heading[2] = 0
+          angle = heading.angle_between NORTH
+
+          #Sets the direction labels according to the beam vec
+          #Single Directions
+          case angle
+          when (0.degrees)..(30.degrees)
+            direction1 = 'N'
+            direction2 = 'S'
+          when (60.degrees)..(120.degrees)
+            if vec[0] >= 0
+            direction1 = 'E'
+            direction2 = 'W'
           else
-            direction1 = 'NW'
-            direction2 = 'SE'
+            direction1 = 'W'
+            direction2 = 'E'
           end
-        when (120.degrees)..(150.degrees)
-          if vec[0] >= 0
-            direction1 = 'SE'
-            direction2 = 'NW'
-          else
-            direction1 = 'SW'
-            direction2 = 'NE'
+          when (150.degrees)..(180.degrees)
+            direction1 = 'S'
+            direction2 = 'N'
+          #Compound Directions
+          when (30.degrees)..(60.degrees)
+            if vec[0] >= 0
+              direction1 = 'NE'
+              direction2 = 'SW'
+            else
+              direction1 = 'NW'
+              direction2 = 'SE'
+            end
+          when (120.degrees)..(150.degrees)
+            if vec[0] >= 0
+              direction1 = 'SE'
+              direction2 = 'NW'
+            else
+              direction1 = 'SW'
+              direction2 = 'NE'
+            end
           end
+
+          #Gets the file paths for the labels
+          file_path1 = Sketchup.find_support_file "#{COMPONENT_PATH}/#{direction1}.skp", "Plugins/"
+          end_direction = @definition_list.load file_path1
+          file_path2 = Sketchup.find_support_file "#{COMPONENT_PATH}/#{direction2}.skp", "Plugins/"
+          start_direction = @definition_list.load file_path2
+
+          start_dir_beam1 = start_direction_group.entities.add_instance start_direction, @center_of_column.position
+          start_dir_beam2 = start_direction_group.entities.add_instance start_direction, @center_of_column.position
+          end_dir_beam1 = end_direction_group.entities.add_instance end_direction, @center_of_column.position
+          end_dir_beam2 = end_direction_group.entities.add_instance end_direction, @center_of_column.position
+
+          rot = Geom::Transformation.rotation(@center_of_column.position, Y_AXIS, 90.degrees)
+          @hss_outer_group.entities.transform_entities rot, start_dir_beam1
+          @hss_outer_group.entities.transform_entities rot, end_dir_beam1
+
+          vec_slide1 = Geom::Vector3d.new(@w/2,0,0)
+          slide1 = Geom::Transformation.translation(vec_slide1)
+          @hss_outer_group.entities.transform_entities slide1, start_dir_beam1
+          @hss_outer_group.entities.transform_entities slide1, end_dir_beam1
+
+          vec2 = Geom::Vector3d.new(0,0,6)
+          slide_to_start = Geom::Transformation.translation(vec2)
+
+          rot = Geom::Transformation.rotation(@center_of_column.position, Y_AXIS, 270.degrees)
+          @hss_outer_group.entities.transform_entities rot, start_dir_beam2
+          @hss_outer_group.entities.transform_entities rot, end_dir_beam2
+
+          vec_slide2 = Geom::Vector3d.new(-@w/2,0,0)
+          slide1 = Geom::Transformation.translation(vec_slide2)
+          @hss_outer_group.entities.transform_entities slide1, start_dir_beam2
+          @hss_outer_group.entities.transform_entities slide1, end_dir_beam2
+
+          vec2 = Geom::Vector3d.new(0,0,6)
+
+          @hss_outer_group.entities.transform_entities slide_to_start, start_direction_group
+
+          vec3 = Geom::Vector3d.new(0,0,(vec.length)-6)
+          slide_to_end = Geom::Transformation.translation(vec3)
+          @hss_outer_group.entities.transform_entities slide_to_end, end_direction_group
+        rescue Exception => e
+          puts e.message
+          puts e.backtrace.inspect
+          UI.messagebox("There was a problem with the hss direction labels")
         end
-
-        #Gets the file paths for the labels
-        file_path1 = Sketchup.find_support_file "#{COMPONENT_PATH}/#{direction1}.skp", "Plugins/"
-        end_direction = @definition_list.load file_path1
-        file_path2 = Sketchup.find_support_file "#{COMPONENT_PATH}/#{direction2}.skp", "Plugins/"
-        start_direction = @definition_list.load file_path2
-
-        start_dir_beam1 = start_direction_group.entities.add_instance start_direction, @center_of_column.position
-        start_dir_beam2 = start_direction_group.entities.add_instance start_direction, @center_of_column.position
-        end_dir_beam1 = end_direction_group.entities.add_instance end_direction, @center_of_column.position
-        end_dir_beam2 = end_direction_group.entities.add_instance end_direction, @center_of_column.position
-
-        rot = Geom::Transformation.rotation(@center_of_column.position, Y_AXIS, 90.degrees)
-        @hss_outer_group.entities.transform_entities rot, start_dir_beam1
-        @hss_outer_group.entities.transform_entities rot, end_dir_beam1
-
-        vec_slide1 = Geom::Vector3d.new(@w/2,0,0)
-        slide1 = Geom::Transformation.translation(vec_slide1)
-        @hss_outer_group.entities.transform_entities slide1, start_dir_beam1
-        @hss_outer_group.entities.transform_entities slide1, end_dir_beam1
-
-        vec2 = Geom::Vector3d.new(0,0,6)
-        slide_to_start = Geom::Transformation.translation(vec2)
-
-        rot = Geom::Transformation.rotation(@center_of_column.position, Y_AXIS, 270.degrees)
-        @hss_outer_group.entities.transform_entities rot, start_dir_beam2
-        @hss_outer_group.entities.transform_entities rot, end_dir_beam2
-
-        vec_slide2 = Geom::Vector3d.new(-@w/2,0,0)
-        slide1 = Geom::Transformation.translation(vec_slide2)
-        @hss_outer_group.entities.transform_entities slide1, start_dir_beam2
-        @hss_outer_group.entities.transform_entities slide1, end_dir_beam2
-
-        vec2 = Geom::Vector3d.new(0,0,6)
-
-        @hss_outer_group.entities.transform_entities slide_to_start, start_direction_group
-
-        vec3 = Geom::Vector3d.new(0,0,(vec.length)-6)
-        slide_to_end = Geom::Transformation.translation(vec3)
-        @hss_outer_group.entities.transform_entities slide_to_end, end_direction_group
-
       end #hss beam lables
 
       def add_studs_beam(length, spread)
@@ -680,40 +708,48 @@ module EA_Extensions623
       end
 
       def etch_plate(plate, hss)
-        ents = plate.definition.entities
-        etch_group = ents.add_group
-        etch_group.name = 'etch'
-        ege = etch_group.entities
-        temp_etch_group = ege.add_group
+        begin
+          ents = plate.definition.entities
+          etch_group = ents.add_group
+          etch_group.name = 'etch'
+          ege = etch_group.entities
+          temp_etch_group = ege.add_group
 
-        col_corner = hss.bounds.min
-        col_corner[2] = 0
+          col_corner = hss.bounds.min
+          col_corner[2] = 0
 
-        p1a = [0,0,0]
-        p2a = [ETCH_LINE,0,0]
-        p3a = [0,ETCH_LINE,0]
+          p1a = [0,0,0]
+          p2a = [ETCH_LINE,0,0]
+          p3a = [0,ETCH_LINE,0]
 
-        p1b = [@w, 0,0]
-        p2b = [@w-ETCH_LINE,0,0]
-        p3b = [@w, ETCH_LINE,0]
+          p1b = [@w, 0,0]
+          p2b = [@w-ETCH_LINE,0,0]
+          p3b = [@w, ETCH_LINE,0]
 
-        temp_etch_group.entities.add_line(p1a, p2a)
-        temp_etch_group.entities.add_line(p1a, p3a)
-        temp_etch_group.entities.add_line(p1b, p2b)
-        temp_etch_group.entities.add_line(p1b, p3b)
+          temp_etch_group.entities.add_line(p1a, p2a)
+          temp_etch_group.entities.add_line(p1a, p3a)
+          temp_etch_group.entities.add_line(p1b, p2b)
+          temp_etch_group.entities.add_line(p1b, p3b)
 
-        temp_group_copy = temp_etch_group.copy
-        rot = Geom::Transformation.rotation([@w/2, @h/2, 0], Z_AXIS, 180.degrees)
-        ege.transform_entities(rot, temp_group_copy)
+          temp_group_copy = temp_etch_group.copy
+          rot = Geom::Transformation.rotation([@w/2, @h/2, 0], Z_AXIS, 180.degrees)
+          ege.transform_entities(rot, temp_group_copy)
 
-        temp_etch_group.explode
-        temp_group_copy.explode
+          temp_etch_group.explode
+          temp_group_copy.explode
 
-        tp1 = etch_group.definition.bounds.center
-        tp2 = hss.definition.bounds.min
-        v = tp2 - tp1
-        place_etch = Geom::Transformation.translation(v)
-        @entities.transform_entities place_etch, etch_group
+          tp1 = etch_group.definition.bounds.center
+          tp2 = hss.definition.bounds.min
+          v = tp2 - tp1
+          place_etch = Geom::Transformation.translation(v)
+          @entities.transform_entities place_etch, etch_group
+
+
+        rescue Exception => e
+          puts e.message
+          puts e.backtrace.inspect
+          UI.messagebox("There was a problem etching the plate")
+        end
       end
 
       def draw_parametric_plate(pts)
@@ -824,9 +860,18 @@ module EA_Extensions623
         end
       end
 
+      def getExtents
+        bb = @model.bounds
+        bbp1 = Geom::Point3d.new(1000,1000,0)
+        bbp2 = Geom::Point3d.new(1000,-1000,0)
+        bbp3 = Geom::Point3d.new(-1000,1000,0)
+        bbp4 = Geom::Point3d.new(-1000,-1000,0)
+        bb.add(bbp1, bbp2, bbp3, bbp4)
+        return bb
+      end
+
       def insert_base_plates(type, center)
         begin
-
           # UI.messagebox("@h is #{@h}, @w is #{@w}")
           h = [@h,@w].sort
           case type
@@ -849,35 +894,27 @@ module EA_Extensions623
           else
             plate = draw_parametric_plate(sq_plate(@w, @h))
           end
-          # p base_type
-          if base_type
-            file_path1 = Sketchup.find_support_file "ea_steel_tools/Beam Components/#{base_type}.skp", "Plugins"
-            # p file_path1
+          # p plate
+          # p "Base Type is #{base_type}"
+          file_path1 = Sketchup.find_support_file "#{COMPONENT_PATH}/#{base_type}.skp", "Plugins"
+          # p file_path1
+          if file_path1
             @base_group = @hss_outer_group.entities.add_group
             @base_group.name = 'Base Plate'
-            if file_path1
-              @base_plate = @definition_list.load file_path1
 
-              slide_vec = Geom::Vector3d.new(@w/2, @h/2, 0)
-              slide_base = Geom::Transformation.translation(slide_vec)
-              @bp = @base_group.entities.add_instance @base_plate, center
-              @bp.material = @base_plate_color
-              etch_plate(@bp, @hss_inner_group)
-              @bp.explode
-            else
-              #insert generic baseplate
-              backup_baseplate = "4_ SQ"
-              file_path_backup = Sketchup.find_support_file "ea_steel_tools/Beam Components/#{backup_baseplate}.skp", "Plugins"
-              @base_plate = @definition_list.load file_path_backup
+            @base_plate = @definition_list.load file_path1
 
-              slide_vec = Geom::Vector3d.new(@w/2, @h/2, 0)
-              slide_base = Geom::Transformation.translation(slide_vec)
-              @bp = @base_group.entities.add_instance @base_plate, center
-              @bp.material = STEEL_COLORS[:pink][:rgb]
-              etch_plate(@bp, @hss_inner_group)
-              @bp.explode
-            end
-          else
+            slide_vec = Geom::Vector3d.new(@w/2, @h/2, 0)
+            slide_base = Geom::Transformation.translation(slide_vec)
+            @bp = @base_group.entities.add_instance @base_plate, center
+            @bp.material = @base_plate_color
+            etch_plate(@bp, @hss_inner_group)
+            @bp.explode
+
+          elsif plate.nil?
+            # p 'drawing parametric baseplate'
+            #insert generic baseplate
+            plate = draw_parametric_plate(sq_plate(@w, @h))
             etch_plate(plate, @hss_inner_group)
             add_plate_compass(plate, ORIGIN)
           end
@@ -922,7 +959,7 @@ module EA_Extensions623
         else
           # p 'created name'
           comp_def = @definition_list.add "#{@tube_name}"
-          comp_def.description = "The #{@tube_name} label"
+          comp_def.description = "#{@tube_name} label"
           ents = comp_def.entities
           _3d_text = ents.add_3d_text("#{@tube_name}", TextAlignCenter, "1CamBam_Stick_7", false, false, LABEL_HEIGHT, 3.0, 0.0, false, 0.0)
           # p "loaded CamBam_Stick_7: #{_3d_text}"
@@ -942,17 +979,68 @@ module EA_Extensions623
         slide_to_center = Geom::Transformation.translation(y_copy)
         hss_name_label.transform! slide_to_center
 
+        if @hss_is_rotated
+          #set to wide face of hss
+          rot_again = Geom::Transformation.rotation(@center_of_column.position, Z_AXIS, 90.degrees)
+          hss_name_label.transform! rot_again
+          vctr = Y_AXIS.clone.reverse
+          vctr.length = (@h - @w)/2
+          p vctr
+          adjust = Geom::Transformation.translation(vctr)
+          hss_name_label.transform! adjust
+        end
+
         labels = []
-        if @h == @w
-          # p "four labels"
-          for n in 1..3
+        if @is_column
+          if @h == @w #square column
+            for n in 1..3
+              labels.push hss_name_label.copy
+              rotation_incrememnts = 90.degrees
+            end
+          elsif @w >= 3 && !@hss_is_rotated
+            label2 = hss_name_label.copy
+            labels.push label2
+            rot1 = Geom::Transformation.rotation @center_of_column.position, Z_AXIS, 90.degrees
+            @name_label_group.entities.transform_entities rot1, label2
+
+            dist = (@h-@w)/2
+
+            sld = Geom::Transformation.translation Geom::Vector3d.new(0,-dist,0)
+            @name_label_group.entities.transform_entities sld, label2
+            rotation_incrememnts = 180.degrees
+            labels.push hss_name_label
             labels.push hss_name_label.copy
-            rotation_incrememnts = 90.degrees
+            label2.copy
+          elsif @w < 3 && @hss_is_rotated
+            labelcop = hss_name_label.copy
+            labels.push labelcop
+
+            rot_again = Geom::Transformation.rotation(@center_of_column.position, Z_AXIS, 90.degrees)
+            rot_cop = hss_name_label.copy
+            rot_cop.transform! rot_again
+            vctr = Y_AXIS.clone.reverse
+            vctr.length = (@h - @w)/2
+            p vctr
+            adjust = Geom::Transformation.translation(vctr)
+            rot_cop.transform! adjust
+
+          else
+            labels.push hss_name_label.copy
+            rotation_incrememnts = 180.degrees
           end
-        else
-          # p 'two labels'
-          labels.push hss_name_label.copy
+        else #hss is a beam so only do 2 labels
+          name_copy =  hss_name_label.copy
+          labels.push name_copy
           rotation_incrememnts = 180.degrees
+
+          flip1 = Geom::Transformation.rotation(hss_name_label.bounds.center, Z_AXIS, 180.degrees)
+          flip2 = Geom::Transformation.rotation(hss_name_label.bounds.center, Y_AXIS, 180.degrees)
+          if @hss_is_rotated
+            flip = flip2
+          else
+            flip = flip1 * flip2
+          end
+          @name_label_group.entities.transform_entities flip, name_copy
         end
 
         labels.each_with_index do |l,i|
@@ -1108,12 +1196,11 @@ module EA_Extensions623
         rescue Exception => e
           puts e.message
           puts e.backtrace.inspect
-          UI.messagebox("There was a problem inserting the #{@half_inch_stud} into the model")
+          UI.messagebox("There was a problem inserting the @half_inch_stud into the model")
         end
       end # end add_studs
 
       def add_up_arrow(length, spread)
-
         begin
 
           up_arrow_group = @hss_outer_group.entities.add_group()
@@ -1225,29 +1312,36 @@ module EA_Extensions623
       end
 
       def align_tube(vec, group)
-        group.transform! @trans #Fixed this so the column is not scaled
-        adjustment_vec = vec.clone
-        if @is_column
-          adjustment_vec.length = (@base_thickness+@start_tolerance) #this ,ight also need to account for the height from slab (1 1/2")
-        else
-          if @hss_has_cap
-            adjustment_vec.length = @cap_thickness #this ,ight also need to account for the height from slab (1 1/2")
-          else
-            adjustment_vec.length = 0 #this ,ight also need to account for the height from slab (1 1/2")
-          end
-        end
-        slide_up = Geom::Transformation.translation(adjustment_vec)
-        @entities.transform_entities(slide_up, group)
+        begin
 
-        if vec[2] < 0 && @is_column
-          if vec.parallel? Z_AXIS
-            rot_vec = X_AXIS
+          group.transform! @trans #Fixed this so the column is not scaled
+          adjustment_vec = vec.clone
+          if @is_column
+            adjustment_vec.length = (@base_thickness+@start_tolerance) #this ,ight also need to account for the height from slab (1 1/2")
           else
-            rot_vec = vec.cross(Z_AXIS)
+            if @hss_has_cap
+              adjustment_vec.length = @cap_thickness #this ,ight also need to account for the height from slab (1 1/2")
+            else
+              adjustment_vec.length = 0 #this ,ight also need to account for the height from slab (1 1/2")
+            end
           end
-          rot_upright = Geom::Transformation.rotation(@vec_center, rot_vec, 180.degrees)
-          group.transform! rot_upright
-          # p 'FLIPPED'
+          slide_up = Geom::Transformation.translation(adjustment_vec)
+          @entities.transform_entities(slide_up, group)
+
+          if vec[2] < 0 && @is_column
+            if vec.parallel? Z_AXIS
+              rot_vec = X_AXIS
+            else
+              rot_vec = vec.cross(Z_AXIS)
+            end
+            rot_upright = Geom::Transformation.rotation(@vec_center, rot_vec, 180.degrees)
+            group.transform! rot_upright
+            # p 'FLIPPED'
+          end
+        rescue Exception => e
+          puts e.message
+          puts e.backtrace.inspect
+          UI.messagebox("There was a problem aligning the tube with the slected points")
         end
       end
 
@@ -1469,9 +1563,6 @@ module EA_Extensions623
         view.draw(GL_LINES, pts)
       end
 
-      # onKeyDown is called when the user presses a key on the keyboard.
-      # We are checking it here to see if the user pressed the shift key
-      # so that we can do inference locking
       def onKeyDown(key, repeat, flags, view)
         if( key == CONSTRAIN_MODIFIER_KEY && repeat == 1 )
           # if we already have an inference lock, then unlock it
@@ -1485,15 +1576,15 @@ module EA_Extensions623
           end
 
         elsif (key == VK_LEFT && repeat == 1)
-          # p 'left'
           if( @state == 1 && @ip1.valid? )
             if @left_lock == true
               view.lock_inference
               @left_lock = false
             elsif( @state == 1 &&  @ip1.valid? )
-              p = @ip1.position
-              plus_1_y = Geom::Point3d.new(p[0], p[1]+10, p[2])
-              green_axis = Sketchup::InputPoint.new(plus_1_y)
+              pt = @ip1.position
+              y_axes = view.model.axes.axes[1]
+              inference_y_point = Geom::Point3d.new(pt[0]+y_axes[0], pt[1]+y_axes[1], pt[2]+y_axes[2])
+              green_axis = Sketchup::InputPoint.new(inference_y_point)
               view.lock_inference green_axis, @ip1
               @left_lock = true
               @right_lock = false
@@ -1502,15 +1593,15 @@ module EA_Extensions623
           end
 
         elsif (key == VK_RIGHT && repeat == 1)
-          # p 'right'
           if( @state == 1 && @ip1.valid? )
             if @right_lock == true
               view.lock_inference
               @right_lock = false
             elsif( @state == 1 &&  @ip1.valid? )
-              p = @ip1.position
-              plus_1_x = Geom::Point3d.new(p[0]+10, p[1], p[2])
-              red_axis = Sketchup::InputPoint.new(plus_1_x)
+              pt = @ip1.position
+              x_axes = view.model.axes.axes[0]
+              inference_x_point = Geom::Point3d.new(pt[0]+x_axes[0], pt[1]+x_axes[1], pt[2]+x_axes[2])
+              red_axis = Sketchup::InputPoint.new(inference_x_point)
               view.lock_inference red_axis, @ip1
               @left_lock = false
               @right_lock = true
@@ -1519,15 +1610,15 @@ module EA_Extensions623
           end
 
         elsif (key == VK_UP && repeat == 1)
-          # p 'up'
           if( @state == 1 && @ip1.valid? )
             if @up_lock == true
               view.lock_inference
               @up_lock = false
             elsif( @state == 1 &&  @ip1.valid? )
-              p = @ip1.position
-              plus_1_z = Geom::Point3d.new(p[0], p[1], p[2]+10)
-              blue_axis = Sketchup::InputPoint.new(plus_1_z)
+              pt = @ip1.position
+              z_axes = view.model.axes.axes[2]
+              inference_z_point = Geom::Point3d.new(pt[0]+z_axes[0], pt[1]+z_axes[1], pt[2]+z_axes[2])
+              blue_axis = Sketchup::InputPoint.new(inference_z_point)
               view.lock_inference blue_axis, @ip1
               @left_lock = false
               @right_lock = false

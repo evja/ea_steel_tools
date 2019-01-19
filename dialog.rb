@@ -83,8 +83,8 @@ module EA_Extensions623
           list = all_beams_in(control.value)
           beam_size_dropdown = SKUI::Listbox.new( list )
           @@beam_name = beam_size_dropdown.value = beam_size_dropdown.items.first
-          beam_size_dropdown.position( 115, 55 )
-          beam_size_dropdown.width = 170
+          beam_size_dropdown.position( 105, 55 )
+          beam_size_dropdown.width = 140
           group.add_control( beam_size_dropdown )
           beam_size_dropdown.on( :change ) { |control, value|
             @@beam_name = control.value
@@ -192,12 +192,25 @@ module EA_Extensions623
         options_list_label.visible = @@has_holes
         group3.add_control( options_list_label )
 
+        #########
+        sel_manual = SKUI::Textbox.new(@@hole_spacing)
+        sel_manual.position(250,15)
+        sel_manual.width = 35
+        sel_manual.height = 25
+        sel_manual.on(:textchange) {|control|
+          @@hole_spacing = control.value.to_s.to_r.to_f
+        }
+        sel_manual.visible = @@has_holes
+        group3.add_control(sel_manual)
+        #############
+
         # create 2 radio buttins for 16" and 24"
         sel_16 = SKUI::RadioButton.new("16\"")
         sel_16.position(148,20)
         sel_16.checked = true if @@hole_spacing == 16
         sel_16.on(:change) {|control|
           @@hole_spacing = 16 if control.checked?
+          sel_manual.value = @@hole_spacing if control.checked?
         }
         sel_16.visible = @@has_holes
         group3.add_control(sel_16)
@@ -207,12 +220,13 @@ module EA_Extensions623
         sel_24.checked = true if @@hole_spacing == 24
         sel_24.on(:change) {|control|
           @@hole_spacing = 24 if control.checked?
+          sel_manual.value = @@hole_spacing if control.checked?
         }
         sel_24.visible = @@has_holes
         group3.add_control(sel_24)
 
-        chk_cut_holes = SKUI::Checkbox.new( 'Cut Holes?' )
-        chk_cut_holes.position( 250, 20 )
+        chk_cut_holes = SKUI::Checkbox.new( 'Cut?' )
+        chk_cut_holes.position( 310, 20 )
         group3.add_control( chk_cut_holes )
         chk_cut_holes.visible = @@has_holes
         chk_cut_holes.on (:change ) { |control|
@@ -336,7 +350,6 @@ module EA_Extensions623
 
         ########################################################################
         ########################################################################
-
         btn_ok = SKUI::Button.new( 'OK' ) { |control|
           @@beam_data = find_beam(@@height_class, @@beam_name)
           data = {

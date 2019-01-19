@@ -85,15 +85,15 @@ module EA_Extensions623
           end
 
         elsif (key == VK_LEFT && repeat == 1)
-          p 'left'
           if( @state == 1 && @ip1.valid? )
             if @left_lock == true
               view.lock_inference
               @left_lock = false
             elsif( @state == 1 &&  @ip1.valid? )
-              p = @ip1.position
-              plus_1_y = Geom::Point3d.new(p[0], p[1]+10, p[2])
-              green_axis = Sketchup::InputPoint.new(plus_1_y)
+              pt = @ip1.position
+              y_axes = view.model.axes.axes[1]
+              inference_y_point = Geom::Point3d.new(pt[0]+y_axes[0], pt[1]+y_axes[1], pt[2]+y_axes[2])
+              green_axis = Sketchup::InputPoint.new(inference_y_point)
               view.lock_inference green_axis, @ip1
               @left_lock = true
               @right_lock = false
@@ -102,15 +102,15 @@ module EA_Extensions623
           end
 
         elsif (key == VK_RIGHT && repeat == 1)
-          p 'right'
           if( @state == 1 && @ip1.valid? )
             if @right_lock == true
               view.lock_inference
               @right_lock = false
             elsif( @state == 1 &&  @ip1.valid? )
-              p = @ip1.position
-              plus_1_x = Geom::Point3d.new(p[0]+10, p[1], p[2])
-              red_axis = Sketchup::InputPoint.new(plus_1_x)
+              pt = @ip1.position
+              x_axes = view.model.axes.axes[0]
+              inference_x_point = Geom::Point3d.new(pt[0]+x_axes[0], pt[1]+x_axes[1], pt[2]+x_axes[2])
+              red_axis = Sketchup::InputPoint.new(inference_x_point)
               view.lock_inference red_axis, @ip1
               @left_lock = false
               @right_lock = true
@@ -119,15 +119,15 @@ module EA_Extensions623
           end
 
         elsif (key == VK_UP && repeat == 1)
-          p 'up'
           if( @state == 1 && @ip1.valid? )
             if @up_lock == true
               view.lock_inference
               @up_lock = false
             elsif( @state == 1 &&  @ip1.valid? )
-              p = @ip1.position
-              plus_1_z = Geom::Point3d.new(p[0], p[1], p[2]+10)
-              blue_axis = Sketchup::InputPoint.new(plus_1_z)
+              pt = @ip1.position
+              z_axes = view.model.axes.axes[2]
+              inference_z_point = Geom::Point3d.new(pt[0]+z_axes[0], pt[1]+z_axes[1], pt[2]+z_axes[2])
+              blue_axis = Sketchup::InputPoint.new(inference_z_point)
               view.lock_inference blue_axis, @ip1
               @left_lock = false
               @right_lock = false

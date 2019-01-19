@@ -7,7 +7,6 @@ module EA_Extensions623
       # This is the standard Ruby initialize method that is called when you create
       # a new object.
       def initialize(data)
-
         #returns the avtive model material list
         @model = Sketchup.active_model
         @entities = @model.active_entities
@@ -69,22 +68,13 @@ module EA_Extensions623
           pt16= [0,0,@tf]
         ]
 
-
-        @x_red = Geom::Vector3d.new 1,0,0
-        @y_green = Geom::Vector3d.new 0,1,0
-        @z_blue = Geom::Vector3d.new 0,0,1
-
         @nine_sixteenths_holes = []
         check_for_preselect(@selection, @model.active_view)
         self.reset(nil)
       end
 
-      def add_column_baseplate()
-        #create a parametric baseplate engine for the flange tool
-
-      end
-
       def check_for_preselect(*args, view)
+        @bad_selections = []
         if args[0].nil?
           p 'no selection'
           return false
@@ -99,20 +89,29 @@ module EA_Extensions623
               #extract the start and end point of the Edge
               pt1 = ent.start.position
               pt2 = ent.end.position
+            else
+              @bad_selections << ent
             end
-            @vy = pt1.vector_to pt2
-            not_a_zero_vec = @vy.length > 0
-            @vx = @vy.axes[0] if not_a_zero_vec
-            @vz = @vy.axes[1] if not_a_zero_vec
+            if pt1 && pt2
+              @vy = pt1.vector_to pt2
+              not_a_zero_vec = @vy.length > 0
+              @vx = @vy.axes[0] if not_a_zero_vec
+              @vz = @vy.axes[1] if not_a_zero_vec
 
-            @trans = Geom::Transformation.axes pt1, @vx, @vy, @vz.reverse
-            @trans2 = Geom::Transformation.axes pt2, @vx, @vy, @vz.reverse
+              @trans = Geom::Transformation.axes pt1, @vx, @vy, @vz.reverse
+              @trans2 = Geom::Transformation.axes pt2, @vx, @vy, @vz.reverse
 
-            # Create the member in Sketchup
-            self.create_geometry(pt1, pt2, view)
-            self.reset(view)
-            # Sketchup.send_action "selectSelectionTool:" #Mabes Babes
+              # Create the member in Sketchup
+              self.create_geometry(pt1, pt2, view)
+              self.reset(view)
+              # Sketchup.send_action "selectSelectionTool:" #Mabes Babes
+            end
           end
+        end
+        if @bad_selections.any?
+          Sketchup.set_status_text("There were #{@bad_selections.count} selections that do not work with the tool", SB_PROMPT)
+        else
+          p 'no bad selections'
         end
       end
 
@@ -126,11 +125,11 @@ module EA_Extensions623
       def draw_ghost(pt1, pt2, view)
         vec = pt1 - pt2
 
-        if vec.parallel? @x_red
+        if vec.parallel? @model.axes.axes[0]
           ghost_color = "Red"
-        elsif vec.parallel? @y_green
+        elsif vec.parallel? @model.axes.axes[1]
           ghost_color = "Lime"
-        elsif vec.parallel? @z_blue
+        elsif vec.parallel? @model.axes.axes[2]
           ghost_color = "Blue"
         elsif pt1[0] == pt2[0] || pt1[1] == pt2[1] || pt1[2] == pt2[2]
           ghost_color = "Yellow"
@@ -139,9 +138,9 @@ module EA_Extensions623
         end
 
         a = []
-        @ip1points.each {|p| a << p.transform(@trans)}
+        @ghostpoints.each {|p| a << p.transform(@trans)}
         b = []
-        @ip1points.each {|p| b << p.transform(@trans2)}
+        @ghostpoints.each {|p| b << p.transform(@trans2)}
 
         pts = a.zip(b).flatten
 
@@ -165,6 +164,16 @@ module EA_Extensions623
         view.line_width = 0.1
         view.drawing_color = ghost_color
         view.draw(GL_LINES, pts)
+      end
+
+      def getExtents
+        bb = @model.bounds
+        bbp1 = Geom::Point3d.new(1000,1000,0)
+        bbp2 = Geom::Point3d.new(1000,-1000,0)
+        bbp3 = Geom::Point3d.new(-1000,1000,0)
+        bbp4 = Geom::Point3d.new(-1000,-1000,0)
+        bb.add(bbp1, bbp2, bbp3, bbp4)
+        return bb
       end
 
       def draw_control_line(pts, view)
@@ -234,6 +243,8 @@ module EA_Extensions623
               o1 = Geom::Point3d.new(((-0.5*@tw)-@r), 0, @tf ),
               p1 = Geom::Point3d.new((-0.5*@w), 0, @tf)
             ]
+
+            @ghostpoints = @ip1points.map{|e| e.clone}
 
             Sketchup::set_status_text ("Select second end"), SB_PROMPT
             @xdown = x
@@ -436,10 +447,7 @@ module EA_Extensions623
               if @hc >= 14
                 topz = @h-(@tf+3)
                 bottz = @h-(@tf+9)
-              elsif @hc == 6
-                topz = (0.5*@h)+(1)
-                bottz = (0.5*@h)-(1)
-              elsif @hc <= 5
+              elsif @hc <= 6
                 topz = (0.5*@h)
                 bottz = topz
               else
@@ -562,19 +570,134 @@ module EA_Extensions623
           end
 
           @all_studs.compact! if not @all_studs.empty?
-          if @@force_studs
+          if @@force_studs || @@flange_type == 'Column'
             @all_studs.each do |stud|
               copy = stud.copy
               tran = Geom::Transformation.rotation [0,0,@h/2], X_AXIS, 180.degrees
               copy.transform! tran
             end
           end
+
         rescue Exception => e
           puts e.message
           puts e.backtrace.inspect
           UI.messagebox("There was a problem loading 9/16 holes into the beam")
         end
       end
+
+      ##########################################
+      ##########################################
+      def draw_parametric_plate(pts)
+        begin
+          temp_faces = []
+          temp_edges = []
+          temp_groups = []
+          arcs = []
+
+          @baseplate_group = @outer_group.entities.add_group
+          @baseplate_group.name = 'Bottom Plate'
+          face = @baseplate_group.entities.add_face pts
+          vec = Geom::Point3d.new(0, 0, @h/2) - @baseplate_group.bounds.center
+          center = Geom::Transformation.translation(vec)
+          @outer_group.entities.transform_entities(center, @baseplate_group)
+          align = Geom::Transformation.axes([-8,0,@h/2], Y_AXIS, Z_AXIS)
+          @outer_group.entities.transform_entities(align, @baseplate_group)
+
+          #chamfer the corner
+          crnr1 = face.vertices[-1]
+          crnr2 = face.vertices[0]
+          crn_pos1 = crnr1.position
+          crn_pos2 = crnr2.position
+          # p crn_pos1
+          gr = @baseplate_group.entities.add_group
+          arc1 = gr.entities.add_arc([crn_pos1[0]-0.5, crn_pos1[1]-0.5, crn_pos1[2]], X_AXIS, Z_AXIS, BOTTOM_PLATE_CORNER_RADIUS, 0.degrees ,90.degrees)
+          arc1 = gr.entities.add_arc([crn_pos2[0]-0.5, crn_pos2[1]+0.5, crn_pos2[2]], Y_AXIS.reverse, Z_AXIS, BOTTOM_PLATE_CORNER_RADIUS, 0.degrees ,90.degrees)
+          # arc1.faces
+
+          dg = 180.degrees
+
+          1.times do |t|
+            grc = gr.copy
+            rot = Geom::Transformation.rotation(ORIGIN, Z_AXIS, dg)
+            @baseplate_group.entities.transform_entities(rot, grc)
+            arcs << grc.explode
+          end
+          pcs = gr.explode
+
+          @baseplate_group.entities.each do |e|
+            if e.class == Sketchup::Edge
+              if e.length == BOTTOM_PLATE_CORNER_RADIUS
+                e.erase!
+              end
+            else
+              next
+            end
+          end
+          pcs.each do |pc|
+            if pc.class == Sketchup::Edge
+              face = pc.faces[0]
+              break
+            end
+          end
+
+          face.pushpull STANDARD_BASE_PLATE_THICKNESS
+
+          @baseplate_group.entities.each do |e|
+            if e.class == Sketchup::Edge
+              if e.length == 0.75
+                e.soft = true
+                e.smooth = true
+              else
+                next
+              end
+            else
+              next
+            end
+          end
+
+          color_by_thickness(@baseplate_group, 0.875)
+
+          bh_file = Sketchup.find_support_file("#{COMPONENT_PATH}/#{THRTN_SXTNTHS_HOLE}", "Plugins")
+          bh_def = @definition_list.load bh_file
+
+          big_hole = @baseplate_group.entities.add_instance bh_def, ORIGIN
+
+          v1 = X_AXIS.clone
+          v2 = Y_AXIS.clone
+
+          v1.length = (@w/2)+(STANDARD_BASE_MARGIN.to_f/2)
+          v2.length = (@h/2)+(STANDARD_BASE_MARGIN.to_f/2)
+          tr1 = Geom::Transformation.translation(v1)
+          tr2 = Geom::Transformation.translation(v2)
+          scl_hole = Geom::Transformation.scaling(ORIGIN, 1,1,STANDARD_BASE_PLATE_THICKNESS/2)
+          @baseplate_group.entities.transform_entities scl_hole, big_hole
+
+          @baseplate_group.entities.transform_entities tr1, big_hole
+          bh2 = big_hole.copy
+          @baseplate_group.entities.transform_entities tr2, big_hole
+
+          tr1 = Geom::Transformation.translation(v2.reverse)
+          @baseplate_group.entities.transform_entities tr1, bh2
+
+          bh3 = bh2.copy
+          bh4 = big_hole.copy
+
+          v3 = v1.clone.reverse
+          v3.length = @w+STANDARD_BASE_MARGIN
+
+          tr3 = Geom::Transformation.translation(v3)
+
+          @baseplate_group.entities.transform_entities tr3, [bh3, bh4]
+
+          return @baseplate_group
+        rescue Exception => e
+          puts e.message
+          puts e.backtrace.inspect
+          UI.messagebox("There was a problem inserting the base plate")
+        end
+      end
+      ##########################################
+      ##########################################
 
       def add_13_16_holes(length)
         begin
@@ -1034,6 +1157,31 @@ module EA_Extensions623
         end
       end
 
+      def insert_moment_clip(length)
+        file_path_moment_clip = Sketchup.find_support_file "#{COMPONENT_PATH}/#{MOMENT_CLIP}", "Plugins/"
+
+        mcd = @definition_list.load file_path_moment_clip
+        moment_clip = @outer_group.entities.add_instance mcd, ORIGIN
+        moment_clip2 = moment_clip.copy
+
+        color_by_thickness(moment_clip, 0.375)
+        color_by_thickness(moment_clip2, 0.375)
+
+        p1 = Geom::Point3d.new(0,0,@h)
+        mv1 = Geom::Transformation.translation(p1)
+
+        @outer_group.entities.transform_entities(mv1, moment_clip2)
+
+        rot = Geom::Transformation.rotation(ORIGIN, Y_AXIS, 180.degrees)
+        @outer_group.entities.transform_entities(rot, moment_clip)
+
+        vec = Geom::Vector3d.new(length-(@hc/2), 0,0)
+        slide = Geom::Transformation.translation(vec)
+
+        @outer_group.entities.transform_entities(slide, moment_clip)
+        @outer_group.entities.transform_entities(slide, moment_clip2)
+      end
+
       def add_shearplates(length, scale, color)
         begin
           all_shearplates = []
@@ -1180,27 +1328,55 @@ module EA_Extensions623
         @solid_group = nil
       end
 
+
+      def sq_plate(w, h)
+        points = [
+          p1 = [(-(w/2)-STANDARD_BASE_MARGIN), (-(h/2)-STANDARD_BASE_MARGIN), 0],
+          p2 = [((w/2)+STANDARD_BASE_MARGIN), (-(h/2)-STANDARD_BASE_MARGIN), 0],
+          p3 = [(w/2)+STANDARD_BASE_MARGIN, ((h/2)+STANDARD_BASE_MARGIN), 0],
+          p4 = [(-(w/2)-STANDARD_BASE_MARGIN), ((h/2)+STANDARD_BASE_MARGIN), 0]
+        ]
+        return points
+      end
+
       def create_geometry(pt1, pt2, view)
         begin
           model = view.model
-          model.start_operation("Create Beam", true)
+          # model.start_operation("Create Beam", true)
           set_groups(model)
 
           vec = pt2 - pt1
           length = vec.length
           if( length < 8 )
-              UI.beep
-              UI.messagebox("Please draw a beam longer than 8")
-              return
+            # UI.beep
+            UI.messagebox("Please draw a beam longer than 8")
+            return
+          end
+
+          if !@model.axes.axes[0].parallel? X_AXIS
+            #need to do something about the vertical ghost
+            p 'Axis Off of Origin'
           end
 
           #draw the bare beam
           beam = draw_beam(@@beam_data, length)
           beam.name = "Difference"
 
+          #insert all labels in the beam and column, insert 13/16" if it is a beam
+          if @@flange_type == 'Column'
+            column = true
+            all_labels = add_labels_column(vec, length)
+          else
+            column = false
+            all_labels = add_labels_beam(vec, length)
+            thirteen_sixteenths_holes = add_13_16_holes(length) unless @hc < 6 && @@has_holes
+          end
+
+          all_labels.each {|label| label.layer = @labels_layer}
+
           #add holes to the beam
           add_9_16_flange_holes(length) if @@has_holes
-          add_9_16_web_holes(length) if @@has_holes
+          add_9_16_web_holes(length) if @@has_holes && !column
 
           case @@stiff_thickness
           when '1/4'
@@ -1270,17 +1446,6 @@ module EA_Extensions623
             @material_names << clr2
           end
 
-          #insert all labels in the beam and column, insert 13/16" if it is a beam
-          if @@flange_type == 'Column'
-            column = true
-            all_labels = add_labels_column(vec, length)
-          else
-            column = false
-            all_labels = add_labels_beam(vec, length)
-            thirteen_sixteenths_holes = add_13_16_holes(length) unless @hc < 6 && @@has_holes
-          end
-          all_labels.each {|label| label.layer = @labels_layer}
-
           # Cuts the holes if the option is checked
           if @@cuts_holes && @@has_holes
             beam.explode
@@ -1315,6 +1480,10 @@ module EA_Extensions623
             move_down = Geom::Transformation.new point
             @entities.transform_entities move_down, @outer_group
           end
+
+          draw_parametric_plate(sq_plate(@w, @h)) if column
+
+          insert_moment_clip(length) if column
 
           #align the beam with the input points
           align_beam(pt1, pt2, vec, @outer_group)

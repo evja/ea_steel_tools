@@ -13,33 +13,21 @@ module EA_Extensions623
     DONE_COLOR = '1 Done'
     PLATE_COLOR = 'Black'
 
-    module BreakoutMod
-      def self.qualify_model(model)
-        ents = model.entities
-        if model.title.match GROUP_REGEX
-        # if model.entities.count == 1
-          if ents[0].class == Sketchup::Group && ents[0].name.match(GROUP_REGEX)
-            # p 'passed as a group'
-            return true
-          elsif ents[0].class == Sketchup::ComponentInstance #&& ents[0].definition.name.match(GROUP_REGEX)
-            # p 'passed as a Component'
-            return true
-          else
-            # p 'not validated'
-            return false
-          end
-        else
-          return false
-        end
-      end
-    end
 
     class Breakout
       include BreakoutSetup
 
       def initialize
+
         # p 'hello'
         @model = Sketchup.active_model
+        unless qualify_model(@model)
+          result = UI.messagebox("You are trying to breakout a part with an unconventional name: #{@model.title}, do you wish to continue? If you do continue you risk the tool not behaving properly", MB_YESNO)
+          if result == 7
+            reset
+            return
+          end
+        end
         @model.start_operation("Breakout", true)
         @@environment_set = false if not defined? @@environment_set
         @pages = @model.pages
@@ -51,8 +39,7 @@ module EA_Extensions623
         @d_list = @model.definitions
         @styles = @model.styles
         @plates = []
-        @steel_member = @entities.first
-        @member_name = @steel_member.name
+        @steel_member = @selection.first
         @letters = [*"A".."Z"]
         @unique_plates = []
         @labels = []
@@ -62,7 +49,6 @@ module EA_Extensions623
         # p 'evaluating for empty plates'
         if @plates.empty?
           result = UI.messagebox("Did not detect any plates, do you wish to continue?", MB_YESNO)
-          p result
           if result == 6
             @state = 1
             position_member(@steel_member)
@@ -82,6 +68,25 @@ module EA_Extensions623
           temp_label(@plates, @model.active_view)
         end
         #last method This resets the users template to what they had in the beginning
+      end
+
+      def qualify_model(model)
+        ents = model.entities
+        if model.title.match GROUP_REGEX
+        # if model.entities.count == 1
+          if ents[0].class == Sketchup::Group && ents[0].name.match(GROUP_REGEX)
+            # p 'passed as a group'
+            return true
+          elsif ents[0].class == Sketchup::ComponentInstance #&& ents[0].definition.name.match(GROUP_REGEX)
+            # p 'passed as a Component'
+            return true
+          else
+            # p 'not validated'
+            return false
+          end
+        else
+          return false
+        end
       end
 
       def reset
@@ -327,10 +332,10 @@ module EA_Extensions623
         poss_labs = ["N", "S", "E", "W", "X"]
         poss_labs.each do |lab|
           if @d_list[lab]
-            p "Found a direction in the list"
+            # p "Found a direction in the list"
             @d_list[lab].name = "Direction Label"
           else
-            p "not FOUND"
+            # p "not FOUND"
           end
         end
 
