@@ -19,6 +19,7 @@ module EA_Extensions623
     require FNAME+'/'+'load_schemas.rb'
     require FNAME+'/'+'magic_numbers.rb'
     require FNAME+'/'+'update.rb'
+    require FNAME+'/'+'version.rb'
     # require FNAME+'/'+'test.rb'
 
   if !file_loaded?('ea_steel_tools_menu_loader')

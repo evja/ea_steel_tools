@@ -114,8 +114,7 @@ module EA_Extensions623
           end
         end
         if @bad_selections.any?
-          UI.beep
-          Sketchup.status_text = "There were #{@bad_selections.count} selections that do not work with the tool"
+          Sketchup.set_status_text("There were #{@bad_selections.count} selections that do not work with the tool", SB_PROMPT)
         else
           p 'no bad selections'
         end

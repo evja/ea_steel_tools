@@ -350,7 +350,6 @@ module EA_Extensions623
 
         ########################################################################
         ########################################################################
-        p @@hole_spacing
         btn_ok = SKUI::Button.new( 'OK' ) { |control|
           @@beam_data = find_beam(@@height_class, @@beam_name)
           data = {
