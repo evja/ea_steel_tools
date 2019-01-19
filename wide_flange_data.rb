@@ -453,10 +453,7 @@ module EA_Extensions623
               if @hc >= 14
                 topz = @h-(@tf+3)
                 bottz = @h-(@tf+9)
-              elsif @hc == 6
-                topz = (0.5*@h)+(1)
-                bottz = (0.5*@h)-(1)
-              elsif @hc <= 5
+              elsif @hc <= 6
                 topz = (0.5*@h)
                 bottz = topz
               else
@@ -1206,9 +1203,14 @@ module EA_Extensions623
           vec = pt2 - pt1
           length = vec.length
           if( length < 8 )
-              UI.beep
-              UI.messagebox("Please draw a beam longer than 8")
-              return
+            # UI.beep
+            UI.messagebox("Please draw a beam longer than 8")
+            return
+          end
+
+          if !@model.axes.axes[0].parallel? X_AXIS
+            #need to do something about the vertical ghost
+            p 'Axis Off of Origin'
           end
 
           #draw the bare beam
