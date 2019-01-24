@@ -1,7 +1,8 @@
 module EA_Extensions623
   module EASteelTools
 
-    class TubeTool < Control
+    class TubeTool
+      include Control
 
       # The activate method is called by SketchUp when the tool is first selected.
       # it is a good place to put most of your initialization
@@ -193,6 +194,7 @@ module EA_Extensions623
 
           sld = Geom::Transformation.new(v3)
           @hss_outer_group.entities.transform_entities sld, cap
+          classify_as_plate(cap)
 
           cap2 = cap.copy
 
@@ -201,8 +203,8 @@ module EA_Extensions623
           @hss_outer_group.entities.transform_entities copy_away, cap2
 
           color_by_thickness(cap, @cap_thickness)
-          cap2.material = cap.material
-          # color_by_thickness(cap2, @cap_thickness)
+          color_by_thickness(cap2, @cap_thickness)
+          # classify_as_plate(cap2)
         rescue Exception => e
           puts e.message
           puts e.backtrace.inspect
@@ -355,13 +357,6 @@ module EA_Extensions623
           add_name_label(vec)
           add_direction_labels()
           align_tube(vec, @hss_outer_group)
-
-          if @material_names.include? STEEL_COLORS[:orange][:name]
-            @base_plate_color = STEEL_COLORS[:orange][:rgb]
-          else
-            @base_plate_color = @materials.add STEEL_COLORS[:orange][:name]
-            @base_plate_color.color = STEEL_COLORS[:orange][:rgb]
-          end
 
           insert_base_plates(@base_type, @center_of_column.position)
           insert_top_plate(@center_of_column.position, extrude_length)
@@ -528,6 +523,21 @@ module EA_Extensions623
         end
       end #hss beam lables
 
+      def array_studs(copies, part, dist)
+        studs = []
+        p copies
+        distance = dist.length
+        copies.times do
+          trns = Geom::Transformation.translation(dist)
+          stud_copy = part.copy
+          part.parent.entities.transform_entities trns, stud_copy
+          studs << stud_copy
+          dist.length += distance
+        end
+
+        return studs
+      end
+
       def add_studs_beam(length, spread)
         begin
           length = length.to_f
@@ -556,14 +566,8 @@ module EA_Extensions623
             copy_dist = vec2.clone
             copy_dist.length = spread
 
-            copies.times do |c|
-              trans = Geom::Transformation.translation(copy_dist)
-              stud_copy = e_stud.copy
-              color_by_thickness(stud_copy, 0.5)
-
-              @hss_outer_group.entities.transform_entities trans, stud_copy
-              copy_dist.length += spread
-            end
+            list = array_studs(copies, e_stud, copy_dist)
+            list.each {|c| color_by_thickness(c, 0.5)}
           end
 
           if @west_stud_selct
@@ -585,14 +589,9 @@ module EA_Extensions623
             copy_dist = vec2.clone
             copy_dist.length = spread
 
-            copies.times do |c|
-              trans = Geom::Transformation.translation(copy_dist)
-              stud_copy = w_stud.copy
-              color_by_thickness(stud_copy, 0.5)
+            list = array_studs(copies, w_stud, copy_dist)
+            list.each {|c| color_by_thickness(c, 0.5)}
 
-              @hss_outer_group.entities.transform_entities trans, stud_copy
-              copy_dist.length += spread
-            end
           end
 
           if @north_stud_selct
@@ -614,13 +613,9 @@ module EA_Extensions623
             copy_dist = vec2.clone
             copy_dist.length = spread
 
-            copies.times do |c|
-              trans = Geom::Transformation.translation(copy_dist)
-              stud_copy = n_stud.copy
+            list = array_studs(copies, n_stud, copy_dist)
+            list.each {|c| color_by_thickness(c, 0.5)}
 
-              @hss_outer_group.entities.transform_entities trans, stud_copy
-              copy_dist.length += spread
-            end
           end
 
           if @south_stud_selct
@@ -645,15 +640,9 @@ module EA_Extensions623
             copy_dist = vec2.clone
             copy_dist.length = spread
 
-            copies.times do |c|
-              trans = Geom::Transformation.translation(copy_dist)
-              stud_copy = s_stud.copy
-              color_by_thickness(stud_copy, 0.5)
+            list = array_studs(copies, s_stud, copy_dist)
+            list.each {|c| color_by_thickness(c, 0.5)}
 
-              @hss_outer_group.entities.transform_entities trans, stud_copy
-              # stud_copy.move! trans
-              copy_dist.length += spread
-            end
           end
         rescue Exception => e
           puts e.message
@@ -664,32 +653,32 @@ module EA_Extensions623
 
       def insert_top_plate(center, vec)
         begin
-          @top_plate_group = @hss_outer_group.entities.add_group
+          top_plate = @hss_outer_group.entities.add_group
 
           if @w <= STANDARD_TOP_PLATE_SIZE
             file_path2 = Sketchup.find_support_file "#{COMPONENT_PATH}/Top Plate.skp", "Plugins"
 
-            @top_plate = @definition_list.load file_path2
+            top_plate_def = @definition_list.load file_path2
 
-            @tp = @top_plate_group.entities.add_instance @top_plate, center
+            @tp = top_plate.entities.add_instance top_plate_def, center
 
             slide_tpl_up = Geom::Transformation.translation(Geom::Vector3d.new(0,0,vec.length))
-            @top_plate_group.entities.transform_entities slide_tpl_up, @tp
-
-            @tp.material = @base_plate_color
+            top_plate.entities.transform_entities slide_tpl_up, @tp
             etch_plate(@tp, @hss_inner_group)
             @tp.explode
           else
-            @top_plate = draw_parametric_plate(sq_plate(@w, @h))
+            top_plate = draw_parametric_plate(sq_plate(@w, @h))
             slide_tpl_up = Geom::Transformation.translation(Geom::Vector3d.new(0,0,vec.length+STANDARD_BASE_PLATE_THICKNESS))
-            @hss_outer_group.entities.transform_entities slide_tpl_up, @top_plate
+            @hss_outer_group.entities.transform_entities slide_tpl_up, top_plate
 
-            rot = Geom::Transformation.rotation(@top_plate.bounds.center, Y_AXIS, 180.degrees)
-            @top_plate.transform! rot
-            @top_plate.material = @base_plate_color
-            etch_plate(@top_plate, @hss_inner_group)
-            add_plate_compass(@top_plate, ORIGIN)
+            rot = Geom::Transformation.rotation(top_plate.bounds.center, Y_AXIS, 180.degrees)
+            top_plate.transform! rot
+            etch_plate(top_plate, @hss_inner_group)
+            add_plate_compass(top_plate, ORIGIN)
           end
+          color_by_thickness(top_plate, STANDARD_BASE_PLATE_THICKNESS)
+          classify_as_plate(top_plate)
+          return top_plate
         rescue Exception => e
           puts e.message
           puts e.backtrace.inspect
@@ -906,8 +895,9 @@ module EA_Extensions623
             slide_vec = Geom::Vector3d.new(@w/2, @h/2, 0)
             slide_base = Geom::Transformation.translation(slide_vec)
             @bp = @base_group.entities.add_instance @base_plate, center
-            @bp.material = @base_plate_color
             etch_plate(@bp, @hss_inner_group)
+            color_by_thickness(@base_group, STANDARD_BASE_PLATE_THICKNESS.to_f)
+            classify_as_plate(@base_group)
             @bp.explode
 
           elsif plate.nil?
@@ -916,6 +906,8 @@ module EA_Extensions623
             plate = draw_parametric_plate(sq_plate(@w, @h))
             etch_plate(plate, @hss_inner_group)
             add_plate_compass(plate, ORIGIN)
+            color_by_thickness(plate, STANDARD_BASE_PLATE_THICKNESS.to_f)
+            classify_as_plate(plate)
           end
           #NEEDS#
 
@@ -1096,14 +1088,8 @@ module EA_Extensions623
             copy_dist = vec2.clone
             copy_dist.length = spread
 
-            copies.times do |c|
-              trans = Geom::Transformation.translation(copy_dist)
-              stud_copy = e_stud.copy
-              color_by_thickness(stud_copy, 0.5)
-
-              @hss_outer_group.entities.transform_entities trans, stud_copy
-              copy_dist.length += spread
-            end
+            list = array_studs(copies, e_stud, copy_dist)
+            list.each {|c| color_by_thickness(c, 0.5)}
           end
 
           if @west_stud_selct
@@ -1125,14 +1111,8 @@ module EA_Extensions623
             copy_dist = vec2.clone
             copy_dist.length = spread
 
-            copies.times do |c|
-              trans = Geom::Transformation.translation(copy_dist)
-              stud_copy = w_stud.copy
-              color_by_thickness(stud_copy, 0.5)
-
-              @hss_outer_group.entities.transform_entities trans, stud_copy
-              copy_dist.length += spread
-            end
+            list = array_studs(copies, w_stud, copy_dist)
+            list.each {|c| color_by_thickness(c, 0.5)}
           end
 
           if @north_stud_selct
@@ -1154,14 +1134,8 @@ module EA_Extensions623
             copy_dist = vec2.clone
             copy_dist.length = spread
 
-            copies.times do |c|
-              trans = Geom::Transformation.translation(copy_dist)
-              stud_copy = n_stud.copy
-              color_by_thickness(stud_copy, 0.5)
-
-              @hss_outer_group.entities.transform_entities trans, stud_copy
-              copy_dist.length += spread
-            end
+            list = array_studs(copies, n_stud, copy_dist)
+            list.each {|c| color_by_thickness(c, 0.5)}
           end
 
           if @south_stud_selct
@@ -1183,14 +1157,8 @@ module EA_Extensions623
             copy_dist = vec2.clone
             copy_dist.length = spread
 
-            copies.times do |c|
-              trans = Geom::Transformation.translation(copy_dist)
-              stud_copy = s_stud.copy
-              color_by_thickness(stud_copy, 0.5)
-
-              @hss_outer_group.entities.transform_entities trans, stud_copy
-              copy_dist.length += spread
-            end
+            list = array_studs(copies, s_stud, copy_dist)
+            list.each {|c| color_by_thickness(c, 0.5)}
           end
         rescue Exception => e
           puts e.message
@@ -1560,82 +1528,6 @@ module EA_Extensions623
         view.line_width = 0.1
         view.drawing_color = ghost_color
         view.draw(GL_LINES, pts)
-      end
-
-      def onKeyDown(key, repeat, flags, view)
-        if( key == CONSTRAIN_MODIFIER_KEY && repeat == 1 )
-          # if we already have an inference lock, then unlock it
-          if( view.inference_locked? )
-            # calling lock_inference with no arguments actually unlocks
-            view.lock_inference
-          elsif( @state == 0 && @ip1.valid? )
-            view.lock_inference @ip1
-          elsif( @state == 1 && @ip2.valid? )
-            view.lock_inference @ip2, @ip1
-          end
-
-        elsif (key == VK_LEFT && repeat == 1)
-          if( @state == 1 && @ip1.valid? )
-            if @left_lock == true
-              view.lock_inference
-              @left_lock = false
-            elsif( @state == 1 &&  @ip1.valid? )
-              pt = @ip1.position
-              y_axes = view.model.axes.axes[1]
-              inference_y_point = Geom::Point3d.new(pt[0]+y_axes[0], pt[1]+y_axes[1], pt[2]+y_axes[2])
-              green_axis = Sketchup::InputPoint.new(inference_y_point)
-              view.lock_inference green_axis, @ip1
-              @left_lock = true
-              @right_lock = false
-              @up_lock = false
-            end
-          end
-
-        elsif (key == VK_RIGHT && repeat == 1)
-          if( @state == 1 && @ip1.valid? )
-            if @right_lock == true
-              view.lock_inference
-              @right_lock = false
-            elsif( @state == 1 &&  @ip1.valid? )
-              pt = @ip1.position
-              x_axes = view.model.axes.axes[0]
-              inference_x_point = Geom::Point3d.new(pt[0]+x_axes[0], pt[1]+x_axes[1], pt[2]+x_axes[2])
-              red_axis = Sketchup::InputPoint.new(inference_x_point)
-              view.lock_inference red_axis, @ip1
-              @left_lock = false
-              @right_lock = true
-              @up_lock = false
-            end
-          end
-
-        elsif (key == VK_UP && repeat == 1)
-          if( @state == 1 && @ip1.valid? )
-            if @up_lock == true
-              view.lock_inference
-              @up_lock = false
-            elsif( @state == 1 &&  @ip1.valid? )
-              pt = @ip1.position
-              z_axes = view.model.axes.axes[2]
-              inference_z_point = Geom::Point3d.new(pt[0]+z_axes[0], pt[1]+z_axes[1], pt[2]+z_axes[2])
-              blue_axis = Sketchup::InputPoint.new(inference_z_point)
-              view.lock_inference blue_axis, @ip1
-              @left_lock = false
-              @right_lock = false
-              @up_lock = true
-            end
-          end
-        end
-      end
-
-      # onKeyUp is called when the user releases the key
-      # We use this to unlock the inference
-      # If the user holds down the shift key for more than 1/2 second, then we
-      # unlock the inference on the release.  Otherwise, the user presses shift
-      # once to lock and a second time to unlock.
-      def onKeyUp(key, repeat, flags, view)
-        if( key == CONSTRAIN_MODIFIER_KEY && view.inference_locked?)
-          view.lock_inference
-        end
       end
 
       # Reset the tool back to its initial state

@@ -7,6 +7,8 @@ module EA_Extensions623
 
     #Setc the north direction as the green axis
     NORTH = Geom::Vector3d.new [0,1,0]
+    CLSSFY_PLT = "Plate"
+    CLSSFR_LIB = "3DS Steel"
 
 
     #########################

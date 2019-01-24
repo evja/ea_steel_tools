@@ -1,12 +1,25 @@
 module EA_Extensions623
   module EASteelTools
 
-    class Control
+    module Control
       # deactivate is called when the tool is deactivated because
       # a different tool was selected
       def deactivate(view)
         view.invalidate if @drawn
         view.lock_inference if view.inference_locked?
+      end
+
+      def classify_as_plate(plate)
+        plate.definition.add_classification(CLSSFR_LIB, CLSSFY_PLT)
+        return plate
+      end
+
+      def set_layer(part, layer)
+        part.layer = layer
+      end
+
+      def check_for_existing_layer(meth, *args, &blk)
+
       end
 
       # The onMouseMove method is called whenever the user moves the mouse.
@@ -210,42 +223,48 @@ module EA_Extensions623
       end
 
       def color_by_thickness(obj, thickness)
-        materials = Sketchup.active_model.materials
-        materials_names = materials.map{|m| m.name}
-        thickness = thickness.to_s.to_r.to_f
+        begin
+          materials = Sketchup.active_model.materials
+          materials_names = materials.map{|m| m.name}
+          thickness = thickness.to_s.to_r.to_f
 
-        case thickness
-         when 0.25
-           color = STEEL_COLORS[:purple][:rgb]
-           clr_name = STEEL_COLORS[:purple][:name]
-         when 0.3125
-           color = STEEL_COLORS[:indigo][:rgb]
-           clr_name = STEEL_COLORS[:indigo][:name]
-         when 0.375
-           color = STEEL_COLORS[:blue][:rgb]
-           clr_name = STEEL_COLORS[:blue][:name]
-         when 0.5
-           color = STEEL_COLORS[:green][:rgb]
-           clr_name = STEEL_COLORS[:green][:name]
-         when 0.625
-           color = STEEL_COLORS[:yellow][:rgb]
-           clr_name = STEEL_COLORS[:yellow][:name]
-         when 0.75
-           color = STEEL_COLORS[:orange][:rgb]
-           clr_name = STEEL_COLORS[:orange][:name]
-         else
-           color = STEEL_COLORS[:red][:rgb]
-           clr_name = STEEL_COLORS[:red][:name]
-         end
+          case thickness
+           when 0.25
+             color = STEEL_COLORS[:purple][:rgb]
+             clr_name = STEEL_COLORS[:purple][:name]
+           when 0.3125
+             color = STEEL_COLORS[:indigo][:rgb]
+             clr_name = STEEL_COLORS[:indigo][:name]
+           when 0.375
+             color = STEEL_COLORS[:blue][:rgb]
+             clr_name = STEEL_COLORS[:blue][:name]
+           when 0.5
+             color = STEEL_COLORS[:green][:rgb]
+             clr_name = STEEL_COLORS[:green][:name]
+           when 0.625
+             color = STEEL_COLORS[:yellow][:rgb]
+             clr_name = STEEL_COLORS[:yellow][:name]
+           when 0.75
+             color = STEEL_COLORS[:orange][:rgb]
+             clr_name = STEEL_COLORS[:orange][:name]
+           else
+             color = STEEL_COLORS[:red][:rgb]
+             clr_name = STEEL_COLORS[:red][:name]
+           end
 
-          if materials_names.include? clr_name
-            obj.material = materials[clr_name]
-          else
-            new_mat = materials.add clr_name
-            new_mat.color = color
-            obj.material = new_mat
-          end
-         return obj
+            if materials_names.include? clr_name
+              obj.material = materials[clr_name]
+            else
+              new_mat = materials.add clr_name
+              new_mat.color = color
+              obj.material = new_mat
+            end
+           return obj
+         rescue Exception => e
+          puts e.message
+          puts e.backtrace.inspect
+          UI.messagebox("There was a problem coloring some parts")
+        end
       end
 
     end #Class
