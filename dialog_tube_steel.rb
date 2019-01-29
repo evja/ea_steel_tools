@@ -393,7 +393,9 @@ module EA_Extensions623
         list3 = all_guage_options_in(@@height_class, @@width_class)
         # p list3
         wall_thickness_dropdown = SKUI::Listbox.new( list3 )
-        @@wall_thickness.empty? ? (@@wall_thickness = (wall_thickness_dropdown.items.include?('1/4"') ? '1/4"' : wall_thickness_dropdown.items.first)) : (@@wall_thickness)
+        if @@wall_thickness.empty?
+          @@wall_thickness = (wall_thickness_dropdown.items.include?('1/4"') ? '1/4"' : wall_thickness_dropdown.items.first)
+        end
         wall_thickness_dropdown.value = @@wall_thickness
         wall_thickness_dropdown.position( 190, 25 )
         wall_thickness_dropdown.width = 50
@@ -435,7 +437,7 @@ module EA_Extensions623
           @@hss_is_rotated = @rotate_hss.checked?
           list3 = all_guage_options_in(@@height_class, @@width_class)
           wall_thickness_dropdown = SKUI::Listbox.new( list3 )
-          # @@wall_thickness = (wall_thickness_dropdown.value = wall_thickness_dropdown.items.first)
+          @@wall_thickness = (wall_thickness_dropdown.value = (wall_thickness_dropdown.items.include?('1/4"') ? '1/4"' : wall_thickness_dropdown.items.first))
           wall_thickness_dropdown.position( 190, 25 )
           wall_thickness_dropdown.width = 50
           wall_thickness_dropdown.on(:change) { |control, value|
@@ -469,7 +471,7 @@ module EA_Extensions623
             @@hss_is_rotated = @rotate_hss.checked?
             list3 = all_guage_options_in(@@height_class, @@width_class)
             wall_thickness_dropdown = SKUI::Listbox.new( list3 )
-            # @@wall_thickness = (wall_thickness_dropdown.value = wall_thickness_dropdown.items.sample)
+            @@wall_thickness = (wall_thickness_dropdown.value = (wall_thickness_dropdown.items.include?('1/4"') ? '1/4"' : wall_thickness_dropdown.items.first))
             wall_thickness_dropdown.position( 190, 25 )
             wall_thickness_dropdown.width = 50
             @group1.add_control( wall_thickness_dropdown )
