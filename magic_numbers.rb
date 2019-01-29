@@ -15,8 +15,8 @@ module EA_Extensions623
     ## COMPONENT CONSTANTS ##
     #########################
     COMPONENT_PATH     = "#{ROOT_FILE_PATH}/Beam Components"
-    NN_SXTNTHS_HOLE    = "9_16 Hole Set.skp"
-    THRTN_SXTNTHS_HOLE = "13_16 Hole Set.skp"
+    NN_SXTNTHS_HOLE    = "9_16_ Hole Set.skp"
+    THRTN_SXTNTHS_HOLE = "13_16_ Hole Set.skp"
     UP_DRCTN           = "UP.skp"
     UP_DRCTN_SM        = "UP_SM.skp"
     HLF_INCH_STD       = "2_Studs.skp"
@@ -26,6 +26,8 @@ module EA_Extensions623
     EAST_LABEL         = "E.skp"
     WEST_LABEL         = "W.skp"
     MOMENT_CLIP        = 'MF Assembly Clip.skp'
+
+    
 
     #########################
     # MEASUREMENT CONSTANTS #
