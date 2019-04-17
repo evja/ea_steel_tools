@@ -69,6 +69,10 @@ module EA_Extensions623
           pt16= [0,0,@tf]
         ]
 
+        @x_red = @model.axes.axes[0]
+        @y_green = @model.axes.axes[1]
+        @z_blue = @model.axes.axes[2]
+
         @nine_sixteenths_holes = []
         check_for_preselect(@selection, @model.active_view)
         self.reset(nil)
@@ -127,11 +131,11 @@ module EA_Extensions623
       def draw_ghost(pt1, pt2, view)
         vec = pt1 - pt2
 
-        if vec.parallel? @model.axes.axes[0]
+        if vec.parallel? @x_red
           ghost_color = "Red"
-        elsif vec.parallel? @model.axes.axes[1]
+        elsif vec.parallel? @y_green
           ghost_color = "Lime"
-        elsif vec.parallel? @model.axes.axes[2]
+        elsif vec.parallel? @z_blue
           ghost_color = "Blue"
         elsif pt1[0] == pt2[0] || pt1[1] == pt2[1] || pt1[2] == pt2[2]
           ghost_color = "Yellow"
@@ -254,6 +258,7 @@ module EA_Extensions623
 
             if @mv_dwn
               @ip1points.each{|p| p.transform!(@mv_dwn)}
+              @ghostpoints.each{|p| p.transform!(@mv_dwn)}
             end
           end
         else
@@ -558,8 +563,8 @@ module EA_Extensions623
               half_inch_stud = @definition_list.load file_path_stud
               #puts studs on the beam if the flange thickness is thicker than 3/4"
 
-              inst1 = @outer_group.entities.add_instance half_inch_stud, [fhpX, y, @h] unless stagger && count.odd?
-              inst2 = @outer_group.entities.add_instance half_inch_stud, [fhpX, -y, @h] unless stagger && count.even?
+              inst1 = @inner_group.entities.add_instance half_inch_stud, [fhpX, y, @h] unless stagger && count.odd?
+              inst2 = @inner_group.entities.add_instance half_inch_stud, [fhpX, -y, @h] unless stagger && count.even?
 
               @all_studs << inst1
               @all_studs << inst2
