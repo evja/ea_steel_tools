@@ -154,7 +154,7 @@ module EA_Extensions623
           # p 'labeling each plate'
           t = 'PLATE'
           pt = pl[:object].bounds.center
-          txt = @steel_member.entities.add_text t, pt, v
+          txt = @steel_member.definition.entities.add_text t, pt, v
           @t_labels.push txt
         end
         view.refresh
