@@ -312,6 +312,7 @@ module EA_Extensions623
           @inner_group.layer = @steel_layer
 
           @solid_group = @inner_group.entities.add_group
+          @solid_group.name = "Difference"
           @centergroup = @solid_group.entities.add_group
 
           b = @outer_group.bounds
@@ -512,7 +513,7 @@ module EA_Extensions623
             return @flange_holes
           else # add in 1/2" studs
             @flange_hole_stagger ? dist = @guage_width/2 : dist = (@w/2) - 1.6250
-            stud1 = @outer_group.entities.add_instance @half_inch_stud, [dist, 0, @h]
+            stud1 = @inner_group.entities.add_instance @half_inch_stud, [dist, 0, @h]
 
             stud2 = stud1.copy
             place_2nd_stud = Geom::Transformation.translation [(@flange_hole_stagger ? -@guage_width : (@w - (1.6250*2))*-1), 0, 0]
@@ -523,7 +524,7 @@ module EA_Extensions623
 
             stud3 = stud2.copy
             stud4 = stud1.copy
-            @outer_group.entities.transform_entities rot, stud3, stud4
+            @inner_group.entities.transform_entities rot, stud3, stud4
 
             @studs.push stud1, stud2, stud3, stud4
             @all_added_entities_so_far.push stud1, stud2, stud3, stud4
@@ -1078,7 +1079,7 @@ module EA_Extensions623
           place = Geom::Transformation.axes start_point, @y_vec, @x_vec, @z_vec
           @solid_group.entities.transform_entities place, @geometry
           @inner_group.entities.transform_entities place, @holes, @beam_labels, @start_labels, @end_labels, @up_label
-          @outer_group.entities.transform_entities place, @studs
+          @inner_group.entities.transform_entities place, @studs
           @outer_group.entities.transform_entities place, @sh_plates
           @outer_group.entities.transform_entities place, @stiff_plates
           if @@placement[0] == 'T'
@@ -1087,7 +1088,7 @@ module EA_Extensions623
             mvdwn = Geom::Transformation.translation tempvec
             @solid_group.entities.transform_entities mvdwn, @geometry
             @inner_group.entities.transform_entities mvdwn, @holes, @beam_labels, @start_labels, @end_labels, @up_label
-            @outer_group.entities.transform_entities mvdwn, @studs
+            @inner_group.entities.transform_entities mvdwn, @studs
             @outer_group.entities.transform_entities mvdwn, @sh_plates
             @outer_group.entities.transform_entities mvdwn, @stiff_plates
           end
@@ -1098,14 +1099,14 @@ module EA_Extensions623
             mvdwn = Geom::Transformation.translation vec_set
             @solid_group.entities.transform_entities mvdwn, @geometry
             @inner_group.entities.transform_entities mvdwn, @holes, @beam_labels, @start_labels, @end_labels, @up_label
-            @outer_group.entities.transform_entities mvdwn, @studs
+            @inner_group.entities.transform_entities mvdwn, @studs
             @outer_group.entities.transform_entities mvdwn, @sh_plates
             @outer_group.entities.transform_entities mvdwn, @stiff_plates
 
             place = Geom::Transformation.axes start_point, @z_vec, @x_vec, @y_vec
             @solid_group.entities.transform_entities place, @geometry
             @inner_group.entities.transform_entities place, @holes, @beam_labels, @start_labels, @end_labels, @up_label
-            @outer_group.entities.transform_entities place, @studs
+            @inner_group.entities.transform_entities place, @studs
             @outer_group.entities.transform_entities place, @sh_plates
             @outer_group.entities.transform_entities place, @stiff_plates
           else
@@ -1113,7 +1114,7 @@ module EA_Extensions623
             flip = Geom::Transformation.rotation cpoint, [0,1,0], 180.degrees
             @solid_group.entities.transform_entities flip, @geometry
             @inner_group.entities.transform_entities flip, @holes, @beam_labels, @start_labels, @end_labels, @up_label
-            @outer_group.entities.transform_entities flip, @studs
+            @inner_group.entities.transform_entities flip, @studs
             @outer_group.entities.transform_entities flip, @sh_plates
             @outer_group.entities.transform_entities flip, @stiff_plates
 
@@ -1121,14 +1122,14 @@ module EA_Extensions623
             mvdwn = Geom::Transformation.translation vec_set
             @solid_group.entities.transform_entities mvdwn, @geometry
             @inner_group.entities.transform_entities mvdwn, @holes, @beam_labels, @start_labels, @end_labels, @up_label
-            @outer_group.entities.transform_entities mvdwn, @studs
+            @inner_group.entities.transform_entities mvdwn, @studs
             @outer_group.entities.transform_entities mvdwn, @sh_plates
             @outer_group.entities.transform_entities mvdwn, @stiff_plates
 
             place = Geom::Transformation.axes start_point, @z_vec, @x_vec, @y_vec
             @solid_group.entities.transform_entities place, @geometry
             @inner_group.entities.transform_entities place, @holes, @beam_labels, @start_labels, @end_labels, @up_label
-            @outer_group.entities.transform_entities place, @studs
+            @inner_group.entities.transform_entities place, @studs
             @outer_group.entities.transform_entities place, @sh_plates
             @outer_group.entities.transform_entities place, @stiff_plates
           end

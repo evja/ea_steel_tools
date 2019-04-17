@@ -178,16 +178,38 @@ module EA_Extensions623
       def draw_beam_caps(length)
         begin
           cap = @hss_outer_group.entities.add_group
-          pts = [
-            pt1 = [0,0,0],
-            pt2 = [@w, 0,0],
-            pt3 = [@w, @h, 0],
-            pt4 = [0, @h, 0]
-          ]
+          if @tw > 0.375
+            pts = [
+              pt1 = [0,0,0],
+              pt2 = [@w - (MINIMUM_WELD_OVERHANG*2), 0,0],
+              pt3 = [@w - (MINIMUM_WELD_OVERHANG*2), @h - (MINIMUM_WELD_OVERHANG*2), 0],
+              pt4 = [0, @h - (MINIMUM_WELD_OVERHANG*2), 0]
+            ]
+            set_dist = MINIMUM_WELD_OVERHANG
+          else
+            pts = [
+              pt1 = [0,0,0],
+              pt2 = [@w - @tw,0,0],
+              pt3 = [@w - @tw,@h - @tw,0],
+              pt4 = [0,@h - @tw,0]
+            ]
+            set_dist = @tw/2
+          end
 
           cap_face = cap.entities.add_face pts
           cap_face.reverse!
           cap_face.pushpull @cap_thickness
+
+          v1 = X_AXIS.clone
+          v2 = Y_AXIS.clone
+
+          v1.length = set_dist
+          v2.length = set_dist
+
+          tr1 = Geom::Transformation.new(v1)
+          tr2 = Geom::Transformation.new(v2)
+
+          @hss_outer_group.entities.transform_entities tr1*tr2, cap
 
           v3 = Z_AXIS.clone
           v3.length = -@cap_thickness
@@ -233,13 +255,17 @@ module EA_Extensions623
         @hss_outer_group = @entities.add_group
         @hss_outer_group.name = 'HSS Member'
 
-        @hss_inner_group = @hss_outer_group.entities.add_group
-        @hss_inner_group.name = @tube_name
+        @hss_name_group = @hss_outer_group.entities.add_group
+        @hss_name_group.name = @tube_name
+
+        @hss_inner_group = @hss_name_group.entities.add_group
+        @hss_inner_group.name = "Difference"
         @hss_inner_group.definition.behavior.no_scale_mask = 123
       end
 
       def clear_groups
         @hss_outer_group = nil
+        @hss_name_group = nil
         @hss_inner_group = nil
       end
 
@@ -326,8 +352,8 @@ module EA_Extensions623
 
         centerpoint_group = @hss_outer_group.entities.add_group
         main_face = @hss_inner_group.entities.select{|e| e.is_a? Sketchup::Face}[0].reverse!
-        @center_of_column = centerpoint_group.entities.add_cpoint(@hss_outer_group.bounds.center)
-        centerpoint_group.locked = true
+        @center_of_column = @hss_outer_group.bounds.center
+        # centerpoint_group.locked = true
 
         slide_face = Geom::Transformation.translation(Geom::Vector3d.new(0,-@h, 0))
 
@@ -358,8 +384,8 @@ module EA_Extensions623
           add_direction_labels()
           align_tube(vec, @hss_outer_group)
 
-          insert_base_plates(@base_type, @center_of_column.position)
-          insert_top_plate(@center_of_column.position, extrude_length)
+          insert_base_plates(@base_type, @center_of_column)
+          insert_top_plate(@center_of_column, extrude_length)
         else
           if @hss_has_cap
             extrude_length.length = (vec.length - (@cap_thickness*2))
@@ -386,38 +412,38 @@ module EA_Extensions623
         reference_cross2 = reference_cross.copy
         v = Z_AXIS.clone
         v.length = seperation_dist.length
-        @hss_inner_group.entities.transform_entities(v, reference_cross2)
+        @hss_name_group.entities.transform_entities(v, reference_cross2)
       end
 
       def add_beam_up_arrow(vec, length)
         begin
-          up_group = @hss_outer_group.entities.add_group()
+          up_group = @hss_name_group.entities.add_group()
 
           file_path = Sketchup.find_support_file "#{COMPONENT_PATH}/#{UP_DRCTN_SM}", "Plugins/"
           up_direction = @definition_list.load file_path
 
-          up_arrow1 = up_group.entities.add_instance(up_direction, @center_of_column.position)
+          up_arrow1 = up_group.entities.add_instance(up_direction, @center_of_column)
 
-          rot = Geom::Transformation.rotation(@center_of_column.position, Y_AXIS, 90.degrees )
+          rot = Geom::Transformation.rotation(@center_of_column, Y_AXIS, 90.degrees )
           sld_vec = X_AXIS.clone
           sld_vec.length = @w/2
           slide = Geom::Transformation.translation(sld_vec)
-          @hss_outer_group.entities.transform_entities(rot, up_arrow1)
-          @hss_outer_group.entities.transform_entities(slide, up_arrow1)
+          @hss_name_group.entities.transform_entities(rot, up_arrow1)
+          @hss_name_group.entities.transform_entities(slide, up_arrow1)
 
           up_arrow1_copy = up_arrow1.copy
-          r_to_o_side = Geom::Transformation.rotation(@center_of_column.position, Y_AXIS, 180.degrees)
-          @hss_outer_group.entities.transform_entities(r_to_o_side, up_arrow1_copy)
+          r_to_o_side = Geom::Transformation.rotation(@center_of_column, Y_AXIS, 180.degrees)
+          @hss_name_group.entities.transform_entities(r_to_o_side, up_arrow1_copy)
 
           rot_direct = 90 - Z_AXIS.angle_between(vec).radians
           # p rot_direct.degrees
-          rot_vert = Geom::Transformation.rotation(@center_of_column.position, X_AXIS, rot_direct.degrees)
-          @hss_outer_group.entities.transform_entities(rot_vert, up_group)
+          rot_vert = Geom::Transformation.rotation(@center_of_column, X_AXIS, rot_direct.degrees)
+          @hss_name_group.entities.transform_entities(rot_vert, up_group)
 
           sld_vec = Z_AXIS.clone
           sld_vec.length = (length.length/2) + 24
           slide_to_pos = Geom::Transformation.translation(sld_vec)
-          @hss_outer_group.entities.transform_entities(slide_to_pos, up_group)
+          @hss_name_group.entities.transform_entities(slide_to_pos, up_group)
         rescue Exception => e
           puts e.message
           puts e.backtrace.inspect
@@ -428,11 +454,11 @@ module EA_Extensions623
       def add_hss_beam_direction_labels(vec)
         begin
 
-          start_direction_group = @hss_outer_group.entities.add_group
+          start_direction_group = @hss_name_group.entities.add_group
           start_ents = start_direction_group.entities
-          end_direction_group = @hss_outer_group.entities.add_group
+          end_direction_group = @hss_name_group.entities.add_group
           end_ents = end_direction_group.entities
-          up_direction_group = @hss_outer_group.entities.add_group
+          up_direction_group = @hss_name_group.entities.add_group
           up_ents = up_direction_group.entities
 
           beam_direction = vec
@@ -483,39 +509,39 @@ module EA_Extensions623
           file_path2 = Sketchup.find_support_file "#{COMPONENT_PATH}/#{direction2}.skp", "Plugins/"
           start_direction = @definition_list.load file_path2
 
-          start_dir_beam1 = start_direction_group.entities.add_instance start_direction, @center_of_column.position
-          start_dir_beam2 = start_direction_group.entities.add_instance start_direction, @center_of_column.position
-          end_dir_beam1 = end_direction_group.entities.add_instance end_direction, @center_of_column.position
-          end_dir_beam2 = end_direction_group.entities.add_instance end_direction, @center_of_column.position
+          start_dir_beam1 = start_direction_group.entities.add_instance start_direction, @center_of_column
+          start_dir_beam2 = start_direction_group.entities.add_instance start_direction, @center_of_column
+          end_dir_beam1 = end_direction_group.entities.add_instance end_direction, @center_of_column
+          end_dir_beam2 = end_direction_group.entities.add_instance end_direction, @center_of_column
 
-          rot = Geom::Transformation.rotation(@center_of_column.position, Y_AXIS, 90.degrees)
-          @hss_outer_group.entities.transform_entities rot, start_dir_beam1
-          @hss_outer_group.entities.transform_entities rot, end_dir_beam1
+          rot = Geom::Transformation.rotation(@center_of_column, Y_AXIS, 90.degrees)
+          @hss_name_group.entities.transform_entities rot, start_dir_beam1
+          @hss_name_group.entities.transform_entities rot, end_dir_beam1
 
           vec_slide1 = Geom::Vector3d.new(@w/2,0,0)
           slide1 = Geom::Transformation.translation(vec_slide1)
-          @hss_outer_group.entities.transform_entities slide1, start_dir_beam1
-          @hss_outer_group.entities.transform_entities slide1, end_dir_beam1
+          @hss_name_group.entities.transform_entities slide1, start_dir_beam1
+          @hss_name_group.entities.transform_entities slide1, end_dir_beam1
 
           vec2 = Geom::Vector3d.new(0,0,6)
           slide_to_start = Geom::Transformation.translation(vec2)
 
-          rot = Geom::Transformation.rotation(@center_of_column.position, Y_AXIS, 270.degrees)
-          @hss_outer_group.entities.transform_entities rot, start_dir_beam2
-          @hss_outer_group.entities.transform_entities rot, end_dir_beam2
+          rot = Geom::Transformation.rotation(@center_of_column, Y_AXIS, 270.degrees)
+          @hss_name_group.entities.transform_entities rot, start_dir_beam2
+          @hss_name_group.entities.transform_entities rot, end_dir_beam2
 
           vec_slide2 = Geom::Vector3d.new(-@w/2,0,0)
           slide1 = Geom::Transformation.translation(vec_slide2)
-          @hss_outer_group.entities.transform_entities slide1, start_dir_beam2
-          @hss_outer_group.entities.transform_entities slide1, end_dir_beam2
+          @hss_name_group.entities.transform_entities slide1, start_dir_beam2
+          @hss_name_group.entities.transform_entities slide1, end_dir_beam2
 
           vec2 = Geom::Vector3d.new(0,0,6)
 
-          @hss_outer_group.entities.transform_entities slide_to_start, start_direction_group
+          @hss_name_group.entities.transform_entities slide_to_start, start_direction_group
 
           vec3 = Geom::Vector3d.new(0,0,(vec.length)-6)
           slide_to_end = Geom::Transformation.translation(vec3)
-          @hss_outer_group.entities.transform_entities slide_to_end, end_direction_group
+          @hss_name_group.entities.transform_entities slide_to_end, end_direction_group
         rescue Exception => e
           puts e.message
           puts e.backtrace.inspect
@@ -641,19 +667,19 @@ module EA_Extensions623
           start_dist = (length - (copies * spread))/2
 
           if @east_stud_selct
-            e_stud = @hss_outer_group.entities.add_instance @half_inch_stud, @center_of_column.position
+            e_stud = @hss_name_group.entities.add_instance @half_inch_stud, @center_of_column
             color_by_thickness(e_stud, 0.5)
-            rot = Geom::Transformation.rotation(@center_of_column.position, Y_AXIS, 90.degrees)
-            @hss_outer_group.entities.transform_entities rot, e_stud
+            rot = Geom::Transformation.rotation(@center_of_column, Y_AXIS, 90.degrees)
+            @hss_name_group.entities.transform_entities rot, e_stud
 
             vec = Geom::Vector3d.new(@w/2,0,0)
             slide1 = Geom::Transformation.translation(vec)
-            @hss_outer_group.entities.transform_entities slide1, e_stud
+            @hss_name_group.entities.transform_entities slide1, e_stud
 
             vec2 = Geom::Vector3d.new(0,0,start_dist)
             slide_to_start = Geom::Transformation.translation(vec2)
 
-            @hss_outer_group.entities.transform_entities slide_to_start, e_stud
+            @hss_name_group.entities.transform_entities slide_to_start, e_stud
 
             copy_dist = vec2.clone
             copy_dist.length = spread
@@ -663,20 +689,20 @@ module EA_Extensions623
           end
 
           if @west_stud_selct
-            w_stud = @hss_outer_group.entities.add_instance @half_inch_stud, @center_of_column.position
+            w_stud = @hss_name_group.entities.add_instance @half_inch_stud, @center_of_column
             color_by_thickness(w_stud, 0.5)
 
-            rot = Geom::Transformation.rotation(@center_of_column.position, Y_AXIS, 270.degrees)
-            @hss_outer_group.entities.transform_entities rot, w_stud
+            rot = Geom::Transformation.rotation(@center_of_column, Y_AXIS, 270.degrees)
+            @hss_name_group.entities.transform_entities rot, w_stud
 
             vec = Geom::Vector3d.new(-@w/2,0,0)
             slide1 = Geom::Transformation.translation(vec)
-            @hss_outer_group.entities.transform_entities slide1, w_stud
+            @hss_name_group.entities.transform_entities slide1, w_stud
 
             vec2 = Geom::Vector3d.new(0,0,start_dist)
             slide_to_start = Geom::Transformation.translation(vec2)
 
-            @hss_outer_group.entities.transform_entities slide_to_start, w_stud
+            @hss_name_group.entities.transform_entities slide_to_start, w_stud
 
             copy_dist = vec2.clone
             copy_dist.length = spread
@@ -687,20 +713,20 @@ module EA_Extensions623
           end
 
           if @north_stud_selct
-            n_stud = @hss_outer_group.entities.add_instance @half_inch_stud, @center_of_column.position
+            n_stud = @hss_name_group.entities.add_instance @half_inch_stud, @center_of_column
             color_by_thickness(n_stud, 0.5)
 
-            rot = Geom::Transformation.rotation(@center_of_column.position, X_AXIS, 270.degrees)
-            @hss_outer_group.entities.transform_entities rot, n_stud
+            rot = Geom::Transformation.rotation(@center_of_column, X_AXIS, 270.degrees)
+            @hss_name_group.entities.transform_entities rot, n_stud
 
             vec = Geom::Vector3d.new(0,@h/2,0)
             slide1 = Geom::Transformation.translation(vec)
-            @hss_outer_group.entities.transform_entities slide1, n_stud
+            @hss_name_group.entities.transform_entities slide1, n_stud
 
             vec2 = Geom::Vector3d.new(0,0,start_dist)
             slide_to_start = Geom::Transformation.translation(vec2)
 
-            @hss_outer_group.entities.transform_entities slide_to_start, n_stud
+            @hss_name_group.entities.transform_entities slide_to_start, n_stud
 
             copy_dist = vec2.clone
             copy_dist.length = spread
@@ -711,22 +737,22 @@ module EA_Extensions623
           end
 
           if @south_stud_selct
-            s_stud = @hss_outer_group.entities.add_instance @half_inch_stud, @center_of_column.position
+            s_stud = @hss_name_group.entities.add_instance @half_inch_stud, @center_of_column
             color_by_thickness(s_stud, 0.5)
 
-            rot = Geom::Transformation.rotation(@center_of_column.position, X_AXIS, 90.degrees)
-            @hss_outer_group.entities.transform_entities rot, s_stud
+            rot = Geom::Transformation.rotation(@center_of_column, X_AXIS, 90.degrees)
+            @hss_name_group.entities.transform_entities rot, s_stud
             # s_stud.move! rot
 
             vec = Geom::Vector3d.new(0,-@h/2,0)
             slide1 = Geom::Transformation.translation(vec)
-            @hss_outer_group.entities.transform_entities slide1, s_stud
+            @hss_name_group.entities.transform_entities slide1, s_stud
             # s_stud.move! slide1
 
             vec2 = Geom::Vector3d.new(0,0,start_dist)
             slide_to_start = Geom::Transformation.translation(vec2)
 
-            @hss_outer_group.entities.transform_entities slide_to_start, s_stud
+            @hss_name_group.entities.transform_entities slide_to_start, s_stud
             # s_stud.move! slide_to_start
 
             copy_dist = vec2.clone
@@ -841,7 +867,7 @@ module EA_Extensions623
 
           @baseplate_group = @hss_outer_group.entities.add_group
           face = @baseplate_group.entities.add_face pts
-          vec = @center_of_column.position - @baseplate_group.bounds.center
+          vec = @center_of_column - @baseplate_group.bounds.center
           center = Geom::Transformation.translation(vec)
           @hss_outer_group.entities.transform_entities(center, @baseplate_group)
 
@@ -1024,7 +1050,7 @@ module EA_Extensions623
 
       def add_name_label(vec)
        begin
-        @name_label_group = @hss_outer_group.entities.add_group
+        @name_label_group = @hss_name_group.entities.add_group
         @name_label_group.name = @tube_name
         ####################
         beam_direction = vec
@@ -1063,7 +1089,7 @@ module EA_Extensions623
 
         if @hss_is_rotated
           #set to wide face of hss
-          rot_again = Geom::Transformation.rotation(@center_of_column.position, Z_AXIS, 90.degrees)
+          rot_again = Geom::Transformation.rotation(@center_of_column, Z_AXIS, 90.degrees)
           hss_name_label.transform! rot_again
           vctr = Y_AXIS.clone.reverse
           vctr.length = (@h - @w)/2
@@ -1082,7 +1108,7 @@ module EA_Extensions623
           elsif @w >= 3 && !@hss_is_rotated
             label2 = hss_name_label.copy
             labels.push label2
-            rot1 = Geom::Transformation.rotation @center_of_column.position, Z_AXIS, 90.degrees
+            rot1 = Geom::Transformation.rotation @center_of_column, Z_AXIS, 90.degrees
             @name_label_group.entities.transform_entities rot1, label2
 
             dist = (@h-@w)/2
@@ -1097,7 +1123,7 @@ module EA_Extensions623
             labelcop = hss_name_label.copy
             labels.push labelcop
 
-            rot_again = Geom::Transformation.rotation(@center_of_column.position, Z_AXIS, 90.degrees)
+            rot_again = Geom::Transformation.rotation(@center_of_column, Z_AXIS, 90.degrees)
             rot_cop = hss_name_label.copy
             rot_cop.transform! rot_again
             vctr = Y_AXIS.clone.reverse
@@ -1127,7 +1153,7 @@ module EA_Extensions623
 
         labels.each_with_index do |l,i|
           # p rotation_incrememnts.radians
-          rot = Geom::Transformation.rotation(@center_of_column.position, Z_AXIS, (rotation_incrememnts*(i+1)))
+          rot = Geom::Transformation.rotation(@center_of_column, Z_AXIS, (rotation_incrememnts*(i+1)))
           l.transform! rot
         end
 
@@ -1162,19 +1188,19 @@ module EA_Extensions623
           end
 
           if @east_stud_selct
-            e_stud = @hss_outer_group.entities.add_instance @half_inch_stud, @center_of_column.position
+            e_stud = @hss_name_group.entities.add_instance @half_inch_stud, @center_of_column
             color_by_thickness(e_stud, 0.5)
-            rot = Geom::Transformation.rotation(@center_of_column.position, Y_AXIS, 90.degrees)
-            @hss_outer_group.entities.transform_entities rot, e_stud
+            rot = Geom::Transformation.rotation(@center_of_column, Y_AXIS, 90.degrees)
+            @hss_name_group.entities.transform_entities rot, e_stud
 
             vec = Geom::Vector3d.new(@w/2,0,0)
             slide1 = Geom::Transformation.translation(vec)
-            @hss_outer_group.entities.transform_entities slide1, e_stud
+            @hss_name_group.entities.transform_entities slide1, e_stud
 
             vec2 = Geom::Vector3d.new(0,0,start_dist)
             slide_to_start = Geom::Transformation.translation(vec2)
 
-            @hss_outer_group.entities.transform_entities slide_to_start, e_stud
+            @hss_name_group.entities.transform_entities slide_to_start, e_stud
 
             copy_dist = vec2.clone
             copy_dist.length = spread
@@ -1184,20 +1210,20 @@ module EA_Extensions623
           end
 
           if @west_stud_selct
-            w_stud = @hss_outer_group.entities.add_instance @half_inch_stud, @center_of_column.position
+            w_stud = @hss_name_group.entities.add_instance @half_inch_stud, @center_of_column
             color_by_thickness(w_stud, 0.5)
 
-            rot = Geom::Transformation.rotation(@center_of_column.position, Y_AXIS, 270.degrees)
-            @hss_outer_group.entities.transform_entities rot, w_stud
+            rot = Geom::Transformation.rotation(@center_of_column, Y_AXIS, 270.degrees)
+            @hss_name_group.entities.transform_entities rot, w_stud
 
             vec = Geom::Vector3d.new(-@w/2,0,0)
             slide1 = Geom::Transformation.translation(vec)
-            @hss_outer_group.entities.transform_entities slide1, w_stud
+            @hss_name_group.entities.transform_entities slide1, w_stud
 
             vec2 = Geom::Vector3d.new(0,0,start_dist)
             slide_to_start = Geom::Transformation.translation(vec2)
 
-            @hss_outer_group.entities.transform_entities slide_to_start, w_stud
+            @hss_name_group.entities.transform_entities slide_to_start, w_stud
 
             copy_dist = vec2.clone
             copy_dist.length = spread
@@ -1207,20 +1233,20 @@ module EA_Extensions623
           end
 
           if @north_stud_selct
-            n_stud = @hss_outer_group.entities.add_instance @half_inch_stud, @center_of_column.position
+            n_stud = @hss_name_group.entities.add_instance @half_inch_stud, @center_of_column
             color_by_thickness(n_stud, 0.5)
 
-            rot = Geom::Transformation.rotation(@center_of_column.position, X_AXIS, 270.degrees)
-            @hss_outer_group.entities.transform_entities rot, n_stud
+            rot = Geom::Transformation.rotation(@center_of_column, X_AXIS, 270.degrees)
+            @hss_name_group.entities.transform_entities rot, n_stud
 
             vec = Geom::Vector3d.new(0,@h/2,0)
             slide1 = Geom::Transformation.translation(vec)
-            @hss_outer_group.entities.transform_entities slide1, n_stud
+            @hss_name_group.entities.transform_entities slide1, n_stud
 
             vec2 = Geom::Vector3d.new(0,0,start_dist)
             slide_to_start = Geom::Transformation.translation(vec2)
 
-            @hss_outer_group.entities.transform_entities slide_to_start, n_stud
+            @hss_name_group.entities.transform_entities slide_to_start, n_stud
 
             copy_dist = vec2.clone
             copy_dist.length = spread
@@ -1230,20 +1256,20 @@ module EA_Extensions623
           end
 
           if @south_stud_selct
-            s_stud = @hss_outer_group.entities.add_instance @half_inch_stud, @center_of_column.position
+            s_stud = @hss_name_group.entities.add_instance @half_inch_stud, @center_of_column
             color_by_thickness(s_stud, 0.5)
 
-            rot = Geom::Transformation.rotation(@center_of_column.position, X_AXIS, 90.degrees)
-            @hss_outer_group.entities.transform_entities rot, s_stud
+            rot = Geom::Transformation.rotation(@center_of_column, X_AXIS, 90.degrees)
+            @hss_name_group.entities.transform_entities rot, s_stud
 
             vec = Geom::Vector3d.new(0,-@h/2,0)
             slide1 = Geom::Transformation.translation(vec)
-            @hss_outer_group.entities.transform_entities slide1, s_stud
+            @hss_name_group.entities.transform_entities slide1, s_stud
 
             vec2 = Geom::Vector3d.new(0,0,start_dist)
             slide_to_start = Geom::Transformation.translation(vec2)
 
-            @hss_outer_group.entities.transform_entities slide_to_start, s_stud
+            @hss_name_group.entities.transform_entities slide_to_start, s_stud
 
             copy_dist = vec2.clone
             copy_dist.length = spread
@@ -1261,7 +1287,7 @@ module EA_Extensions623
       def add_up_arrow(length, spread)
         begin
 
-          up_arrow_group = @hss_outer_group.entities.add_group()
+          up_arrow_group = @hss_name_group.entities.add_group()
 
           file_path = Sketchup.find_support_file "#{COMPONENT_PATH}/#{UP_DRCTN}", "Plugins"
           up_d = @definition_list.load file_path
@@ -1273,7 +1299,7 @@ module EA_Extensions623
           up_arrow_group.entities.transform_entities rot*rot1, up_arrow
 
           slgp = Geom::Transformation.translation (Geom::Vector3d.new(0,@h/2,0))
-          @hss_outer_group.entities.transform_entities slgp, up_arrow_group
+          @hss_name_group.entities.transform_entities slgp, up_arrow_group
 
           up_copy1 = up_arrow.copy
 
@@ -1308,7 +1334,7 @@ module EA_Extensions623
           up_vec = Geom::Vector3d.new(0,0,dist)
           slide_up = Geom::Transformation.translation(up_vec)
 
-          @hss_outer_group.entities.transform_entities slide_up, up_arrow_group
+          @hss_name_group.entities.transform_entities slide_up, up_arrow_group
 
         rescue Exception => e
           puts e.message
@@ -1321,7 +1347,7 @@ module EA_Extensions623
 
         begin
 
-          drctn_lbls_group = @hss_outer_group.entities.add_group()
+          drctn_lbls_group = @hss_name_group.entities.add_group()
 
           #Gets the file paths for the labels
           f1 = Sketchup.find_support_file "#{COMPONENT_PATH}/#{NORTH_LABEL}", "Plugins/"
