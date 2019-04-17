@@ -525,7 +525,6 @@ module EA_Extensions623
 
       def array_studs(copies, part, dist)
         studs = []
-        p copies
         distance = dist.length
         copies.times do
           trns = Geom::Transformation.translation(dist)
@@ -536,6 +535,99 @@ module EA_Extensions623
         end
 
         return studs
+      end
+
+       # onKeyDown is called when the user presses a key on the keyboard.
+      # We are checking it here to see if the user pressed the shift key
+      # so that we can do inference locking
+      def onKeyDown(key, repeat, flags, view)
+        if( key == CONSTRAIN_MODIFIER_KEY && repeat == 1 )
+          # if we already have an inference lock, then unlock it
+          if( view.inference_locked? )
+            # calling lock_inference with no arguments actually unlocks
+            view.lock_inference
+          elsif( @state == 0 && @ip1.valid? )
+            view.lock_inference @ip1
+          elsif( @state == 1 && @ip2.valid? )
+            view.lock_inference @ip2, @ip1
+          end
+
+        elsif (key == VK_LEFT && repeat == 1)
+          p 'left_lock'
+          if( @state == 1 && @ip1.valid? )
+            if @left_lock == true
+              view.lock_inference
+              @left_lock = false
+            elsif( @state == 1 &&  @ip1.valid? )
+              pt = @ip1.position
+              y_axes = view.model.axes.axes[1]
+              inference_y_point = Geom::Point3d.new(pt[0]+y_axes[0], pt[1]+y_axes[1], pt[2]+y_axes[2])
+              green_axis = Sketchup::InputPoint.new(inference_y_point)
+              view.lock_inference green_axis, @ip1
+              @left_lock = true
+              @right_lock = false
+              @up_lock = false
+            end
+          end
+
+        elsif (key == VK_RIGHT && repeat == 1)
+          p 'right_lock'
+          if( @state == 1 && @ip1.valid? )
+            if @right_lock == true
+              view.lock_inference
+              @right_lock = false
+            elsif( @state == 1 &&  @ip1.valid? )
+              pt = @ip1.position
+              x_axes = view.model.axes.axes[0]
+              inference_x_point = Geom::Point3d.new(pt[0]+x_axes[0], pt[1]+x_axes[1], pt[2]+x_axes[2])
+              red_axis = Sketchup::InputPoint.new(inference_x_point)
+              view.lock_inference red_axis, @ip1
+              @left_lock = false
+              @right_lock = true
+              @up_lock = false
+            end
+          end
+
+        elsif (key == VK_UP && repeat == 1)
+          p 'up_lock'
+          if( @state == 1 && @ip1.valid? )
+            if @up_lock == true
+              view.lock_inference
+              @up_lock = false
+            elsif( @state == 1 &&  @ip1.valid? )
+              pt = @ip1.position
+              z_axes = view.model.axes.axes[2]
+              inference_z_point = Geom::Point3d.new(pt[0]+z_axes[0], pt[1]+z_axes[1], pt[2]+z_axes[2])
+              blue_axis = Sketchup::InputPoint.new(inference_z_point)
+              view.lock_inference blue_axis, @ip1
+              @left_lock = false
+              @right_lock = false
+              @up_lock = true
+            end
+          end
+        end
+
+        # if key == VK_ALT && repeat == 1
+
+        #   p 'start rotation incriments'
+        #   if @state == 1 && @ip1.valid?
+        #     vec = @ip1.position - @ip2.position
+        #     rot = Geom::Transformation.rotation(@ip1.position, vec, 45.degrees)
+        #     @ip1points.each{|ip| ip.transform! rot}
+        #   end
+        # end
+
+      end
+
+      # onKeyUp is called when the user releases the key
+      # We use this to unlock the inference
+      # If the user holds down the shift key for more than 1/2 second, then we
+      # unlock the inference on the release.  Otherwise, the user presses shift
+      # once to lock and a second time to unlock.
+      def onKeyUp(key, repeat, flags, view)
+        if( key == CONSTRAIN_MODIFIER_KEY && view.inference_locked?)
+          view.lock_inference
+        end
       end
 
       def add_studs_beam(length, spread)
@@ -748,7 +840,6 @@ module EA_Extensions623
           arcs = []
 
           @baseplate_group = @hss_outer_group.entities.add_group
-          @baseplate_group.name = 'Bottom Plate'
           face = @baseplate_group.entities.add_face pts
           vec = @center_of_column.position - @baseplate_group.bounds.center
           center = Geom::Transformation.translation(vec)
@@ -880,13 +971,22 @@ module EA_Extensions623
           when 'DI'
             base_type = "#{h[-1].to_i}_ DI"
           else
+            p 'selected blank'
             plate = draw_parametric_plate(sq_plate(@w, @h))
+            # etch_plate(plate, @hss_inner_group)
           end
-          # p plate
-          # p "Base Type is #{base_type}"
+          p "base type after is #{base_type}"
+
           file_path1 = Sketchup.find_support_file "#{COMPONENT_PATH}/#{base_type}.skp", "Plugins"
-          # p file_path1
-          if file_path1
+          if plate
+            p 'drawing parametric baseplate'
+            etch_plate(plate, @hss_inner_group)
+            add_plate_compass(plate, ORIGIN)
+            color_by_thickness(plate, STANDARD_BASE_PLATE_THICKNESS.to_f)
+            classify_as_plate(plate)
+
+          else
+            p 'grabbed plate from library'
             @base_group = @hss_outer_group.entities.add_group
             @base_group.name = 'Base Plate'
 
@@ -899,15 +999,6 @@ module EA_Extensions623
             color_by_thickness(@base_group, STANDARD_BASE_PLATE_THICKNESS.to_f)
             classify_as_plate(@base_group)
             @bp.explode
-
-          elsif plate.nil?
-            # p 'drawing parametric baseplate'
-            #insert generic baseplate
-            plate = draw_parametric_plate(sq_plate(@w, @h))
-            etch_plate(plate, @hss_inner_group)
-            add_plate_compass(plate, ORIGIN)
-            color_by_thickness(plate, STANDARD_BASE_PLATE_THICKNESS.to_f)
-            classify_as_plate(plate)
           end
           #NEEDS#
 
@@ -976,7 +1067,7 @@ module EA_Extensions623
           hss_name_label.transform! rot_again
           vctr = Y_AXIS.clone.reverse
           vctr.length = (@h - @w)/2
-          p vctr
+          # p vctr
           adjust = Geom::Transformation.translation(vctr)
           hss_name_label.transform! adjust
         end
@@ -1011,7 +1102,7 @@ module EA_Extensions623
             rot_cop.transform! rot_again
             vctr = Y_AXIS.clone.reverse
             vctr.length = (@h - @w)/2
-            p vctr
+            # p vctr
             adjust = Geom::Transformation.translation(vctr)
             rot_cop.transform! adjust
 

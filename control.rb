@@ -98,6 +98,7 @@ module EA_Extensions623
           end
 
         elsif (key == VK_LEFT && repeat == 1)
+          p 'left_lock'
           if( @state == 1 && @ip1.valid? )
             if @left_lock == true
               view.lock_inference
@@ -115,6 +116,7 @@ module EA_Extensions623
           end
 
         elsif (key == VK_RIGHT && repeat == 1)
+          p 'right_lock'
           if( @state == 1 && @ip1.valid? )
             if @right_lock == true
               view.lock_inference
@@ -132,6 +134,7 @@ module EA_Extensions623
           end
 
         elsif (key == VK_UP && repeat == 1)
+          p 'up_lock'
           if( @state == 1 && @ip1.valid? )
             if @up_lock == true
               view.lock_inference

@@ -427,7 +427,7 @@ module EA_Extensions623
           end
 
           # Load the 9/16" holes from the collection
-          file_path1 = Sketchup.find_support_file "#{COMPONENT_PATH}/#{ NN_SXTNTHS_HOLE}", "Plugins/"
+          file_path1 = Sketchup.find_support_file "#{COMPONENT_PATH}/#{NN_SXTNTHS_HOLE}", "Plugins/"
           nine_sixteenths_hole = @definition_list.load file_path1
 
           #load the 1/2" studs ready for placing
