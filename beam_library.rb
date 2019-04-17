@@ -52,8 +52,8 @@ module EA_Extensions623
             "W6x8" => { d: 5.82, bf: 4.000, tf: 0.194, tw: 0.170, r: (6.4).mm, width_class: 4},
             "W6x9" => { d: 5.90, bf: 3.940, tf: 0.215, tw: 0.170, r: (6.4).mm, width_class: 4},
             "W6x12" => { d: 6.03, bf: 4.000, tf: 0.280, tw: 0.230, r: (6.4).mm, width_class: 4},
-            "W6x16" => { d: 6.28, bf: 4.030, tf: 0.405, tw: 0.260, r: (6.4).mm, width_class: 4},
             "W6x15" => { d: 5.99, bf: 5.990, tf: 0.260, tw: 0.230, r: (7.6).mm, width_class: 6},
+            "W6x16" => { d: 6.28, bf: 4.030, tf: 0.405, tw: 0.260, r: (6.4).mm, width_class: 4},
             "W6x20" => { d: 6.20, bf: 6.020, tf: 0.365, tw: 0.260, r: (7.6).mm, width_class: 6},
             "W6x25" => { d: 6.38, bf: 6.080, tf: 0.455, tw: 0.320, r: (7.6).mm, width_class: 6}
 
