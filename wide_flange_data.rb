@@ -1,8 +1,9 @@
 module EA_Extensions623
   module EASteelTools
 
-    class FlangeTool < Control
+    class FlangeTool
       include BeamLibrary
+      include Control
 
       # This is the standard Ruby initialize method that is called when you create
       # a new object.
@@ -68,6 +69,10 @@ module EA_Extensions623
           pt16= [0,0,@tf]
         ]
 
+        @x_red = @model.axes.axes[0]
+        @y_green = @model.axes.axes[1]
+        @z_blue = @model.axes.axes[2]
+
         @nine_sixteenths_holes = []
         check_for_preselect(@selection, @model.active_view)
         self.reset(nil)
@@ -126,11 +131,11 @@ module EA_Extensions623
       def draw_ghost(pt1, pt2, view)
         vec = pt1 - pt2
 
-        if vec.parallel? @model.axes.axes[0]
+        if vec.parallel? @x_red
           ghost_color = "Red"
-        elsif vec.parallel? @model.axes.axes[1]
+        elsif vec.parallel? @y_green
           ghost_color = "Lime"
-        elsif vec.parallel? @model.axes.axes[2]
+        elsif vec.parallel? @z_blue
           ghost_color = "Blue"
         elsif pt1[0] == pt2[0] || pt1[1] == pt2[1] || pt1[2] == pt2[2]
           ghost_color = "Yellow"
@@ -253,6 +258,7 @@ module EA_Extensions623
 
             if @mv_dwn
               @ip1points.each{|p| p.transform!(@mv_dwn)}
+              @ghostpoints.each{|p| p.transform!(@mv_dwn)}
             end
           end
         else
@@ -426,7 +432,7 @@ module EA_Extensions623
           end
 
           # Load the 9/16" holes from the collection
-          file_path1 = Sketchup.find_support_file "#{COMPONENT_PATH}/#{ NN_SXTNTHS_HOLE}", "Plugins/"
+          file_path1 = Sketchup.find_support_file "#{COMPONENT_PATH}/#{NN_SXTNTHS_HOLE}", "Plugins/"
           nine_sixteenths_hole = @definition_list.load file_path1
 
           #load the 1/2" studs ready for placing
@@ -557,8 +563,8 @@ module EA_Extensions623
               half_inch_stud = @definition_list.load file_path_stud
               #puts studs on the beam if the flange thickness is thicker than 3/4"
 
-              inst1 = @outer_group.entities.add_instance half_inch_stud, [fhpX, y, @h] unless stagger && count.odd?
-              inst2 = @outer_group.entities.add_instance half_inch_stud, [fhpX, -y, @h] unless stagger && count.even?
+              inst1 = @inner_group.entities.add_instance half_inch_stud, [fhpX, y, @h] unless stagger && count.odd?
+              inst2 = @inner_group.entities.add_instance half_inch_stud, [fhpX, -y, @h] unless stagger && count.even?
 
               @all_studs << inst1
               @all_studs << inst2
@@ -1096,7 +1102,7 @@ module EA_Extensions623
 
       # Sets the appropriate plates in the beam
       # Shear Plates and stiffener plates
-      def add_stiffener_plates(length, column, scale, color)
+      def add_stiffener_plates(length, column, scale)
         begin
           all_stiffplates = []
           var = @wc.to_s.split(".")
@@ -1148,7 +1154,7 @@ module EA_Extensions623
             end
           end
 
-          all_stiffplates.each {|plate| plate.material = color; plate.definition.add_classification("3DS Steel", "Plate") }
+          all_stiffplates.each {|plate| color_by_thickness(plate, @@stiff_thickness.to_r.to_f); classify_as_plate(plate) }
           #returns the all plates array
           return all_stiffplates
         rescue Exception => e
@@ -1163,6 +1169,7 @@ module EA_Extensions623
 
         mcd = @definition_list.load file_path_moment_clip
         moment_clip = @outer_group.entities.add_instance mcd, ORIGIN
+        classify_as_plate(moment_clip)
         moment_clip2 = moment_clip.copy
 
         color_by_thickness(moment_clip, 0.375)
@@ -1183,7 +1190,7 @@ module EA_Extensions623
         @outer_group.entities.transform_entities(slide, moment_clip2)
       end
 
-      def add_shearplates(length, scale, color)
+      def add_shearplates(length, scale)
         begin
           all_shearplates = []
 
@@ -1248,7 +1255,7 @@ module EA_Extensions623
             end
           end
 
-          all_shearplates.each {|plate| plate.material = color; plate.definition.add_classification("3DS Steel", "Plate")}
+          all_shearplates.each {|plate| color_by_thickness(plate, @@shearpl_thickness.to_r.to_f); classify_as_plate(plate)}
           return all_shearplates
         rescue Exception => e
           puts e.message
@@ -1382,70 +1389,48 @@ module EA_Extensions623
           case @@stiff_thickness
           when '1/4'
             @stiff_scale = 2
-            clr1 = STEEL_COLORS[:purple][:name]
-            rgb  = STEEL_COLORS[:purple][:rgb]
           when '5/16'
             @stiff_scale = 2.5
-            clr1 = STEEL_COLORS[:indigo][:name]
-            rgb  = STEEL_COLORS[:indigo][:rgb]
           when '3/8'
             @stiff_scale = 3
-            clr1 = STEEL_COLORS[:blue][:name]
-            rgb  = STEEL_COLORS[:blue][:rgb]
           when '1/2'
             @stiff_scale = 4
-            clr1 = STEEL_COLORS[:green][:name]
-            rgb  = STEEL_COLORS[:green][:rgb]
           when '5/8'
             @stiff_scale = 5
-            clr1 = STEEL_COLORS[:yellow][:name]
-            rgb  = STEEL_COLORS[:yellow][:rgb]
           when '3/4'
             @stiff_scale = 6
-            clr1 = STEEL_COLORS[:orange][:name]
-            rgb  = STEEL_COLORS[:orange][:rgb]
           end
 
-          if @material_names.include? clr1
-            @stiff_color = @materials[clr1]
-            @material_names << clr1
-          else
-            @stiff_color = @materials.add clr1
-            @stiff_color.color = rgb
-            @material_names << clr1
-          end
+          # if @material_names.include? clr1
+          #   @stiff_color = @materials[clr1]
+          #   @material_names << clr1
+          # else
+          #   @stiff_color = @materials.add clr1
+          #   @stiff_color.color = rgb
+          #   @material_names << clr1
+          # end
 
           case @@shearpl_thickness
           when '1/4'
             @shear_scale = 2
-            clr2 = STEEL_COLORS[:purple][:name]
-            rgb2  = STEEL_COLORS[:purple][:rgb]
           when '3/8'
             @shear_scale = 3
-            clr2 = STEEL_COLORS[:blue][:name]
-            rgb2  = STEEL_COLORS[:blue][:rgb]
           when '1/2'
             @shear_scale = 4
-            clr2 = STEEL_COLORS[:green][:name]
-            rgb2  = STEEL_COLORS[:green][:rgb]
           when '5/8'
             @shear_scale = 5
-            clr2 = STEEL_COLORS[:yellow][:name]
-            rgb2  = STEEL_COLORS[:yellow][:rgb]
           when '3/4'
             @shear_scale = 6
-            clr2 = STEEL_COLORS[:orange][:name]
-            rgb2  = STEEL_COLORS[:orange][:rgb]
           end
 
-          if @material_names.include? clr2
-            @shear_color = @materials[clr2]
-            @material_names << clr2
-          else
-            @shear_color = @materials.add clr2
-            @shear_color.color = rgb2
-            @material_names << clr2
-          end
+          # if @material_names.include? clr2
+          #   @shear_color = @materials[clr2]
+          #   @material_names << clr2
+          # else
+          #   @shear_color = @materials.add clr2
+          #   @shear_color.color = rgb2
+          #   @material_names << clr2
+          # end
 
           # Cuts the holes if the option is checked
           if @@cuts_holes && @@has_holes
@@ -1463,12 +1448,12 @@ module EA_Extensions623
 
           # #insert stiffener plates in the beam
           if @@has_stiffeners
-            stiffplates = add_stiffener_plates(length, column, @stiff_scale, @stiff_color)
+            stiffplates = add_stiffener_plates(length, column, @stiff_scale)
             stiffplates.each {|plate| plate.layer = @steel_layer}
           end
 
           if @@has_shearplates && column == false
-            shplates = add_shearplates(length, @shear_scale, @shear_color)
+            shplates = add_shearplates(length, @shear_scale)
             shplates.each {|plate| plate.layer = @steel_layer}
           end
 
@@ -1482,8 +1467,9 @@ module EA_Extensions623
             @entities.transform_entities move_down, @outer_group
           end
 
-          draw_parametric_plate(sq_plate(@w, @h)) if column
-
+          #draw and classify the baseplate of a flang column
+          classify_as_plate(draw_parametric_plate(sq_plate(@w, @h))) if column
+          #insert moment clip if column
           insert_moment_clip(length) if column
 
           #align the beam with the input points

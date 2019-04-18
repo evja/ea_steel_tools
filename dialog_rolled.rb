@@ -39,7 +39,7 @@ module EA_Extensions623
           @@has_stiffeners    = true           #Boolean
           @@has_shearplates   = true           #Boolean
           @@stiff_thickness   = '1/4'          #String '1/4' or '3/8' or '1/2'
-          @@shearpl_thickness = '1/2'          #String '3/8' or '1/2' or '3/4'
+          @@shearpl_thickness = '3/8'          #String '3/8' or '1/2' or '3/4'
           @@roll_type         = 'EASY'         #String 'EASY' or 'HARD'
           @@radius_offset     = -0.5           # float or integer. This is the distance of offset the new arc will be drawn at
           # @@segment_length    = 8.0          # This is not a good idea as it could throw off the alignment of the web holes and the stagger

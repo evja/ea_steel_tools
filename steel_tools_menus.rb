@@ -15,7 +15,6 @@ module EA_Extensions623
     require FNAME+'/'+'breakout_setup.rb'
     require FNAME+'/'+'breakout.rb'
     require FNAME+'/'+'breakout_send.rb'
-    require FNAME+'/'+'layout_send.rb'
     require FNAME+'/'+'load_schemas.rb'
     require FNAME+'/'+'magic_numbers.rb'
     require FNAME+'/'+'update.rb'
@@ -73,25 +72,8 @@ module EA_Extensions623
 
     @@EA_tools_menu.add_item( 'Check for updates' ) { EASteelTools::ToolUpdater.update_tool }
 
-
     toolbar.show
 
-
-    # cmd3 = UI::Command.new("HSS") {
-    #  Sketchup.active_model.select_tool EASteelTools::HssColumn.new
-    # }
-    # @@EA_tools_menu.add_item cmd3
-    # cmd3.small_icon = "icons/wfs_icon_column.png"
-    # cmd3.large_icon = "icons/wfs_icon_column.png"
-    # cmd3.tooltip = "Draw Hollow Structural Sections"
-    # cmd3.status_bar_text = "Draw Column"
-    # cmd3.menu_text = "Wide HSS Columns"
-    # toolbar = toolbar.add_item cmd3
-
-    # cmd4 = UI::Command.new("Update Steel Tool") {
-    #  EASteelTools::ToolUpdater.new
-    # }
-    # @@EA_tools_menu.add_item cmd4
 
     UI.add_context_menu_handler do |menu|
       menu.add_separator
@@ -103,10 +85,10 @@ module EA_Extensions623
       menu.add_separator
     end
 
-    UI.add_context_menu_handler do |menu|
-      menu.add_item("Send to Layout") { EASteelTools::SendToLayout.new(Sketchup.active_model.selection[0], Sketchup.active_model.path) }
-      menu.add_separator
-    end
+    # UI.add_context_menu_handler do |menu|
+    #   menu.add_item("Send to Layout") { EASteelTools::SendToLayout.new(Sketchup.active_model.selection[0], Sketchup.active_model.path) }
+    #   menu.add_separator
+    # end
 
   end
 

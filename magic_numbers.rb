@@ -7,6 +7,8 @@ module EA_Extensions623
 
     #Setc the north direction as the green axis
     NORTH = Geom::Vector3d.new [0,1,0]
+    CLSSFY_PLT = "Plate"
+    CLSSFR_LIB = "3DS Steel"
 
 
     #########################
@@ -24,6 +26,8 @@ module EA_Extensions623
     EAST_LABEL         = "E.skp"
     WEST_LABEL         = "W.skp"
     MOMENT_CLIP        = 'MF Assembly Clip.skp'
+
+
 
     #########################
     # MEASUREMENT CONSTANTS #
@@ -78,7 +82,7 @@ module EA_Extensions623
     STANDARD_BASE_PLATE_THICKNESS = 0.75
     ETCH_LINE = 0.25
 
-    BASETYPES = ["SQ","OC","IL","IC","EX","DR","DL","DI", "Bryceplate"]
+    BASETYPES = ["SQ","OC","IL","IC","EX","DR","DL","DI","Blank"]
 
 
     # Normal steel colors for 3DS conventions and procedures

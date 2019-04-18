@@ -3,6 +3,7 @@ module EA_Extensions623
 
     class RolledSteel < RolledDialog
       include BeamLibrary
+      include Control
 
       def initialize(data)
 
@@ -55,67 +56,29 @@ module EA_Extensions623
         case @@stiff_thickness
         when '1/4'
           @stiff_scale = 2 #this doubles the size of the plate from it's standard 1/8" to 1/4"
-          clr1 = STEEL_COLORS[:purple][:name]
-          rgb  = STEEL_COLORS[:purple][:rgb]
         when '5/16'
           @stiff_scale = 2.5
-          clr1 = STEEL_COLORS[:indigo][:name]
-          rgb  = STEEL_COLORS[:indigo][:rgb]
         when '3/8'
           @stiff_scale = 3
-          clr1 = STEEL_COLORS[:blue][:name]
-          rgb  = STEEL_COLORS[:blue][:rgb]
         when '1/2'
           @stiff_scale = 4
-          clr1 = STEEL_COLORS[:green][:name]
-          rgb  = STEEL_COLORS[:green][:rgb]
         when '5/8'
           @stiff_scale = 5
-          clr1 = STEEL_COLORS[:yellow][:name]
-          rgb  = STEEL_COLORS[:yellow][:rgb]
         when '3/4'
           @stiff_scale = 6
-          clr1 = STEEL_COLORS[:orange][:name]
-          rgb  = STEEL_COLORS[:orange][:rgb]
-        end
-
-        if @material_names.include? clr1
-          @stiff_color = clr1
-        else
-          @stiff_color = @materials.add clr1
-          culler = Sketchup::Color.new rgb
-          @stiff_color.color = culler
         end
 
         case @@shearpl_thickness
         when '1/4'
           @shear_scale = 2
-          clr2 = STEEL_COLORS[:purple][:name]
-          rgb2  = STEEL_COLORS[:purple][:rgb]
         when '3/8'
           @shear_scale = 3
-          clr2 = STEEL_COLORS[:blue][:name]
-          rgb2  = STEEL_COLORS[:blue][:rgb]
         when '1/2'
           @shear_scale = 4
-          clr2 = STEEL_COLORS[:green][:name]
-          rgb2  = STEEL_COLORS[:green][:rgb]
         when '5/8'
           @shear_scale = 5
-          clr2 = STEEL_COLORS[:yellow][:name]
-          rgb2  = STEEL_COLORS[:yellow][:rgb]
         when '3/4'
           @shear_scale = 6
-          clr2 = STEEL_COLORS[:orange][:name]
-          rgb2  = STEEL_COLORS[:orange][:rgb]
-        end
-
-        if @material_names.include? clr2
-          @shear_color = clr2
-        else
-          @shear_color = @materials.add clr2
-          culler2 = Sketchup::Color.new rgb2
-          @shear_color.color = culler2
         end
 
         values = data[:data]
@@ -182,45 +145,6 @@ module EA_Extensions623
           pt15= [(0.5*@w)-(0.5*@tw)-@r, 0, @tf],
           pt16= [0,0,@tf]
         ]
-      end
-
-      def color_by_thickness(obj, thickness)
-        materials = Sketchup.active_model.materials
-        materials_names = materials.map{|m| m.name}
-        thickness = thickness.to_s.to_r.to_f
-
-        case thickness
-         when 0.25
-           color = STEEL_COLORS[:purple][:rgb]
-           clr_name = STEEL_COLORS[:purple][:name]
-         when 0.3125
-           color = STEEL_COLORS[:indigo][:rgb]
-           clr_name = STEEL_COLORS[:indigo][:name]
-         when 0.375
-           color = STEEL_COLORS[:blue][:rgb]
-           clr_name = STEEL_COLORS[:blue][:name]
-         when 0.5
-           color = STEEL_COLORS[:green][:rgb]
-           clr_name = STEEL_COLORS[:green][:name]
-         when 0.625
-           color = STEEL_COLORS[:yellow][:rgb]
-           clr_name = STEEL_COLORS[:yellow][:name]
-         when 0.75
-           color = STEEL_COLORS[:orange][:rgb]
-           clr_name = STEEL_COLORS[:orange][:name]
-         else
-           color = STEEL_COLORS[:red][:rgb]
-           clr_name = STEEL_COLORS[:red][:name]
-         end
-
-        if materials_names.include? clr_name
-          obj.material = materials[clr_name]
-        else
-          new_mat = materials.add clr_name
-          new_mat.color = color
-          obj.material = new_mat
-        end
-        return obj
       end
 
       def activate()
@@ -352,7 +276,7 @@ module EA_Extensions623
           labels = add_labels(arc)
 
           # Adds in the plates
-          add_stiffeners(@stiff_scale, @stiff_color) if @@has_stiffeners
+          add_stiffeners(@stiff_scale) if @@has_stiffeners
           add_shearplates(@shear_scale, @shear_color) if @@has_shearplates
 
           align_with_curve(profile, arc) #this returns an array. The FACE that has been aligned and the ARC
@@ -368,8 +292,6 @@ module EA_Extensions623
             @guage_holes.each(&@explode)
           end
           @studs.each {|st| st.layer = @steel_layer; color_by_thickness(st, 0.5)} if !@studs.empty?
-          # @stiff_plates.each {|stp| st.layer = @steel_layer} if !@stiff_plates.empty?
-          # @sh_plates.each {|shp| st.layer = @steel_layer} if !@sh_plates.empty?
           rescue Exception => e
             puts e.message
             puts e.backtrace.inspect
@@ -390,6 +312,7 @@ module EA_Extensions623
           @inner_group.layer = @steel_layer
 
           @solid_group = @inner_group.entities.add_group
+          @solid_group.name = "Difference"
           @centergroup = @solid_group.entities.add_group
 
           b = @outer_group.bounds
@@ -590,7 +513,7 @@ module EA_Extensions623
             return @flange_holes
           else # add in 1/2" studs
             @flange_hole_stagger ? dist = @guage_width/2 : dist = (@w/2) - 1.6250
-            stud1 = @outer_group.entities.add_instance @half_inch_stud, [dist, 0, @h]
+            stud1 = @inner_group.entities.add_instance @half_inch_stud, [dist, 0, @h]
 
             stud2 = stud1.copy
             place_2nd_stud = Geom::Transformation.translation [(@flange_hole_stagger ? -@guage_width : (@w - (1.6250*2))*-1), 0, 0]
@@ -601,7 +524,7 @@ module EA_Extensions623
 
             stud3 = stud2.copy
             stud4 = stud1.copy
-            @outer_group.entities.transform_entities rot, stud3, stud4
+            @inner_group.entities.transform_entities rot, stud3, stud4
 
             @studs.push stud1, stud2, stud3, stud4
             @all_added_entities_so_far.push stud1, stud2, stud3, stud4
@@ -850,7 +773,7 @@ module EA_Extensions623
         end
       end
 
-      def add_stiffeners(scale, color)
+      def add_stiffeners(scale)
         var = @wc.to_s.split(".")
         if var.last.to_i == 0
           wc = var.first
@@ -887,7 +810,7 @@ module EA_Extensions623
         @stiff_plates.each_with_index do |plate, i|
           plate.transform! resize1
         end
-        @stiff_plates.each {|plate| plate.material = color; plate.definition.add_classification("3DS Steel", "Plate"); plate.layer = @steel_layer }
+        @stiff_plates.each {|plate| color_by_thickness(plate, @@stiff_thickness.to_r.to_f); classify_as_plate(plate); plate.layer = @steel_layer }
       end
 
       def add_shearplates(scale, color)
@@ -939,7 +862,7 @@ module EA_Extensions623
           end
         end
 
-        all_shearplates.each {|plate| plate.material = color; plate.definition.add_classification("3DS Steel", "Plate"); plate.layer = @steel_layer}
+        all_shearplates.each {|plate| color_by_thickness(plate, @@shearpl_thickness); classify_as_plate(plate); plate.layer = @steel_layer}
         return all_shearplates
       end
 
@@ -1156,7 +1079,7 @@ module EA_Extensions623
           place = Geom::Transformation.axes start_point, @y_vec, @x_vec, @z_vec
           @solid_group.entities.transform_entities place, @geometry
           @inner_group.entities.transform_entities place, @holes, @beam_labels, @start_labels, @end_labels, @up_label
-          @outer_group.entities.transform_entities place, @studs
+          @inner_group.entities.transform_entities place, @studs
           @outer_group.entities.transform_entities place, @sh_plates
           @outer_group.entities.transform_entities place, @stiff_plates
           if @@placement[0] == 'T'
@@ -1165,7 +1088,7 @@ module EA_Extensions623
             mvdwn = Geom::Transformation.translation tempvec
             @solid_group.entities.transform_entities mvdwn, @geometry
             @inner_group.entities.transform_entities mvdwn, @holes, @beam_labels, @start_labels, @end_labels, @up_label
-            @outer_group.entities.transform_entities mvdwn, @studs
+            @inner_group.entities.transform_entities mvdwn, @studs
             @outer_group.entities.transform_entities mvdwn, @sh_plates
             @outer_group.entities.transform_entities mvdwn, @stiff_plates
           end
@@ -1176,14 +1099,14 @@ module EA_Extensions623
             mvdwn = Geom::Transformation.translation vec_set
             @solid_group.entities.transform_entities mvdwn, @geometry
             @inner_group.entities.transform_entities mvdwn, @holes, @beam_labels, @start_labels, @end_labels, @up_label
-            @outer_group.entities.transform_entities mvdwn, @studs
+            @inner_group.entities.transform_entities mvdwn, @studs
             @outer_group.entities.transform_entities mvdwn, @sh_plates
             @outer_group.entities.transform_entities mvdwn, @stiff_plates
 
             place = Geom::Transformation.axes start_point, @z_vec, @x_vec, @y_vec
             @solid_group.entities.transform_entities place, @geometry
             @inner_group.entities.transform_entities place, @holes, @beam_labels, @start_labels, @end_labels, @up_label
-            @outer_group.entities.transform_entities place, @studs
+            @inner_group.entities.transform_entities place, @studs
             @outer_group.entities.transform_entities place, @sh_plates
             @outer_group.entities.transform_entities place, @stiff_plates
           else
@@ -1191,7 +1114,7 @@ module EA_Extensions623
             flip = Geom::Transformation.rotation cpoint, [0,1,0], 180.degrees
             @solid_group.entities.transform_entities flip, @geometry
             @inner_group.entities.transform_entities flip, @holes, @beam_labels, @start_labels, @end_labels, @up_label
-            @outer_group.entities.transform_entities flip, @studs
+            @inner_group.entities.transform_entities flip, @studs
             @outer_group.entities.transform_entities flip, @sh_plates
             @outer_group.entities.transform_entities flip, @stiff_plates
 
@@ -1199,14 +1122,14 @@ module EA_Extensions623
             mvdwn = Geom::Transformation.translation vec_set
             @solid_group.entities.transform_entities mvdwn, @geometry
             @inner_group.entities.transform_entities mvdwn, @holes, @beam_labels, @start_labels, @end_labels, @up_label
-            @outer_group.entities.transform_entities mvdwn, @studs
+            @inner_group.entities.transform_entities mvdwn, @studs
             @outer_group.entities.transform_entities mvdwn, @sh_plates
             @outer_group.entities.transform_entities mvdwn, @stiff_plates
 
             place = Geom::Transformation.axes start_point, @z_vec, @x_vec, @y_vec
             @solid_group.entities.transform_entities place, @geometry
             @inner_group.entities.transform_entities place, @holes, @beam_labels, @start_labels, @end_labels, @up_label
-            @outer_group.entities.transform_entities place, @studs
+            @inner_group.entities.transform_entities place, @studs
             @outer_group.entities.transform_entities place, @sh_plates
             @outer_group.entities.transform_entities place, @stiff_plates
           end
