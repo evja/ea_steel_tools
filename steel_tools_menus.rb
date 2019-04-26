@@ -19,6 +19,7 @@ module EA_Extensions623
     require FNAME+'/'+'magic_numbers.rb'
     require FNAME+'/'+'update.rb'
     require FNAME+'/'+'version.rb'
+    require FNAME+'/'+'layer_helper.rb'
     # require FNAME+'/'+'test.rb'
 
   if !file_loaded?('ea_steel_tools_menu_loader')
@@ -86,7 +87,7 @@ module EA_Extensions623
     end
 
     UI.add_context_menu_handler do |menu|
-      menu.add_item("ManageSelectionLayers") {Sketchup.active_model.select_tool EASteelTools::LayerHelper.new}
+      menu.add_item("ManageSelectedSubLayers") {Sketchup.active_model.select_tool EASteelTools::LayerHelper.new}
     end
 
     # UI.add_context_menu_handler do |menu|

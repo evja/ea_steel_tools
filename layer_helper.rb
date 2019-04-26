@@ -8,7 +8,7 @@ module EA_Extensions623
         layers = model.layers
 
         layer_list = layers.map {|l| l.name}
-        p layer_list
+        # p layer_list
         layer_list2 = ""
 
         layer_list.each_with_index do |l,i|
@@ -24,16 +24,15 @@ module EA_Extensions623
         else
           default_layer = layers.first.name
         end
-        p layer_list2
-
-        prompts = ['Level Depth', 'Layer Assign']
-        default = ['2', default_layer]
-        list = ["1|2|3|4", layer_list2]
+        # p layer_list2
+        prompts = ['Layer Assign']
+        default = [default_layer]
+        list = [layer_list2]
         title = "Layer Helper"
 
         choice = UI.inputbox(prompts, default, list, title)
 
-        p choice
+        # p choice
 
         parts_to_layer = []
 
@@ -51,7 +50,7 @@ module EA_Extensions623
             end
           end
         end
- 
+
         sel.clear
 
         # parts_to_layer.each {|p| sel.add p }
