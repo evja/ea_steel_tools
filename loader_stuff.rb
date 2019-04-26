@@ -9,6 +9,9 @@ scenes = model.pages
 #CONSTANT LIBRARY
 load 'ea_steel_tools/magic_numbers.rb'
 
+#LayerHelper
+load 'ea_steel_tools/layer_helper.rb'
+
 #HSS Files
 load 'ea_steel_tools/tube_steel_data.rb'
 load 'ea_steel_tools/dialog_tube_steel.rb'

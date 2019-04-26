@@ -85,6 +85,10 @@ module EA_Extensions623
       menu.add_separator
     end
 
+    UI.add_context_menu_handler do |menu|
+      menu.add_item("ManageSelectionLayers") {Sketchup.active_model.select_tool EASteelTools::LayerHelper.new}
+    end
+
     # UI.add_context_menu_handler do |menu|
     #   menu.add_item("Send to Layout") { EASteelTools::SendToLayout.new(Sketchup.active_model.selection[0], Sketchup.active_model.path) }
     #   menu.add_separator
