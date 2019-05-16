@@ -1,5 +1,7 @@
 module EA_Extensions623
   module EASteelTools
+    # require FNAME+'/'+'plate_observer.rb'
+    # extend MyPlateObserver
 
     module Control
       # deactivate is called when the tool is deactivated because
@@ -9,18 +11,27 @@ module EA_Extensions623
         view.lock_inference if view.inference_locked?
       end
 
-      def classify_as_plate(plate)
-        plate.definition.add_classification(CLSSFR_LIB, CLSSFY_PLT)
-        return plate
+      def set_layer(part, layer)
+        part.layer = layer[0]
       end
 
-      def set_layer(part, layer)
-        part.layer = layer
+      def classify_as_plate(plate)
+        plate.definition.add_classification(CLSSFR_LIB, CLSSFY_PLT)
+        plate.add_observer(EASteelTools::MyPlateObserver.new(plate))
+        set_layer(plate, STEEL_LAYER)
+        return plate
       end
 
       def check_for_existing_layer(meth, *args, &blk)
 
       end
+
+      def get_plate()
+
+      end
+
+
+
 
       # The onMouseMove method is called whenever the user moves the mouse.
       # because it is called so often, it is important to try to make it efficient.
@@ -98,59 +109,73 @@ module EA_Extensions623
           end
 
         elsif (key == VK_LEFT && repeat == 1)
-          p 'left_lock'
+          # p 'left_lock'
           if( @state == 1 && @ip1.valid? )
             if @left_lock == true
               view.lock_inference
               @left_lock = false
-            elsif( @state == 1 &&  @ip1.valid? )
+            else
               pt = @ip1.position
               y_axes = view.model.axes.axes[1]
               inference_y_point = Geom::Point3d.new(pt[0]+y_axes[0], pt[1]+y_axes[1], pt[2]+y_axes[2])
               green_axis = Sketchup::InputPoint.new(inference_y_point)
               view.lock_inference green_axis, @ip1
-              @left_lock = true
-              @right_lock = false
-              @up_lock = false
+              # @left_lock = true
+              # @right_lock = false
+              # @up_lock = false
             end
           end
 
         elsif (key == VK_RIGHT && repeat == 1)
-          p 'right_lock'
+          # p 'right_lock'
           if( @state == 1 && @ip1.valid? )
             if @right_lock == true
               view.lock_inference
               @right_lock = false
-            elsif( @state == 1 &&  @ip1.valid? )
+            else
               pt = @ip1.position
               x_axes = view.model.axes.axes[0]
               inference_x_point = Geom::Point3d.new(pt[0]+x_axes[0], pt[1]+x_axes[1], pt[2]+x_axes[2])
               red_axis = Sketchup::InputPoint.new(inference_x_point)
               view.lock_inference red_axis, @ip1
-              @left_lock = false
-              @right_lock = true
-              @up_lock = false
+              # @left_lock = false
+              # @right_lock = true
+              # @up_lock = false
             end
           end
 
         elsif (key == VK_UP && repeat == 1)
-          p 'up_lock'
+          # p 'up_lock'
+          # p "left lock = #{@left_lock}"
+          # p "right lock = #{@right_lock}"
+          # p "up lock = #{@up_lock}"
           if( @state == 1 && @ip1.valid? )
             if @up_lock == true
-              view.lock_inference
+              view.lock_inference if !view.inference_locked?
               @up_lock = false
-            elsif( @state == 1 &&  @ip1.valid? )
+            else
               pt = @ip1.position
               z_axes = view.model.axes.axes[2]
               inference_z_point = Geom::Point3d.new(pt[0]+z_axes[0], pt[1]+z_axes[1], pt[2]+z_axes[2])
               blue_axis = Sketchup::InputPoint.new(inference_z_point)
               view.lock_inference blue_axis, @ip1
-              @left_lock = false
-              @right_lock = false
-              @up_lock = true
+              # @left_lock = false
+              # @right_lock = false
+              # @up_lock = true
             end
           end
         end
+
+        # if key == VK_ALT && repeat == 1
+
+        #   p 'start rotation incriments'
+        #   if @state == 1 && @ip1.valid?
+        #     vec = @ip1.position - @ip2.position
+        #     rot = Geom::Transformation.rotation(@ip1.position, vec, 45.degrees)
+        #     @ip1points.each{|ip| ip.transform! rot}
+        #   end
+        # end
+
       end
 
       # onKeyUp is called when the user releases the key
@@ -233,25 +258,25 @@ module EA_Extensions623
 
           case thickness
            when 0.25
-             color = STEEL_COLORS[:purple][:rgb]
+             color = STEEL_COLORS[:purple][:rgba]
              clr_name = STEEL_COLORS[:purple][:name]
            when 0.3125
-             color = STEEL_COLORS[:indigo][:rgb]
+             color = STEEL_COLORS[:indigo][:rgba]
              clr_name = STEEL_COLORS[:indigo][:name]
            when 0.375
-             color = STEEL_COLORS[:blue][:rgb]
+             color = STEEL_COLORS[:blue][:rgba]
              clr_name = STEEL_COLORS[:blue][:name]
            when 0.5
-             color = STEEL_COLORS[:green][:rgb]
+             color = STEEL_COLORS[:green][:rgba]
              clr_name = STEEL_COLORS[:green][:name]
            when 0.625
-             color = STEEL_COLORS[:yellow][:rgb]
+             color = STEEL_COLORS[:yellow][:rgba]
              clr_name = STEEL_COLORS[:yellow][:name]
            when 0.75
-             color = STEEL_COLORS[:orange][:rgb]
+             color = STEEL_COLORS[:orange][:rgba]
              clr_name = STEEL_COLORS[:orange][:name]
            else
-             color = STEEL_COLORS[:red][:rgb]
+             color = STEEL_COLORS[:red][:rgba]
              clr_name = STEEL_COLORS[:red][:name]
            end
 

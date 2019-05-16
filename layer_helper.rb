@@ -5,7 +5,7 @@ module EA_Extensions623
       def initialize
         model = Sketchup.active_model
         sel = model.selection
-        layers = model.layers
+        layers = model.layers.sort
 
         layer_list = layers.map {|l| l.name}
         # p layer_list
@@ -32,29 +32,30 @@ module EA_Extensions623
 
         choice = UI.inputbox(prompts, default, list, title)
 
-        # p choice
 
-        parts_to_layer = []
+        if choice
+          parts_to_layer = []
 
-        sel.each do |part|
-          if part.typename != 'Group' && part.typename != 'ComponentInstance'
-            sel.remove part
-            next
-          else
-            part.definition.entities.each do |ent|
-              if ent.typename != 'Group' && ent.typename != 'ComponentInstance'
-                next
-              else
-                parts_to_layer.push ent
+          sel.each do |part|
+            if part.typename != 'Group' && part.typename != 'ComponentInstance'
+              sel.remove part
+              next
+            else
+              part.definition.entities.each do |ent|
+                if ent.typename != 'Group' && ent.typename != 'ComponentInstance'
+                  next
+                else
+                  parts_to_layer.push ent
+                end
               end
             end
           end
+
+          sel.clear
+
+          # parts_to_layer.each {|p| sel.add p }
+          parts_to_layer.each {|p| p.layer = choice[0]}
         end
-
-        sel.clear
-
-        # parts_to_layer.each {|p| sel.add p }
-        parts_to_layer.each {|p| p.layer = choice[1]}
         Sketchup.send_action "selectSelectionTool:"
 
       end

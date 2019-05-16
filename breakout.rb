@@ -249,10 +249,12 @@ module EA_Extensions623
       end
 
       def split_plates()
-        @individual_plates.each_with_index do |plate, i|
+        @individual_plates.each do |plate|
           @unique_plates.push plate.definition.instances
         end
+        p @unique_plates.count
         @unique_plates.uniq! if @individual_plates.count > 0
+        p @unique_plates.count
         @unique_plates.compact! if @unique_plates.compact != nil
         return @unique_plates
       end
@@ -273,9 +275,53 @@ module EA_Extensions623
       #   end
       # end
 
+      def sort_plates2(plates)
+        plates each do |pl|
+          p pl
+          bnds = pl.bounds.diagonal.to_f.round(4)
+
+          #(idea) create a hash of objects and thier diagonal and compact it.
+          #check definition instances against each other for diagonal
+
+          #make differences unique and update the definition
+
+          #check that the now true thickness matches the material thickness
+
+          #give warnings when some of these occur.
+        end
+
+      end
+
       def sort_plates(plates)
+        plates_hash = {}
         plates.each do |pl|
           if pl.class == Array && pl.count > 1
+            pl.each do |part|
+              bnds = part.bounds.diagonal.to_f.round(4)
+              cl = part.material.name
+
+              plates_hash[part] = bnds
+            end
+
+            # if there are multiple instances of the plate and none of the other diagonal bounds match then make unique and reset the scale definition.
+            counter = 1
+            uniqueholder = []
+            plates_hash.each do |k,v|
+              p counter
+              phc = plates_hash.clone.each do |k1, v1|
+                if k != k1
+                  if (k.equals?(k1)) && (v != v1)
+                    uniqueholder.push k
+                    plates_hash.delete(k)
+                  end
+                end
+              end
+              counter += 1
+            end
+            p uniqueholder
+
+
+
             instance_materials = []
             test_bucket = []
             pl.each_with_index do |plate, i|

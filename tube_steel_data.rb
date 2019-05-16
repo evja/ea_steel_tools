@@ -253,13 +253,13 @@ module EA_Extensions623
 
       def set_groups
         @hss_outer_group = @entities.add_group
-        @hss_outer_group.name = 'HSS Member'
+        @hss_outer_group.name = HSSOUTGROUPNAME
 
         @hss_name_group = @hss_outer_group.entities.add_group
         @hss_name_group.name = @tube_name
 
         @hss_inner_group = @hss_name_group.entities.add_group
-        @hss_inner_group.name = "Difference"
+        @hss_inner_group.name = HSSINGROUPNAME
         @hss_inner_group.definition.behavior.no_scale_mask = 123
       end
 
@@ -401,6 +401,8 @@ module EA_Extensions623
           cap = draw_beam_caps(extrude_length) if @hss_has_cap
           align_tube(vec, @hss_outer_group)
         end
+
+        set_layer(@hss_name_group, STEEL_LAYER)
       end
 
       def add_reference_cross(pts, seperation_dist)
@@ -471,42 +473,42 @@ module EA_Extensions623
           #Single Directions
           case angle
           when (0.degrees)..(30.degrees)
-            direction1 = 'N'
-            direction2 = 'S'
+            direction1 = NORTH_LABEL
+            direction2 = SOUTH_LABEL
           when (60.degrees)..(120.degrees)
             if vec[0] >= 0
-            direction1 = 'E'
-            direction2 = 'W'
+            direction1 = EAST_LABEL
+            direction2 = WEST_LABEL
           else
-            direction1 = 'W'
-            direction2 = 'E'
+            direction1 = WEST_LABEL
+            direction2 = EAST_LABEL
           end
           when (150.degrees)..(180.degrees)
-            direction1 = 'S'
-            direction2 = 'N'
+            direction1 = SOUTH_LABEL
+            direction2 = NORTH_LABEL
           #Compound Directions
           when (30.degrees)..(60.degrees)
             if vec[0] >= 0
-              direction1 = 'NE'
-              direction2 = 'SW'
+              direction1 = NORTHEAST_LABEL
+              direction2 = SOUTHWEST_LABEL
             else
-              direction1 = 'NW'
-              direction2 = 'SE'
+              direction1 = NORTHWEST_LABEL
+              direction2 = SOUTHEAST_LABEL
             end
           when (120.degrees)..(150.degrees)
             if vec[0] >= 0
-              direction1 = 'SE'
-              direction2 = 'NW'
+              direction1 = SOUTHEAST_LABEL
+              direction2 = NORTHWEST_LABEL
             else
-              direction1 = 'SW'
-              direction2 = 'NE'
+              direction1 = SOUTHWEST_LABEL
+              direction2 = NORTHEAST_LABEL
             end
           end
 
           #Gets the file paths for the labels
-          file_path1 = Sketchup.find_support_file "#{COMPONENT_PATH}/#{direction1}.skp", "Plugins/"
+          file_path1 = Sketchup.find_support_file "#{COMPONENT_PATH}/#{direction1}", "Plugins/"
           end_direction = @definition_list.load file_path1
-          file_path2 = Sketchup.find_support_file "#{COMPONENT_PATH}/#{direction2}.skp", "Plugins/"
+          file_path2 = Sketchup.find_support_file "#{COMPONENT_PATH}/#{direction2}", "Plugins/"
           start_direction = @definition_list.load file_path2
 
           start_dir_beam1 = start_direction_group.entities.add_instance start_direction, @center_of_column
@@ -566,84 +568,75 @@ module EA_Extensions623
        # onKeyDown is called when the user presses a key on the keyboard.
       # We are checking it here to see if the user pressed the shift key
       # so that we can do inference locking
-      def onKeyDown(key, repeat, flags, view)
-        if( key == CONSTRAIN_MODIFIER_KEY && repeat == 1 )
-          # if we already have an inference lock, then unlock it
-          if( view.inference_locked? )
-            # calling lock_inference with no arguments actually unlocks
-            view.lock_inference
-          elsif( @state == 0 && @ip1.valid? )
-            view.lock_inference @ip1
-          elsif( @state == 1 && @ip2.valid? )
-            view.lock_inference @ip2, @ip1
-          end
 
-        elsif (key == VK_LEFT && repeat == 1)
-          p 'left_lock'
-          if( @state == 1 && @ip1.valid? )
-            if @left_lock == true
-              view.lock_inference
-              @left_lock = false
-            elsif( @state == 1 &&  @ip1.valid? )
-              pt = @ip1.position
-              y_axes = view.model.axes.axes[1]
-              inference_y_point = Geom::Point3d.new(pt[0]+y_axes[0], pt[1]+y_axes[1], pt[2]+y_axes[2])
-              green_axis = Sketchup::InputPoint.new(inference_y_point)
-              view.lock_inference green_axis, @ip1
-              @left_lock = true
-              @right_lock = false
-              @up_lock = false
-            end
-          end
+      # def onKeyDown(key, repeat, flags, view)
+      #   if( key == CONSTRAIN_MODIFIER_KEY && repeat == 1 )
+      #     # if we already have an inference lock, then unlock it
+      #     if( view.inference_locked? )
+      #       # calling lock_inference with no arguments actually unlocks
+      #       view.lock_inference
+      #     elsif( @state == 0 && @ip1.valid? )
+      #       view.lock_inference @ip1
+      #     elsif( @state == 1 && @ip2.valid? )
+      #       view.lock_inference @ip2, @ip1
+      #     end
 
-        elsif (key == VK_RIGHT && repeat == 1)
-          p 'right_lock'
-          if( @state == 1 && @ip1.valid? )
-            if @right_lock == true
-              view.lock_inference
-              @right_lock = false
-            elsif( @state == 1 &&  @ip1.valid? )
-              pt = @ip1.position
-              x_axes = view.model.axes.axes[0]
-              inference_x_point = Geom::Point3d.new(pt[0]+x_axes[0], pt[1]+x_axes[1], pt[2]+x_axes[2])
-              red_axis = Sketchup::InputPoint.new(inference_x_point)
-              view.lock_inference red_axis, @ip1
-              @left_lock = false
-              @right_lock = true
-              @up_lock = false
-            end
-          end
+      #   elsif (key == VK_LEFT && repeat == 1)
+      #     # p 'left_lock'
+      #     if( @state == 1 && @ip1.valid? )
+      #       if @left_lock == true
+      #         view.lock_inference
+      #         @left_lock = false
+      #       elsif( @state == 1 &&  @ip1.valid? )
+      #         pt = @ip1.position
+      #         y_axes = view.model.axes.axes[1]
+      #         inference_y_point = Geom::Point3d.new(pt[0]+y_axes[0], pt[1]+y_axes[1], pt[2]+y_axes[2])
+      #         green_axis = Sketchup::InputPoint.new(inference_y_point)
+      #         view.lock_inference green_axis, @ip1
+      #         @left_lock = true
+      #         @right_lock = false
+      #         @up_lock = false
+      #       end
+      #     end
 
-        elsif (key == VK_UP && repeat == 1)
-          p 'up_lock'
-          if( @state == 1 && @ip1.valid? )
-            if @up_lock == true
-              view.lock_inference
-              @up_lock = false
-            elsif( @state == 1 &&  @ip1.valid? )
-              pt = @ip1.position
-              z_axes = view.model.axes.axes[2]
-              inference_z_point = Geom::Point3d.new(pt[0]+z_axes[0], pt[1]+z_axes[1], pt[2]+z_axes[2])
-              blue_axis = Sketchup::InputPoint.new(inference_z_point)
-              view.lock_inference blue_axis, @ip1
-              @left_lock = false
-              @right_lock = false
-              @up_lock = true
-            end
-          end
-        end
+      #   elsif (key == VK_RIGHT && repeat == 1)
+      #     # p 'right_lock'
+      #     if( @state == 1 && @ip1.valid? )
+      #       if @right_lock == true
+      #         view.lock_inference
+      #         @right_lock = false
+      #       elsif( @state == 1 &&  @ip1.valid? )
+      #         pt = @ip1.position
+      #         x_axes = view.model.axes.axes[0]
+      #         inference_x_point = Geom::Point3d.new(pt[0]+x_axes[0], pt[1]+x_axes[1], pt[2]+x_axes[2])
+      #         red_axis = Sketchup::InputPoint.new(inference_x_point)
+      #         view.lock_inference red_axis, @ip1
+      #         @left_lock = false
+      #         @right_lock = true
+      #         @up_lock = false
+      #       end
+      #     end
 
-        # if key == VK_ALT && repeat == 1
+      #   elsif (key == VK_UP && repeat == 1)
+      #     # p 'up_lock'
+      #     if( @state == 1 && @ip1.valid? )
+      #       if @up_lock == true
+      #         view.lock_inference
+      #         @up_lock = false
+      #       elsif( @state == 1 &&  @ip1.valid? )
+      #         pt = @ip1.position
+      #         z_axes = view.model.axes.axes[2]
+      #         inference_z_point = Geom::Point3d.new(pt[0]+z_axes[0], pt[1]+z_axes[1], pt[2]+z_axes[2])
+      #         blue_axis = Sketchup::InputPoint.new(inference_z_point)
+      #         view.lock_inference blue_axis, @ip1
+      #         @left_lock = false
+      #         @right_lock = false
+      #         @up_lock = true
+      #       end
+      #     end
+      #   end
 
-        #   p 'start rotation incriments'
-        #   if @state == 1 && @ip1.valid?
-        #     vec = @ip1.position - @ip2.position
-        #     rot = Geom::Transformation.rotation(@ip1.position, vec, 45.degrees)
-        #     @ip1points.each{|ip| ip.transform! rot}
-        #   end
-        # end
-
-      end
+      # end
 
       # onKeyUp is called when the user releases the key
       # We use this to unlock the inference
@@ -774,7 +767,7 @@ module EA_Extensions623
           top_plate = @hss_outer_group.entities.add_group
 
           if @w <= STANDARD_TOP_PLATE_SIZE
-            file_path2 = Sketchup.find_support_file "#{COMPONENT_PATH}/Top Plate.skp", "Plugins"
+            file_path2 = Sketchup.find_support_file "#{COMPONENT_PATH}/#{HSSBLANKCAP}", "Plugins"
 
             top_plate_def = @definition_list.load file_path2
 
@@ -794,6 +787,7 @@ module EA_Extensions623
             etch_plate(top_plate, @hss_inner_group)
             add_plate_compass(top_plate, ORIGIN)
           end
+          @definition_list.remove(top_plate_def)
           color_by_thickness(top_plate, STANDARD_BASE_PLATE_THICKNESS)
           classify_as_plate(top_plate)
           return top_plate
@@ -981,38 +975,38 @@ module EA_Extensions623
           h = [@h,@w].sort
           case type
           when 'SQ'
-            base_type = "#{h[-1].to_i}_ SQ"
+            base_type = "PL_ #{h[-1].to_i}_ SQ"
           when 'OC'
-            base_type = "#{h[-1].to_i}_ OC"
+            base_type = "PL_ #{h[-1].to_i}_ OC"
           when 'IL'
-            base_type = "#{h[-1].to_i}_ IL"
+            base_type = "PL_ #{h[-1].to_i}_ IL"
           when 'IC'
-            base_type = "#{h[-1].to_i}_ IC"
+            base_type = "PL_ #{h[-1].to_i}_ IC"
           when 'EX'
-            base_type = "#{h[-1].to_i}_ EX"
+            base_type = "PL_ #{h[-1].to_i}_ EX"
           when 'DR'
-            base_type = "#{h[-1].to_i}_ DR"
+            base_type = "PL_ #{h[-1].to_i}_ DR"
           when 'DL'
-            base_type = "#{h[-1].to_i}_ DL"
+            base_type = "PL_ #{h[-1].to_i}_ DL"
           when 'DI'
-            base_type = "#{h[-1].to_i}_ DI"
+            base_type = "PL_ #{h[-1].to_i}_ DI"
           else
-            p 'selected blank'
+            # p 'selected blank'
             plate = draw_parametric_plate(sq_plate(@w, @h))
             # etch_plate(plate, @hss_inner_group)
           end
-          p "base type after is #{base_type}"
+          # p "base type after is #{base_type}"
 
           file_path1 = Sketchup.find_support_file "#{COMPONENT_PATH}/#{base_type}.skp", "Plugins"
           if plate
-            p 'drawing parametric baseplate'
+            # p 'drawing parametric baseplate'
             etch_plate(plate, @hss_inner_group)
             add_plate_compass(plate, ORIGIN)
             color_by_thickness(plate, STANDARD_BASE_PLATE_THICKNESS.to_f)
             classify_as_plate(plate)
 
           else
-            p 'grabbed plate from library'
+            # p 'grabbed plate from library'
             @base_group = @hss_outer_group.entities.add_group
             @base_group.name = 'Base Plate'
 
@@ -1025,12 +1019,9 @@ module EA_Extensions623
             color_by_thickness(@base_group, STANDARD_BASE_PLATE_THICKNESS.to_f)
             classify_as_plate(@base_group)
             @bp.explode
+            @definition_list.remove(@base_plate)
           end
-          #NEEDS#
 
-          #Conditions if the hss is different sizes
-          #conditions if the hss is rectangular (probs build from scratch, or use defualt and make group for editing)
-          #add Etch marks that fit appropriate size
         rescue Exception => e
           puts e.message
           puts e.backtrace.inspect
@@ -1388,6 +1379,8 @@ module EA_Extensions623
           w_rot_z = Geom::Transformation.rotation([0,0,0], Y_AXIS, 270.degrees)
           west.transform! (w_rot_x*w_rot_z)
           west.transform! w_traj
+
+          @dlg = drctn_lbls_group
         rescue Exception => e
           puts e.message
           puts e.backtrace.inspect
@@ -1412,9 +1405,19 @@ module EA_Extensions623
           slide_up = Geom::Transformation.translation(adjustment_vec)
           @entities.transform_entities(slide_up, group)
 
+
+          if not vec.parallel? Z_AXIS
+            v = Geom::Vector3d.new(14,14,14)
+            if @dlg
+              @dlg.entities.add_text('CHECK DIRECTION', @dlg.bounds.max, v)
+            elsif @is_column
+              group.entities.add_text('CHECK DIRECTION', group.bounds.max, v)
+            end
+          end
+
           if vec[2] < 0 && @is_column
             if vec.parallel? Z_AXIS
-              rot_vec = X_AXIS
+              rot_vec = Y_AXIS
             else
               rot_vec = vec.cross(Z_AXIS)
             end
@@ -1607,15 +1610,15 @@ module EA_Extensions623
         vec = pt1 - pt2
 
         if vec.parallel? @x_red
-          ghost_color = "Red"
+          ghost_color = GC_XAXIS
         elsif vec.parallel? @y_green
-          ghost_color = "Lime"
+          ghost_color = GC_YAXIS
         elsif vec.parallel? @z_blue
-          ghost_color = "Blue"
+          ghost_color = GC_ZAXIS
         elsif pt1[0] == pt2[0] || pt1[1] == pt2[1] || pt1[2] == pt2[2]
-          ghost_color = "Yellow"
+          ghost_color = GC_ONPLANE
         else
-          ghost_color = "Gray"
+          ghost_color = GC_OUTOFPLANE
         end
 
         a = []

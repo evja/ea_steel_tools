@@ -1,16 +1,20 @@
 module EA_Extensions623
   module EASteelTools
-    require "testup/testcase"
 
-    # class SteelToolsTest < Test::Unit::TestCase
-    # class TC_HelloWorld < TestUp::TestCase
+    class MasterTest
+      include Seed_Data
 
-    #   def test_say
-    #     hello = HelloWorld.new
-    #     result = hello.say("World")
-    #     assert_equal("Hello World", result)
-    #   end
 
-    # end
+      def initialize
+        # draw_various_hss_columns
+      end
+
+      def draw_various_hss_columns
+        Sketchup.active_model.select_tool EASteelTools::TubeTool.new(hss_options(1))
+      end
+
+
+    end
+
   end
 end

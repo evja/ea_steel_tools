@@ -32,18 +32,19 @@ load 'ea_steel_tools/dialog.rb'
 #Layout Files (Under Construction)
 load 'ea_steel_tools/layout_send.rb'
 
-
 #Breakout Files
 load 'ea_steel_tools/breakout_setup.rb'
 load 'ea_steel_tools/breakout.rb'
 load 'ea_steel_tools/breakout_send.rb'
-load 'ea_steel_tools/dialog_rolled.rb'
 
 
 #Guide Tools Files (Depricated)
 load 'ea_guide_tools/ea_guide_tools.rb'
 load 'ea_steel_tools_loader.rb'
 load 'ea_steel_tools/Updater/updater.rb'
+
+
+load 'ea_steel_tools/plate_observer.rb'
 
 
 
