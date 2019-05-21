@@ -30,9 +30,6 @@ module EA_Extensions623
 
       end
 
-
-
-
       # The onMouseMove method is called whenever the user moves the mouse.
       # because it is called so often, it is important to try to make it efficient.
       # In a lot of tools, your main interaction will occur in this method.

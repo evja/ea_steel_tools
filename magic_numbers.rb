@@ -58,6 +58,7 @@ module EA_Extensions623
     NN_SXTNTHS_HOLE    = "Holes_ 9_16_ Hole Set.skp"
     THRTN_SXTNTHS_HOLE = "Holes_ 13_16_ Hole Set.skp"
     UP_DRCTN           = "Label_  UP.skp"
+    UP_DRCTN_MD        = "Label_  _Upm.skp"
     UP_DRCTN_SM        = "Label_  _up.skp"
     HLF_INCH_STD       = "Studs_ 2 x½_.skp"
     STEEL_FONT         = "1CamBam_Stick_7"
@@ -70,6 +71,7 @@ module EA_Extensions623
     EAST_LABEL         = "Label_ E.skp"
     WEST_LABEL         = "Label_ W.skp"
     MOMENT_CLIP        = 'PL_ MF Assembly Clip.skp'
+    PL_COMPASS         = 'PlateCompass.skp'
 
 
 

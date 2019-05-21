@@ -9,7 +9,7 @@ module EA_Extensions623
       end
 
       def onChangeEntity(entity)
-        puts "Entity Changed: #{entity}"
+        # puts "Entity Changed: #{entity}"
       end
 
       def onOpen(instance)
