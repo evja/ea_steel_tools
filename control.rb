@@ -106,61 +106,60 @@ module EA_Extensions623
           end
 
         elsif (key == VK_LEFT && repeat == 1)
-          # p 'left_lock'
-          if( @state == 1 && @ip1.valid? )
+          p 'left_lock'
+          # if(@ip1.valid? )
             if @left_lock == true
-              view.lock_inference
+              view.lock_inference if view.inference_locked?
               @left_lock = false
+            # elsif( @state == 1 && @ip1.valid? )
             else
               pt = @ip1.position
               y_axes = view.model.axes.axes[1]
               inference_y_point = Geom::Point3d.new(pt[0]+y_axes[0], pt[1]+y_axes[1], pt[2]+y_axes[2])
               green_axis = Sketchup::InputPoint.new(inference_y_point)
               view.lock_inference green_axis, @ip1
-              # @left_lock = true
-              # @right_lock = false
-              # @up_lock = false
+              @left_lock = true
+              @right_lock = false
+              @up_lock = false
             end
-          end
+          # end
 
         elsif (key == VK_RIGHT && repeat == 1)
-          # p 'right_lock'
-          if( @state == 1 && @ip1.valid? )
+          p 'right_lock'
+          # if(@ip1.valid? )
             if @right_lock == true
-              view.lock_inference
+              view.lock_inference if view.inference_locked?
               @right_lock = false
+            # elsif( @state == 1 && @ip1.valid? )
             else
               pt = @ip1.position
               x_axes = view.model.axes.axes[0]
               inference_x_point = Geom::Point3d.new(pt[0]+x_axes[0], pt[1]+x_axes[1], pt[2]+x_axes[2])
               red_axis = Sketchup::InputPoint.new(inference_x_point)
               view.lock_inference red_axis, @ip1
-              # @left_lock = false
-              # @right_lock = true
-              # @up_lock = false
+              @left_lock = false
+              @right_lock = true
+              @up_lock = false
             end
-          end
+          # end
 
         elsif (key == VK_UP && repeat == 1)
-          # p 'up_lock'
-          # p "left lock = #{@left_lock}"
-          # p "right lock = #{@right_lock}"
-          # p "up lock = #{@up_lock}"
-          if( @state == 1 && @ip1.valid? )
+          # if( @ip1.valid? )
             if @up_lock == true
-              view.lock_inference if !view.inference_locked?
+              view.lock_inference if view.inference_locked?
               @up_lock = false
+            # elsif( @state == 1 && @ip1.valid? )
             else
               pt = @ip1.position
               z_axes = view.model.axes.axes[2]
               inference_z_point = Geom::Point3d.new(pt[0]+z_axes[0], pt[1]+z_axes[1], pt[2]+z_axes[2])
               blue_axis = Sketchup::InputPoint.new(inference_z_point)
               view.lock_inference blue_axis, @ip1
-              # @left_lock = false
-              # @right_lock = false
-              # @up_lock = true
+              @left_lock = false
+              @right_lock = false
+              @up_lock = true
             end
-          end
+          # end
         end
 
         # if key == VK_ALT && repeat == 1
@@ -172,7 +171,6 @@ module EA_Extensions623
         #     @ip1points.each{|ip| ip.transform! rot}
         #   end
         # end
-
       end
 
       # onKeyUp is called when the user releases the key

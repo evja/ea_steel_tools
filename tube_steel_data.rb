@@ -1640,6 +1640,12 @@ module EA_Extensions623
       def reset(view)
         # This variable keeps track of which point we are currently getting
         @state = 0
+        if view.inference_locked?
+          view.lock_inference
+          @up_lock = false
+          @right_lock = false
+          @left_lock = false
+        end
 
         # Display a prompt on the status bar
         Sketchup::set_status_text(("Select first end"), SB_PROMPT)
