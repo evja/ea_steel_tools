@@ -50,6 +50,9 @@ module EA_Extensions623
       " (A) Compass"
     ]
     STEEL_LAYER = STANDARD_LAYERS.grep(/Steel/)
+    STUD_LAYER = STANDARD_LAYERS.grep(/Stud/)
+    HOLES_LAYER = STANDARD_LAYERS.grep(/Holes/)
+    CENTERS_LAYER = STANDARD_LAYERS.grep(/Centers/)
 
     #########################
     ## COMPONENT CONSTANTS ##

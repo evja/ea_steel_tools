@@ -424,8 +424,10 @@ module EA_Extensions623
         reference_cross = @hss_inner_group.entities.add_group
         cl1 = reference_cross.entities.add_line(pts[0], pts[2])
         cl2 = reference_cross.entities.add_line(pts[1], pts[3])
+        set_layer(reference_cross, CENTERS_LAYER)
 
         reference_cross2 = reference_cross.copy
+        set_layer(reference_cross2, CENTERS_LAYER)
         v = Z_AXIS.clone if @is_column
         v = X_AXIS.clone if !@is_column
         v.length = seperation_dist.length
