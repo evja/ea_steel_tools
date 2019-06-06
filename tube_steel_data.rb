@@ -46,7 +46,7 @@ module EA_Extensions623
           @square_tube = true
         end
 
-        if @hss_type == 'Column'
+        if @hss_type == FLANGE_TYPE_COL
           @is_column = true
         else
           @is_column = false
@@ -488,44 +488,12 @@ module EA_Extensions623
 
           #Sets the direction labels according to the beam vec
           #Single Directions
-          case angle
-          when (0.degrees)..(30.degrees)
-            direction1 = NORTH_LABEL
-            direction2 = SOUTH_LABEL
-          when (60.degrees)..(120.degrees)
-            if vec[0] >= 0
-            direction1 = EAST_LABEL
-            direction2 = WEST_LABEL
-          else
-            direction1 = WEST_LABEL
-            direction2 = EAST_LABEL
-          end
-          when (150.degrees)..(180.degrees)
-            direction1 = SOUTH_LABEL
-            direction2 = NORTH_LABEL
-          #Compound Directions
-          when (30.degrees)..(60.degrees)
-            if vec[0] >= 0
-              direction1 = NORTHEAST_LABEL
-              direction2 = SOUTHWEST_LABEL
-            else
-              direction1 = NORTHWEST_LABEL
-              direction2 = SOUTHEAST_LABEL
-            end
-          when (120.degrees)..(150.degrees)
-            if vec[0] >= 0
-              direction1 = SOUTHEAST_LABEL
-              direction2 = NORTHWEST_LABEL
-            else
-              direction1 = SOUTHWEST_LABEL
-              direction2 = NORTHEAST_LABEL
-            end
-          end
+          direction_labels = get_direction_labels(angle, vec)
 
           #Gets the file paths for the labels
-          file_path1 = Sketchup.find_support_file "#{COMPONENT_PATH}/#{direction1}", "Plugins/"
+          file_path1 = Sketchup.find_support_file "#{COMPONENT_PATH}/#{direction_labels[0]}", "Plugins/"
           end_direction = @definition_list.load file_path1
-          file_path2 = Sketchup.find_support_file "#{COMPONENT_PATH}/#{direction2}", "Plugins/"
+          file_path2 = Sketchup.find_support_file "#{COMPONENT_PATH}/#{direction_labels[1]}", "Plugins/"
           start_direction = @definition_list.load file_path2
 
           start_dir_beam1 = start_direction_group.entities.add_instance start_direction, @center_of_column
@@ -1591,79 +1559,6 @@ module EA_Extensions623
 
         # Clear any inference lock
         view.lock_inference if view.inference_locked?
-      end
-
-      # Draw the geometry
-      def draw_ghost(pt1, pt2, view)
-        vec = pt1 - pt2
-
-        if vec.parallel? @x_red
-          ghost_color = GC_XAXIS
-        elsif vec.parallel? @y_green
-          ghost_color = GC_YAXIS
-        elsif vec.parallel? @z_blue
-          ghost_color = GC_ZAXIS
-        elsif pt1[0] == pt2[0] || pt1[1] == pt2[1] || pt1[2] == pt2[2]
-          ghost_color = GC_ONPLANE
-        else
-          ghost_color = GC_OUTOFPLANE
-        end
-
-        a = []
-        @ip1points.each {|p| a << p.transform(@trans)}
-        b = []
-        @ip1points.each {|p| b << p.transform(@trans2)}
-
-        pts = a.zip(b).flatten
-
-        fc1 = a.each_with_index do |p ,i|
-          if i < (a.count - 1)
-            pts.push a[i], a[i+1]
-          else
-            pts.push a[i], a[0]
-          end
-        end
-
-        fc2 = b.each_with_index do |p ,i|
-          if i < (b.count - 1)
-            pts.push b[i], b[i+1]
-          else
-            pts.push b[i], b[0]
-          end
-        end
-        # @ip1points.push pt1,pt2
-        # returns a view
-        view.line_width = 0.1
-        view.drawing_color = ghost_color
-        view.draw(GL_LINES, pts)
-      end
-
-      # Reset the tool back to its initial state
-      def reset(view)
-        # This variable keeps track of which point we are currently getting
-        @state = 0
-        if view.inference_locked?
-          view.lock_inference
-          @up_lock = false
-          @right_lock = false
-          @left_lock = false
-        end
-
-        # Display a prompt on the status bar
-        Sketchup::set_status_text(("Select first end"), SB_PROMPT)
-
-        # clear the InputPoints
-        @ip1.clear if @ip1
-        @ip2.clear if @ip2
-
-        if( view )
-          view.tooltip = nil
-          view.invalidate if @drawn
-        end
-
-        @drawn = false
-        @dragging = false
-
       end
 
       def deactivate(view)

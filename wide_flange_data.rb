@@ -15,8 +15,6 @@ module EA_Extensions623
         @definition_list = @model.definitions
         @materials = @model.materials
         @material_names = @materials.map {|color| color.name}
-        @steel_layer = @model.layers.add " Steel"
-        @labels_layer = @model.layers.add " Labels"
 
         view = @model.active_view
         @ip1 = nil
@@ -73,9 +71,15 @@ module EA_Extensions623
         @y_green = @model.axes.axes[1]
         @z_blue = @model.axes.axes[2]
 
+        if @@flange_type == FLANGE_TYPE_COL
+          @is_column = true
+        else
+          @is_column = false
+        end
+
         @nine_sixteenths_holes = []
         check_for_preselect(@selection, @model.active_view)
-        self.reset(nil)
+        self.reset(view)
       end
 
       def check_for_preselect(*args, view)
@@ -101,10 +105,7 @@ module EA_Extensions623
               @vy = pt1.vector_to pt2
               not_a_zero_vec = @vy.length > 0
               @vx = @vy.axes[0] if not_a_zero_vec
-              @vz = @vy.axes[1] if not_a_zero_vec
 
-              @trans = Geom::Transformation.axes pt1, @vx, @vy, @vz.reverse
-              @trans2 = Geom::Transformation.axes pt2, @vx, @vy, @vz.reverse
 
               # Create the member in Sketchup
               self.create_geometry(pt1, pt2, view)
@@ -125,51 +126,6 @@ module EA_Extensions623
         cursor_path = Sketchup.find_support_file ROOT_FILE_PATH+"/icons/wfs_cursor(2).png", "Plugins/"
         cursor_id = UI.create_cursor(cursor_path, 0, 0)
         UI.set_cursor(cursor_id.to_i)
-      end
-
-      # Draw the geometry
-      def draw_ghost(pt1, pt2, view)
-        vec = pt1 - pt2
-
-        if vec.parallel? @x_red
-          ghost_color = "Red"
-        elsif vec.parallel? @y_green
-          ghost_color = "Lime"
-        elsif vec.parallel? @z_blue
-          ghost_color = "Blue"
-        elsif pt1[0] == pt2[0] || pt1[1] == pt2[1] || pt1[2] == pt2[2]
-          ghost_color = "Yellow"
-        else
-          ghost_color = "Gray"
-        end
-
-        a = []
-        @ghostpoints.each {|p| a << p.transform(@trans)}
-        b = []
-        @ghostpoints.each {|p| b << p.transform(@trans2)}
-
-        pts = a.zip(b).flatten
-
-        fc1 = a.each_with_index do |p ,i|
-          if i < (a.count - 1)
-            pts.push a[i], a[i+1]
-          else
-            pts.push a[i], a[0]
-          end
-        end
-
-        fc2 = b.each_with_index do |p ,i|
-          if i < (b.count - 1)
-            pts.push b[i], b[i+1]
-          else
-            pts.push b[i], b[0]
-          end
-        end
-        # @ip1points.push pt1,pt2
-        # returns a view
-        view.line_width = 0.1
-        view.drawing_color = ghost_color
-        view.draw(GL_LINES, pts)
       end
 
       def getExtents
@@ -289,6 +245,7 @@ module EA_Extensions623
       # it is a good place to put most of your initialization
       def activate
         clear_groups # clears the groups so new ones can be made on the next instance
+        @nine_sixteenths_holes = []
 
         # The Sketchup::InputPoint class is used to get 3D points from screen
         # positions.  It uses the SketchUp inferencing code.
@@ -392,7 +349,10 @@ module EA_Extensions623
           #adds the face to the beam outline
           face = beam_ents.add_face segs
 
-          #extrudes the profile the length od the @points
+          if @is_column
+            length = length - STANDARD_BASE_PLATE_THICKNESS
+          end
+
           face.pushpull length
 
           #Soften the radius lines
@@ -604,11 +564,16 @@ module EA_Extensions623
           @baseplate_group = @outer_group.entities.add_group
           @baseplate_group.name = 'Bottom Plate'
           face = @baseplate_group.entities.add_face pts
+          rotface = Geom::Transformation.rotation(ORIGIN, Z_AXIS, 90.degrees)
+          @outer_group.entities.transform_entities(rotface, @baseplate_group)
           vec = Geom::Point3d.new(0, 0, @h/2) - @baseplate_group.bounds.center
           center = Geom::Transformation.translation(vec)
           @outer_group.entities.transform_entities(center, @baseplate_group)
-          align = Geom::Transformation.axes([-8,0,@h/2], Y_AXIS, Z_AXIS)
+          align = Geom::Transformation.rotation(Geom::Point3d.new(0, 0, @h/2), Y_AXIS, 90.degrees)
           @outer_group.entities.transform_entities(align, @baseplate_group)
+          vector = Geom::Vector3d.new(STANDARD_BASE_PLATE_THICKNESS, 0, 0)
+          sld = Geom::Transformation.translation(vector)
+          @outer_group.entities.transform_entities(sld, @baseplate_group)
 
           #chamfer the corner
           crnr1 = face.vertices[-1]
@@ -696,6 +661,9 @@ module EA_Extensions623
 
           @baseplate_group.entities.transform_entities tr3, [bh3, bh4]
 
+          [big_hole, bh2, bh3, bh4].each {|h| set_layer(h, HOLES_LAYER)}
+          # classify_as_plate(@baseplate_group)
+
           return @baseplate_group
         rescue Exception => e
           puts e.message
@@ -770,20 +738,20 @@ module EA_Extensions623
               z = (0.5*@h)
 
               # Sets the spacing for the 13/16" Web holes to be spaced from each other vertically
-              reasonable_spacing = 3
+
               # if @hc >= 10
-              #   reasonable_spacing = 3
+              #   SHEAR_HOLE_SPACING = 3
               # elsif @hc < 10
               #   @number_of_sheer_holes = 2  if @hc <= 6
-              #   reasonable_spacing = 2.5
+              #   SHEAR_HOLE_SPACING = 2.5
               # end
 
               #adds in the 13/16" Web/Connection holes
-              @number_of_sheer_holes.even? ? z = (z-reasonable_spacing.to_f/2)-(((@number_of_sheer_holes-2)/2)*reasonable_spacing) : z = z-(((@number_of_sheer_holes-1)/2)*reasonable_spacing)
+              @number_of_sheer_holes.even? ? z = (z-SHEAR_HOLE_SPACING.to_f/2)-(((@number_of_sheer_holes-2)/2)*SHEAR_HOLE_SPACING) : z = z-(((@number_of_sheer_holes-1)/2)*SHEAR_HOLE_SPACING)
 
               for n in 0..(@number_of_sheer_holes-1) do
-                t1 = Geom::Transformation.rotation [x,y1,z + (n*reasonable_spacing)], [1,0,0], 270.degrees
-                inst =  @inner_group.entities.add_instance thirteen_sixteenths_hole, [x, y1, z + (n*reasonable_spacing)]
+                t1 = Geom::Transformation.rotation [x,y1,z + (n*SHEAR_HOLE_SPACING)], [1,0,0], 270.degrees
+                inst =  @inner_group.entities.add_instance thirteen_sixteenths_hole, [x, y1, z + (n*SHEAR_HOLE_SPACING)]
                 inst.transform! t1
                 inst.transform! tran1
                 all_holes << inst
@@ -798,6 +766,7 @@ module EA_Extensions623
             count += 1
           end
 
+          all_holes.each{|h| set_layer(h, HOLES_LAYER)}
           return all_holes
         rescue Exception => e
           puts e.message
@@ -826,44 +795,12 @@ module EA_Extensions623
 
           #Sets the direction labels according to the beam vec
           #Single Directions
-          case angle
-          when (0.degrees)..(30.degrees)
-            direction1 = 'N'
-            direction2 = 'S'
-          when (60.degrees)..(120.degrees)
-            if vec[0] >= 0
-            direction1 = 'E'
-            direction2 = 'W'
-          else
-            direction1 = 'W'
-            direction2 = 'E'
-          end
-          when (150.degrees)..(180.degrees)
-            direction1 = 'S'
-            direction2 = 'N'
-          #Compound Directions
-          when (30.degrees)..(60.degrees)
-            if vec[0] >= 0
-              direction1 = 'NE'
-              direction2 = 'SW'
-            else
-              direction1 = 'NW'
-              direction2 = 'SE'
-            end
-          when (120.degrees)..(150.degrees)
-            if vec[0] >= 0
-              direction1 = 'SE'
-              direction2 = 'NW'
-            else
-              direction1 = 'SW'
-              direction2 = 'NE'
-            end
-          end
+          direction_labels = get_direction_labels(angle, vec)
 
           #Gets the file paths for the labels
-          file_path1 = Sketchup.find_support_file "#{COMPONENT_PATH}/#{direction1}.skp", "Plugins/"
+          file_path1 = Sketchup.find_support_file "#{COMPONENT_PATH}/#{direction_labels[0]}", "Plugins/"
           end_direction = @definition_list.load file_path1
-          file_path2 = Sketchup.find_support_file "#{COMPONENT_PATH}/#{direction2}.skp", "Plugins/"
+          file_path2 = Sketchup.find_support_file "#{COMPONENT_PATH}/#{direction_labels[1]}", "Plugins/"
           start_direction = @definition_list.load file_path2
 
           for n in 1..2
@@ -1040,7 +977,7 @@ module EA_Extensions623
             comp_def = @definition_list.add "#{@@beam_name}"
             comp_def.description = "The #{@@beam_name} label"
             ents = comp_def.entities
-            _3d_text = ents.add_3d_text("#{@@beam_name}", TextAlignCenter, "1CamBam_Stick_7", false, false, 3.0, 3.0, 0.0, false, 0.0)
+            _3d_text = ents.add_3d_text("#{@@beam_name}", TextAlignCenter, STEEL_FONT, false, false, 3.0, 3.0, 0.0, false, 0.0)
             save_path = Sketchup.find_support_file "Components", ""
             comp_def.save_as(save_path + "/#{@@beam_name}.skp")
           end
@@ -1084,7 +1021,7 @@ module EA_Extensions623
 
           rot_direct = 360 - Z_AXIS.angle_between(vec).radians
 
-          p rot_direct
+          # p rot_direct
 
           # p rot_direct.degrees
           rot_vert = Geom::Transformation.rotation(up_direction_group.bounds.center, Y_AXIS, rot_direct.degrees)
@@ -1112,7 +1049,7 @@ module EA_Extensions623
             wc = var.join('.')
           end
 
-          stiffener_plate = "PL #{@@height_class}(#{wc}) Stiffener"
+          stiffener_plate = "PL_ #{@@height_class}(#{wc}) Stiffener"
 
           file_path_stiffener = Sketchup.find_support_file "#{COMPONENT_PATH}/#{stiffener_plate}.skp", "Plugins/"
 
@@ -1154,7 +1091,7 @@ module EA_Extensions623
             end
           end
 
-          all_stiffplates.each {|plate| color_by_thickness(plate, @@stiff_thickness.to_r.to_f); classify_as_plate(plate) }
+          all_stiffplates.each {|plate| color_by_thickness(plate, @@stiff_thickness.to_r.to_f); classify_as_plate(plate); lock_scale_toX(plate) }
           #returns the all plates array
           return all_stiffplates
         rescue Exception => e
@@ -1171,6 +1108,7 @@ module EA_Extensions623
         moment_clip = @outer_group.entities.add_instance mcd, ORIGIN
         classify_as_plate(moment_clip)
         moment_clip2 = moment_clip.copy
+        classify_as_plate(moment_clip2)
 
         color_by_thickness(moment_clip, 0.375)
         color_by_thickness(moment_clip2, 0.375)
@@ -1188,6 +1126,9 @@ module EA_Extensions623
 
         @outer_group.entities.transform_entities(slide, moment_clip)
         @outer_group.entities.transform_entities(slide, moment_clip2)
+
+        lock_scale_toX(moment_clip)
+        lock_scale_toX(moment_clip2)
       end
 
       def add_shearplates(length, scale)
@@ -1201,19 +1142,18 @@ module EA_Extensions623
             wc = var.join('.')
           end
 
-          to_w10_shear_plate = "PL #{@@height_class}(#{wc}) to W10"
-          to_w12_shear_plate = "PL #{@@height_class}(#{wc}) to W12"
+          to_w10_shear_plate = "PL_ #{@@height_class}(#{wc}) to W10"
+          to_w12_shear_plate = "PL_ #{@@height_class}(#{wc}) to W12"
           resize = Geom::Transformation.scaling (1+scale.to_r.to_f), 1, 1
 
 
-          small_shear_plate = "PL #{@@height_class}(#{wc}) to #{@@height_class}" #This is for all beams smaller than W10's
           if @hc < 10
+            small_shear_plate = "PL_ #{@@height_class}(#{wc}) to #{@@height_class}" #This is for all beams smaller than W10's
             file_path_sm_shear_plate = Sketchup.find_support_file "#{COMPONENT_PATH}/#{small_shear_plate}.skp", "Plugins/"
           else
             file_path_sm_shear_plate = Sketchup.find_support_file "#{COMPONENT_PATH}/#{to_w10_shear_plate}.skp", "Plugins/"
           end
            file_path_lg_shear_plate = Sketchup.find_support_file "#{COMPONENT_PATH}/#{to_w12_shear_plate}.skp", "Plugins/"
-
           #Sets the x y and z values for placement of the plates
           x = STIFF_LOCATION
           y = (-0.5*@tw)-0.0625
@@ -1255,7 +1195,7 @@ module EA_Extensions623
             end
           end
 
-          all_shearplates.each {|plate| color_by_thickness(plate, @@shearpl_thickness.to_r.to_f); classify_as_plate(plate)}
+          all_shearplates.each {|plate| color_by_thickness(plate, @@shearpl_thickness.to_r.to_f); classify_as_plate(plate); lock_scale_toX(plate)}
           return all_shearplates
         rescue Exception => e
           puts e.message
@@ -1312,6 +1252,66 @@ module EA_Extensions623
         end
       end
 
+      def align_column(pt1, pt2, vec, group)
+        begin
+
+          # #move the center of the bottom flange to the first point
+          tr = Geom::Transformation.translation pt1
+          # @entities.transform_entities tr, group
+
+          vy = @ip1.position.vector_to @ip2.position
+          not_a_zero_vec = @vz.length > 0
+          vx = @vy.axes[0] if not_a_zero_vec
+          vz = @vy.axes[1] if not_a_zero_vec
+          p vx
+          p vy
+          p vz
+
+
+          align = Geom::Transformation.axes(pt1, vx, vz)
+          @entities.transform_entities align, group
+
+          # temp_vec = Geom::Vector3d.new [vec[0], vec[1], 0]
+          # vt_angle = temp_vec.angle_between vec
+
+          # #checks to see if the vec is negative-Z
+          # if vec[2] > 0
+          #   vt_angle += (vt_angle * -2.0)
+          # end
+
+          # # Checks if the vec is vertical and applies a rotation to 90 degrees
+
+          # if Z_AXIS.parallel? vec
+          #   rot = Geom::Transformation.rotation pt1, [0,1,0], vt_angle
+          #   rot2 = Geom::Transformation.rotation pt1, [0,0,1], vt_angle
+          #   @entities.transform_entities rot, group
+          #   @entities.transform_entities rot2, group
+          # else
+          #   #getrs both vectors to compare angle difference
+          #   temp_vec = Geom::Vector3d.new [vec[0], vec[1], 0]
+          #   beam_profile_vec = Geom::Vector3d.new [1,0,0]
+
+          #   #gets the horizontal angle to rotate the face
+          #   hz_angle = beam_profile_vec.angle_between temp_vec
+
+          #   #checks if the vec is negative-X
+          #   if vec[1] < 0
+          #     hz_angle += (hz_angle * -2)
+          #   end
+          #   #rotates the profile to align with the vec horizontally
+          #   rotation1 = Geom::Transformation.rotation pt1, [0,0,1], hz_angle
+          #   @entities.transform_entities rotation1, group
+
+          #   rot = Geom::Transformation.rotation pt1, [(-1.0*vec[1]), (vec[0]), 0], vt_angle
+          #   @entities.transform_entities rot, group
+          # end
+        rescue Exception => e
+          puts e.message
+          puts e.backtrace.inspect
+          UI.messagebox("Sorry, There was a problem aligning the beam to your specified location")
+        end
+      end
+
       def set_groups(model)
         active_model = Sketchup.active_model.active_entities.parent
         ###########################################
@@ -1319,14 +1319,15 @@ module EA_Extensions623
         ###########################################
         # Sets the outer group for the beam and should be named "Beam"
         @outer_group = active_model.entities.add_group
-        @outer_group.name = 'Beam'
+        @outer_group.name = UN_NAMED_GROUP
         # Sets the inside group for the beam and should be named "W--X--"
         @inner_group = @outer_group.entities.add_group
         @inner_group.name = "#{@@beam_name}"
-        @steel_layer = model.layers.add " Steel"
-        @inner_group.layer = @steel_layer
+        set_layer(@inner_group, STEEL_LAYER)
+
         # Sets the inner most group for the beam and should be named "Difference"
         @solid_group = @inner_group.entities.add_group
+        @solid_group.name = WFINGROUPNAME
         ########################################
       end
 
@@ -1356,8 +1357,7 @@ module EA_Extensions623
           vec = pt2 - pt1
           length = vec.length
           if( length < 8 )
-            # UI.beep
-            UI.messagebox("Please draw a beam longer than 8")
+            UI.beep
             return
           end
 
@@ -1368,10 +1368,9 @@ module EA_Extensions623
 
           #draw the bare beam
           beam = draw_beam(@@beam_data, length)
-          beam.name = "Difference"
 
           #insert all labels in the beam and column, insert 13/16" if it is a beam
-          if @@flange_type == 'Column'
+          if @@flange_type == FLANGE_TYPE_COL
             column = true
             all_labels = add_labels_column(vec, length)
           else
@@ -1401,15 +1400,6 @@ module EA_Extensions623
             @stiff_scale = 6
           end
 
-          # if @material_names.include? clr1
-          #   @stiff_color = @materials[clr1]
-          #   @material_names << clr1
-          # else
-          #   @stiff_color = @materials.add clr1
-          #   @stiff_color.color = rgb
-          #   @material_names << clr1
-          # end
-
           case @@shearpl_thickness
           when '1/4'
             @shear_scale = 2
@@ -1423,38 +1413,20 @@ module EA_Extensions623
             @shear_scale = 6
           end
 
-          # if @material_names.include? clr2
-          #   @shear_color = @materials[clr2]
-          #   @material_names << clr2
-          # else
-          #   @shear_color = @materials.add clr2
-          #   @shear_color.color = rgb2
-          #   @material_names << clr2
-          # end
-
-          # Cuts the holes if the option is checked
-          if @@cuts_holes && @@has_holes
-            beam.explode
-            @nine_sixteenths_holes.each do |hole|
-              hole.explode
-            end
-            thirteen_sixteenths_holes.each {|hole| hole.explode} if not column
-          end
-
           if not @all_studs.empty?
-            @all_studs.each {|stud| stud.layer = @steel_layer }
+            @all_studs.each {|stud| stud.layer = STEEL_LAYER }
             @all_studs.each {|stud| color_by_thickness(stud, 0.5)}
           end
 
           # #insert stiffener plates in the beam
           if @@has_stiffeners
             stiffplates = add_stiffener_plates(length, column, @stiff_scale)
-            stiffplates.each {|plate| plate.layer = @steel_layer}
+            stiffplates.each {|plate| plate.layer = STEEL_LAYER}
           end
 
           if @@has_shearplates && column == false
             shplates = add_shearplates(length, @shear_scale)
-            shplates.each {|plate| plate.layer = @steel_layer}
+            shplates.each {|plate| plate.layer = STEEL_LAYER}
           end
 
           if @@placement == "TOP"
@@ -1473,6 +1445,43 @@ module EA_Extensions623
           insert_moment_clip(length) if column
 
           #align the beam with the input points
+
+
+          if @@flange_type == FLANGE_TYPE_COL
+            trans = Geom::Transformation.rotation(ORIGIN, Y_AXIS, 270.degrees)
+            trans2 = Geom::Transformation.rotation(ORIGIN, Z_AXIS, 270.degrees)
+            beam.entities.transform_entities(trans, beam.entities.to_a)
+            beam.entities.transform_entities(trans2, beam.entities.to_a)
+            p beam.name
+            p beam.parent.instances[0].name
+            gtm = []
+            @outer_group.entities.each do |e|
+              if e.name != beam.parent.instances[0].name
+                gtm << e
+              else
+                e.entities.each do |e2|
+                  if e2.name != beam.name
+                    # @entities.transform_entities(trans, e2)
+                    # @entities.transform_entities(trans2, e2)
+                    e2.transform!(trans)
+                    e2.transform!(trans2)
+                  end
+                end
+              end
+            end
+            @entities.transform_entities(trans, gtm)
+            @entities.transform_entities(trans2, gtm)
+
+            setbak = Geom::Transformation.rotation(ORIGIN, Y_AXIS, 90.degrees)
+            setbak2  = Geom::Transformation.rotation(ORIGIN, Z_AXIS, 90.degrees)
+            @entities.transform_entities((setbak*setbak2), @outer_group)
+
+            vector = Geom::Vector3d.new(0, 0, STANDARD_BASE_PLATE_THICKNESS)
+            sld = Geom::Transformation.translation(vector)
+            @entities.transform_entities(sld, @inner_group)
+
+          end
+
           align_beam(pt1, pt2, vec, @outer_group)
 
           # This code checks to see if it is a column
@@ -1483,6 +1492,15 @@ module EA_Extensions623
             # p "#{center}"
             new_rot = Geom::Transformation.rotation center, [0,1,0], 180.degrees
             @entities.transform_entities new_rot, @outer_group
+          end
+
+          # Cuts the holes if the option is checked
+          if @@cuts_holes && @@has_holes
+            beam.explode
+            @nine_sixteenths_holes.each do |hole|
+              hole.explode if not hole.deleted?
+            end
+            thirteen_sixteenths_holes.each {|hole| hole.explode} if not column
           end
 
           model.commit_operation

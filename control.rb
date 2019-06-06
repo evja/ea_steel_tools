@@ -12,22 +12,76 @@ module EA_Extensions623
       end
 
       def set_layer(part, layer)
-        part.layer = layer[0]
+        layers = Sketchup.active_model.layers.collect{|l| l.name}
+        # p layer
+        if layers.include? layer
+          # p 'layer exists'
+          part.layer = layer
+        else
+          Sketchup.active_model.layers.add layer
+          # p 'added the layer'
+          part.layer = layer
+        end
       end
 
       def classify_as_plate(plate)
         plate.definition.add_classification(CLSSFR_LIB, CLSSFY_PLT)
-        plate.add_observer(EASteelTools::MyPlateObserver.new(plate))
         set_layer(plate, STEEL_LAYER)
         return plate
       end
 
-      def check_for_existing_layer(meth, *args, &blk)
-
+      def add_observer_to_plate(plate)
+        plate.add_observer(EASteelTools::MyPlateObserver.new(plate))
       end
 
-      def get_plate()
+      def lock_scale_toX(plate)
+        plate.definition.behavior.no_scale_mask=(126)
+      end
 
+      # def lock_scale_toY(plate)
+      #   plate.definition.behavior.no_scale_mask=(?)
+      # end
+
+      # def lock_scale_toZ(plate)
+      #   plate.definition.behavior.no_scale_mask=(?)
+      # end
+
+      def get_direction_labels(angle, vec)
+        case angle
+          when (0.degrees)..(30.degrees)
+            direction1 = NORTH_LABEL
+            direction2 = SOUTH_LABEL
+          when (60.degrees)..(120.degrees)
+            if vec[0] >= 0
+            direction1 = EAST_LABEL
+            direction2 = WEST_LABEL
+          else
+            direction1 = WEST_LABEL
+            direction2 = EAST_LABEL
+          end
+          when (150.degrees)..(180.degrees)
+            direction1 = SOUTH_LABEL
+            direction2 = NORTH_LABEL
+          #Compound Directions
+          when (30.degrees)..(60.degrees)
+            if vec[0] >= 0
+              direction1 = NORTHEAST_LABEL
+              direction2 = SOUTHWEST_LABEL
+            else
+              direction1 = NORTHWEST_LABEL
+              direction2 = SOUTHEAST_LABEL
+            end
+          when (120.degrees)..(150.degrees)
+            if vec[0] >= 0
+              direction1 = SOUTHEAST_LABEL
+              direction2 = NORTHWEST_LABEL
+            else
+              direction1 = SOUTHWEST_LABEL
+              direction2 = NORTHEAST_LABEL
+            end
+          end
+
+          return [direction1, direction2]
       end
 
       # The onMouseMove method is called whenever the user moves the mouse.
@@ -106,13 +160,13 @@ module EA_Extensions623
           end
 
         elsif (key == VK_LEFT && repeat == 1)
-          p 'left_lock'
-          # if(@ip1.valid? )
+          # p 'left_lock'
+          if(@ip1.valid? )
             if @left_lock == true
               view.lock_inference if view.inference_locked?
               @left_lock = false
-            # elsif( @state == 1 && @ip1.valid? )
-            else
+            elsif( @state == 1 && @ip1.valid? )
+            # else
               pt = @ip1.position
               y_axes = view.model.axes.axes[1]
               inference_y_point = Geom::Point3d.new(pt[0]+y_axes[0], pt[1]+y_axes[1], pt[2]+y_axes[2])
@@ -122,16 +176,16 @@ module EA_Extensions623
               @right_lock = false
               @up_lock = false
             end
-          # end
+          end
 
         elsif (key == VK_RIGHT && repeat == 1)
-          p 'right_lock'
-          # if(@ip1.valid? )
+          # p 'right_lock'
+          if(@ip1.valid? )
             if @right_lock == true
               view.lock_inference if view.inference_locked?
               @right_lock = false
-            # elsif( @state == 1 && @ip1.valid? )
-            else
+            elsif( @state == 1 && @ip1.valid? )
+            # else
               pt = @ip1.position
               x_axes = view.model.axes.axes[0]
               inference_x_point = Geom::Point3d.new(pt[0]+x_axes[0], pt[1]+x_axes[1], pt[2]+x_axes[2])
@@ -141,15 +195,15 @@ module EA_Extensions623
               @right_lock = true
               @up_lock = false
             end
-          # end
+          end
 
         elsif (key == VK_UP && repeat == 1)
-          # if( @ip1.valid? )
+          if( @ip1.valid? )
             if @up_lock == true
               view.lock_inference if view.inference_locked?
               @up_lock = false
-            # elsif( @state == 1 && @ip1.valid? )
-            else
+            elsif( @state == 1 && @ip1.valid? )
+            # else
               pt = @ip1.position
               z_axes = view.model.axes.axes[2]
               inference_z_point = Geom::Point3d.new(pt[0]+z_axes[0], pt[1]+z_axes[1], pt[2]+z_axes[2])
@@ -159,7 +213,7 @@ module EA_Extensions623
               @right_lock = false
               @up_lock = true
             end
-          # end
+          end
         end
 
         # if key == VK_ALT && repeat == 1
@@ -227,6 +281,12 @@ module EA_Extensions623
       def reset(view)
         # This variable keeps track of which point we are currently getting
         @state = 0
+        if view.inference_locked?
+          view.lock_inference
+          @up_lock = false
+          @right_lock = false
+          @left_lock = false
+        end
 
         # Display a prompt on the status bar
         Sketchup::set_status_text(("Select first end"), SB_PROMPT)
@@ -288,6 +348,50 @@ module EA_Extensions623
           puts e.backtrace.inspect
           UI.messagebox("There was a problem coloring some parts")
         end
+      end
+
+      def draw_ghost(pt1, pt2, view)
+        vec = pt1 - pt2
+
+        if vec.parallel? @x_red
+          ghost_color = GC_XAXIS
+        elsif vec.parallel? @y_green
+          ghost_color = GC_YAXIS
+        elsif vec.parallel? @z_blue
+          ghost_color = GC_ZAXIS
+        elsif pt1[0] == pt2[0] || pt1[1] == pt2[1] || pt1[2] == pt2[2]
+          ghost_color = GC_ONPLANE
+        else
+          ghost_color = GC_OUTOFPLANE
+        end
+
+        a = []
+        @ip1points.each {|p| a << p.transform(@trans)}
+        b = []
+        @ip1points.each {|p| b << p.transform(@trans2)}
+
+        pts = a.zip(b).flatten
+
+        fc1 = a.each_with_index do |p ,i|
+          if i < (a.count - 1)
+            pts.push a[i], a[i+1]
+          else
+            pts.push a[i], a[0]
+          end
+        end
+
+        fc2 = b.each_with_index do |p ,i|
+          if i < (b.count - 1)
+            pts.push b[i], b[i+1]
+          else
+            pts.push b[i], b[0]
+          end
+        end
+        # @ip1points.push pt1,pt2
+        # returns a view
+        view.line_width = 0.1
+        view.drawing_color = ghost_color
+        view.draw(GL_LINES, pts)
       end
 
     end #Class

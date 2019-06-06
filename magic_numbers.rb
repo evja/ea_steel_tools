@@ -49,10 +49,10 @@ module EA_Extensions623
       " (S) Holes/Studs",
       " (A) Compass"
     ]
-    STEEL_LAYER = STANDARD_LAYERS.grep(/Steel/)
-    STUD_LAYER = STANDARD_LAYERS.grep(/Stud/)
-    HOLES_LAYER = STANDARD_LAYERS.grep(/Holes/)
-    CENTERS_LAYER = STANDARD_LAYERS.grep(/Centers/)
+    STEEL_LAYER = STANDARD_LAYERS.grep(/Steel/)[0]
+    STUD_LAYER = STANDARD_LAYERS.grep(/Stud/)[0]
+    HOLES_LAYER = STANDARD_LAYERS.grep(/Holes/)[0]
+    CENTERS_LAYER = STANDARD_LAYERS.grep(/Centers/)[0]
 
     #########################
     ## COMPONENT CONSTANTS ##
@@ -103,6 +103,11 @@ module EA_Extensions623
     BIG_HOLES_LOCATION = 4
     # Minimum distance from the inside of the flanges to the center of 13/16" holes can be
     MIN_BIG_HOLE_DISTANCE_FROM_KZONE = 1.5
+    SHEAR_HOLE_SPACING = 3
+    WFINGROUPNAME = "Difference"
+    UN_NAMED_GROUP = "[UnAssigned]"
+    FLANGE_TYPE_COL = "Column"
+    FLANGE_TYPE_BM = "Beam"
 
 
     ##################################
