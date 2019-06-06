@@ -183,7 +183,7 @@ module EA_Extensions623
         else
           wc = var.join('.')
         end
-        stiffener_plate = "PL #{@@height_class}(#{wc}) Stiffener"
+        stiffener_plate = "PL_ #{@@height_class}(#{wc}) Stiffener"
 
         file_path1 = Sketchup.find_support_file "#{COMPONENT_PATH}/#{NN_SXTNTHS_HOLE}", "Plugins"
         file_path2 = Sketchup.find_support_file "#{COMPONENT_PATH}/#{THRTN_SXTNTHS_HOLE}", "Plugins"
@@ -192,11 +192,11 @@ module EA_Extensions623
         file_path5 = Sketchup.find_support_file "#{COMPONENT_PATH}/#{stiffener_plate}.skp", "Plugins/"
 
         if @hc < 10
-          file_path6 = Sketchup.find_support_file "#{COMPONENT_PATH}/PL #{@@height_class}(#{wc}) to #{@@height_class}.skp", "Plugins/"
+          file_path6 = Sketchup.find_support_file "#{COMPONENT_PATH}/PL_ #{@@height_class}(#{wc}) to #{@@height_class}.skp", "Plugins/"
         elsif @hc >= 10
-          file_path6 = Sketchup.find_support_file "#{COMPONENT_PATH}/PL #{@@height_class}(#{wc}) to W10.skp", "Plugins/"
+          file_path6 = Sketchup.find_support_file "#{COMPONENT_PATH}/PL_ #{@@height_class}(#{wc}) to W10.skp", "Plugins/"
         end
-        file_path7 = Sketchup.find_support_file "#{COMPONENT_PATH}/PL #{@@height_class}(#{wc}) to W12.skp", "Plugins/"
+        file_path7 = Sketchup.find_support_file "#{COMPONENT_PATH}/PL_ #{@@height_class}(#{wc}) to W12.skp", "Plugins/"
 
         begin
           @nine_sixteenths_hole = @definition_list.load file_path1
@@ -284,6 +284,18 @@ module EA_Extensions623
           spread_parts(arc)
           erase_arc(arc) #Keep this at the bottom of the #create_beam method
           @working_group.explode
+          if @@has_holes
+            if @@web_holes
+              @web_holes.each{|wh| set_layer(wh, HOLES_LAYER)}
+            end
+            if @flange_holes
+              @flange_holes.each{|fh| set_layer(fh, HOLES_LAYER)}
+            end
+
+            @shear_holes.each{|sh| set_layer(sh, HOLES_LAYER)}
+            @guage_holes.each{|gh| set_layer(gh, HOLES_LAYER)}
+          end
+
           if @@has_holes && @@cuts_holes
             @solid_group.explode
             @web_holes.each(&@explode) if @@web_holes
@@ -291,7 +303,7 @@ module EA_Extensions623
             @shear_holes.each(&@explode)
             @guage_holes.each(&@explode)
           end
-          @studs.each {|st| st.layer = @steel_layer; color_by_thickness(st, 0.5)} if !@studs.empty?
+          @studs.each {|st| st.layer = STUD_LAYER; color_by_thickness(st, 0.5)} if !@studs.empty?
           rescue Exception => e
             puts e.message
             puts e.backtrace.inspect
@@ -304,15 +316,14 @@ module EA_Extensions623
           @working_group      = @entities.add_group
           @working_group_ents = @working_group.entities
           @outer_group = @working_group_ents.add_group # add plates
-          @outer_group.name = 'Beam'
+          @outer_group.name = UN_NAMED_GROUP
 
           @inner_group = @outer_group.entities.add_group #Add Labels
           @inner_group.name = "#{@@beam_name}"
-          @steel_layer = Sketchup.active_model.layers.add " Steel"
-          @inner_group.layer = @steel_layer
+          set_layer(@inner_group, STEEL_LAYER)
 
           @solid_group = @inner_group.entities.add_group
-          @solid_group.name = "Difference"
+          @solid_group.name = WFINGROUPNAME
           @centergroup = @solid_group.entities.add_group
 
           b = @outer_group.bounds
@@ -675,14 +686,14 @@ module EA_Extensions623
           angle_x = heading_x.angle_between Y_AXIS
           angle_y = heading_y.angle_between Y_AXIS
 
-          direction1 = get_direction(angle_x, vec1)
-          direction2 = get_direction(angle_y, vec2)
+          direction_labels = get_direction_labels(angle_x, vec1)
+          direction_labels1 = get_direction_labels(angle_y, vec2)
 
           #Gets the file paths for the direction labels
           # Direction Labels have the axis at the center of mass
-          file_path1 = Sketchup.find_support_file "#{COMPONENT_PATH}/#{direction1}.skp", "Plugins/"
+          file_path1 = Sketchup.find_support_file "#{COMPONENT_PATH}/#{direction_labels[0]}", "Plugins/"
           start_direction = @definition_list.load file_path1
-          file_path2 = Sketchup.find_support_file "#{COMPONENT_PATH}/#{direction2}.skp", "Plugins/"
+          file_path2 = Sketchup.find_support_file "#{COMPONENT_PATH}/#{direction_labels1[0]}", "Plugins/"
           end_direction = @definition_list.load file_path2
 
           direction_insertion_point1 = [(@tw/2), 0, @h/2]
@@ -781,9 +792,9 @@ module EA_Extensions623
           wc = var.join('.')
         end
 
-        stiffener_plate = "PL #{@@height_class}(#{wc}) Stiffener"
+        stiffener_plate = "PL_ #{@@height_class}(#{wc}) Stiffener"
 
-        file_path_stiffener = Sketchup.find_support_file "#{ROOT_FILE_PATH}/Beam Components/#{stiffener_plate}.skp", "Plugins/"
+        file_path_stiffener = Sketchup.find_support_file "#{COMPONENT_PATH}/#{stiffener_plate}.skp", "Plugins/"
 
         #Sets the x y and z values for placement of the plates
         x = (-0.5*@tw)-0.0625
@@ -810,7 +821,7 @@ module EA_Extensions623
         @stiff_plates.each_with_index do |plate, i|
           plate.transform! resize1
         end
-        @stiff_plates.each {|plate| color_by_thickness(plate, @@stiff_thickness.to_r.to_f); classify_as_plate(plate); plate.layer = @steel_layer }
+        @stiff_plates.each {|plate| color_by_thickness(plate, @@stiff_thickness.to_r.to_f); classify_as_plate(plate); plate.layer = STEEL_LAYER }
       end
 
       def add_shearplates(scale, color)
@@ -862,40 +873,8 @@ module EA_Extensions623
           end
         end
 
-        all_shearplates.each {|plate| color_by_thickness(plate, @@shearpl_thickness); classify_as_plate(plate); plate.layer = @steel_layer}
+        all_shearplates.each {|plate| color_by_thickness(plate, @@shearpl_thickness); classify_as_plate(plate); plate.layer = STEEL_LAYER}
         return all_shearplates
-      end
-
-      def get_direction(angle, vec)
-        #Gets the direction based on the angles heading in relation to NORTH
-        #Single Directions
-        case angle
-        when (0.degrees)..(30.degrees)
-          hdng = 'N'
-        when (60.degrees)..(120.degrees)
-          if vec[0] >= 0
-          hdng = 'E'
-        else
-          hdng = 'W'
-        end
-        when (150.degrees)..(180.degrees)
-          hdng = 'S'
-        #Compound Directions
-        when (30.degrees)..(60.degrees)
-          if vec[0] >= 0
-            hdng = 'NE'
-          else
-            hdng = 'NW'
-          end
-        when (120.degrees)..(150.degrees)
-          if vec[0] >= 0
-            hdng = 'SE'
-          else
-            hdng = 'SW'
-          end
-        end
-
-        return hdng
       end
 
       def draw_new_arc(selected_arc)

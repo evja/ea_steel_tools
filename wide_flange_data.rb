@@ -1252,66 +1252,6 @@ module EA_Extensions623
         end
       end
 
-      def align_column(pt1, pt2, vec, group)
-        begin
-
-          # #move the center of the bottom flange to the first point
-          tr = Geom::Transformation.translation pt1
-          # @entities.transform_entities tr, group
-
-          vy = @ip1.position.vector_to @ip2.position
-          not_a_zero_vec = @vz.length > 0
-          vx = @vy.axes[0] if not_a_zero_vec
-          vz = @vy.axes[1] if not_a_zero_vec
-          p vx
-          p vy
-          p vz
-
-
-          align = Geom::Transformation.axes(pt1, vx, vz)
-          @entities.transform_entities align, group
-
-          # temp_vec = Geom::Vector3d.new [vec[0], vec[1], 0]
-          # vt_angle = temp_vec.angle_between vec
-
-          # #checks to see if the vec is negative-Z
-          # if vec[2] > 0
-          #   vt_angle += (vt_angle * -2.0)
-          # end
-
-          # # Checks if the vec is vertical and applies a rotation to 90 degrees
-
-          # if Z_AXIS.parallel? vec
-          #   rot = Geom::Transformation.rotation pt1, [0,1,0], vt_angle
-          #   rot2 = Geom::Transformation.rotation pt1, [0,0,1], vt_angle
-          #   @entities.transform_entities rot, group
-          #   @entities.transform_entities rot2, group
-          # else
-          #   #getrs both vectors to compare angle difference
-          #   temp_vec = Geom::Vector3d.new [vec[0], vec[1], 0]
-          #   beam_profile_vec = Geom::Vector3d.new [1,0,0]
-
-          #   #gets the horizontal angle to rotate the face
-          #   hz_angle = beam_profile_vec.angle_between temp_vec
-
-          #   #checks if the vec is negative-X
-          #   if vec[1] < 0
-          #     hz_angle += (hz_angle * -2)
-          #   end
-          #   #rotates the profile to align with the vec horizontally
-          #   rotation1 = Geom::Transformation.rotation pt1, [0,0,1], hz_angle
-          #   @entities.transform_entities rotation1, group
-
-          #   rot = Geom::Transformation.rotation pt1, [(-1.0*vec[1]), (vec[0]), 0], vt_angle
-          #   @entities.transform_entities rot, group
-          # end
-        rescue Exception => e
-          puts e.message
-          puts e.backtrace.inspect
-          UI.messagebox("Sorry, There was a problem aligning the beam to your specified location")
-        end
-      end
-
       def set_groups(model)
         active_model = Sketchup.active_model.active_entities.parent
         ###########################################
@@ -1445,15 +1385,11 @@ module EA_Extensions623
           insert_moment_clip(length) if column
 
           #align the beam with the input points
-
-
           if @@flange_type == FLANGE_TYPE_COL
             trans = Geom::Transformation.rotation(ORIGIN, Y_AXIS, 270.degrees)
             trans2 = Geom::Transformation.rotation(ORIGIN, Z_AXIS, 270.degrees)
             beam.entities.transform_entities(trans, beam.entities.to_a)
             beam.entities.transform_entities(trans2, beam.entities.to_a)
-            p beam.name
-            p beam.parent.instances[0].name
             gtm = []
             @outer_group.entities.each do |e|
               if e.name != beam.parent.instances[0].name
