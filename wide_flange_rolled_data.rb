@@ -1182,7 +1182,6 @@ module EA_Extensions623
       end
 
       def spread_parts(arc)
-
         # Spread the 13/16" Flange Holes
         if @@has_holes && @guage_holes
         fsh = []
