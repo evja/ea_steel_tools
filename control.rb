@@ -27,6 +27,7 @@ module EA_Extensions623
       def classify_as_plate(plate)
         plate.definition.add_classification(CLSSFR_LIB, CLSSFY_PLT)
         set_layer(plate, STEEL_LAYER)
+        # add_observer_to_plate(plate)
         return plate
       end
 
