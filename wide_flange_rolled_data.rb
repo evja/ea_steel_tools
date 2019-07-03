@@ -28,7 +28,7 @@ module EA_Extensions623
         @face = 0 # This is the profile
 
         @radius             = 3 #root radius of the steel
-        @segment_length     = 8 #length of the center of rolled steel segments
+        @@segment_length     = 8 #length of the center of rolled steel segments
         @model              = Sketchup.active_model
         @entities           = @model.active_entities
         @selected_curve     = @model.selection # This is the predetermined curve that the will be rolled to
@@ -51,7 +51,10 @@ module EA_Extensions623
         @@shearpl_thickness = data[:shearpl_thickness]  #String '1/4' or '3/8' or '1/2'
         @@roll_type         = data[:roll_type]
         @@radius_offset     = data[:radius_offset]
-        # @@segment_length    = date[:seg_length] #Update the dialog to allow for 4" 8" & 16" Segements on the rolled tool
+        @@segment_length    = data[:segment_length] #Update the dialog to allow for 4" 8" & 16" Segements on the rolled tool
+        # @hole_start = 8
+        @hole_start = @@segment_length/2
+        puts @@segment_length
 
         case @@stiff_thickness
         when '1/4'
@@ -757,8 +760,8 @@ module EA_Extensions623
           label_height = comp_def.bounds.height
           label_center = comp_def.bounds.center
 
-          tr3 = Geom::Transformation.axes [(@tw/2) + 0.0625, ((@segment_length/2)-(label_width/2))-(7/16.to_f), (@h/2)-(label_height/2)], Y_AXIS, Z_AXIS
-          tr4 = Geom::Transformation.axes [-(@tw/2) - inlabel_offset, ((@segment_length/2)+(label_width/2))+(7/16.to_f), (@h/2)-(label_height/2)], Y_AXIS.reverse, Z_AXIS
+          tr3 = Geom::Transformation.axes [(@tw/2) + 0.0625, ((@@segment_length/2)-(label_width/2))-(7/16.to_f), (@h/2)-(label_height/2)], Y_AXIS, Z_AXIS
+          tr4 = Geom::Transformation.axes [-(@tw/2) - inlabel_offset, ((@@segment_length/2)+(label_width/2))+(7/16.to_f), (@h/2)-(label_height/2)], Y_AXIS.reverse, Z_AXIS
           # Adds in the labels and sets them in position
           @beam_label = label_ents.add_instance comp_def, ORIGIN
           @beam_label.move! tr3
@@ -943,8 +946,8 @@ module EA_Extensions623
           end
         end
 
-        @segment_count = get_segment_count(percent, radius, @segment_length)
-        value = (@segment_length/2.0)/new_radius
+        @segment_count = get_segment_count(percent, radius, @@segment_length)
+        value = (@@segment_length/2.0)/new_radius
         @half_angle = Math.asin(value)
         @seg_angle = @half_angle*2.0000
         @hole_rotation_angle = @seg_angle*2.000
@@ -1027,6 +1030,7 @@ module EA_Extensions623
         seg_count = (2*pi*radius)/segment_length
         rounded_up = (seg_count.to_i)+1
         rounded_up += 1 if rounded_up.even?
+        p rounded_up
         return rounded_up
       end
 
@@ -1186,7 +1190,7 @@ module EA_Extensions623
         if @@has_holes && @guage_holes
         fsh = []
           @guage_holes.each do |hole|
-            slide(hole, arc, BIG_HOLES_LOCATION)
+            slide(hole, arc, @hole_start)
             fsh.push spread(hole, arc, @guage_hole_rotation_angle, 0, 1, true, [])
           end
           fsh.flatten.each {|h| @guage_holes.push h}
@@ -1194,9 +1198,9 @@ module EA_Extensions623
 
         # Spread the 13/16" Web Holes
         if @@has_holes
-        wsh = []
+          wsh = []
           @shear_holes.each do |hole|
-            slide(hole, arc, BIG_HOLES_LOCATION)
+            slide(hole, arc, @hole_start)
             wsh.push spread(hole, arc, @guage_hole_rotation_angle, 0, 1, true, [])
           end
           wsh.flatten.each {|h| @shear_holes.push h}
@@ -1227,7 +1231,7 @@ module EA_Extensions623
         in_tr  = Geom::Transformation.rotation arc.center, arc.normal, @seg_angle*2
         if @@has_holes && @@flange_holes && @studs.empty?
           @flange_holes.each do |hole|
-            slide(hole, arc, BIG_HOLES_LOCATION)
+            slide(hole, arc, @hole_start)
           end
 
           @flange_holes.each do |hole|
@@ -1246,7 +1250,7 @@ module EA_Extensions623
             [tofh,tifh,bofh,bifh].flatten.each{|h| @flange_holes.push h}
         elsif @@has_holes && !@studs.empty?
           @studs.each do |stud|
-            slide(stud, arc, BIG_HOLES_LOCATION)
+            slide(stud, arc, @hole_start)
           end
           @studs.each do |stud|
             stud.transform! out_tr
@@ -1274,7 +1278,7 @@ module EA_Extensions623
 
         if @@has_holes && @@web_holes
           @web_holes.each do |hole|
-            slide(hole, arc, BIG_HOLES_LOCATION)
+            slide(hole, arc, @hole_start)
           end
           top_w_hole_rot = Geom::Transformation.rotation arc.center, arc.normal, @seg_angle
           bottom_w_hole_rot = Geom::Transformation.rotation arc.center, arc.normal, @seg_angle*3
@@ -1293,12 +1297,12 @@ module EA_Extensions623
 
         # Spred the Direction Labels
         @start_labels.each do |label|
-          slide(label, arc, @segment_length/2)
+          slide(label, arc, @@segment_length/2)
           spread(label, arc, @seg_angle, 0, 1, false)
         end
         al = (@seg_angle * @segment_count) - (@seg_angle*2)
         @end_labels.each do |label|
-          slide(label, arc, @segment_length/2)
+          slide(label, arc, @@segment_length/2)
           spread(label, arc, al, 0, 1, false)
         end
 
@@ -1306,7 +1310,7 @@ module EA_Extensions623
         if @@has_stiffeners
           ang = @segment_count*@seg_angle
           @stiff_plates.each do |plate|
-            slide(plate, arc, @segment_length/2)
+            slide(plate, arc, @@segment_length/2)
             spread(plate, arc, @seg_angle/2, 0,1, false)
           end
         end
@@ -1314,11 +1318,11 @@ module EA_Extensions623
         #Spread Shear Plates
         if @@has_shearplates && !@sh_plates.empty?
           @sh_plates[0..1].each do |plate|
-            slide(plate, arc, @segment_length/2)
+            slide(plate, arc, @@segment_length/2)
             spread(plate, arc, @seg_angle*1.5, 0, 1, false)
           end
           @sh_plates[2..3].each do |plate|
-            slide(plate, arc, @segment_length/2)
+            slide(plate, arc, @@segment_length/2)
             spread(plate, arc, @seg_angle*2.5, 0, 1, false)
           end
         end

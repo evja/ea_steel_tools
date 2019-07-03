@@ -10,7 +10,7 @@ module EA_Extensions623
 
       def onChangeEntity(entity)
         # puts "Entity Changed: #{entity}"
-        # color_by_thickness(entity, get_width(entity))
+        color_by_thickness(entity, get_width(entity))
       end
 
       def onOpen(instance)

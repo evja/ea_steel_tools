@@ -42,7 +42,7 @@ module EA_Extensions623
           @@shearpl_thickness = '3/8'          #String '3/8' or '1/2' or '3/4'
           @@roll_type         = 'EASY'         #String 'EASY' or 'HARD'
           @@radius_offset     = -0.5           # float or integer. This is the distance of offset the new arc will be drawn at
-          # @@segment_length    = 8.0          # This is not a good idea as it could throw off the alignment of the web holes and the stagger
+          @@segment_length    = 8.0          # This is not a good idea as it could throw off the alignment of the web holes and the stagger
           @@state = 1
         end
 
@@ -189,8 +189,6 @@ module EA_Extensions623
           @@beam_name = control.value
         }
       end
-
-
 
       def add_path_selection_group
         group2 = SKUI::Groupbox.new( 'Path Position' )
@@ -515,25 +513,27 @@ module EA_Extensions623
         lbl_input = SKUI::Label.new('Radius Offset:', offset )
         lbl_input.position(10, 98)
         group3.add_control( lbl_input )
+###############################################################################
+        list = ["2","4","8","16"]
+        seg_length_input = SKUI::Listbox.new(list)
+        seg_length_input.name = :segment_length
+        seg_length_input.position(255, 90)
+        seg_length_input.value = @@segment_length.to_i.to_s
+        seg_length_input.width = 50
+        seg_length_input.height = 20
+        seg_length_input.on( :change ) {|control|
+          @@segment_length = control.value
+        }
+
+        lbl_seg_input = SKUI::Label.new('Segment Length:', seg_length_input )
+        lbl_seg_input.position(160, 92)
+
+        ########################################################################
+        # group3.add_control(seg_length_input)
+        # group3.add_control( lbl_seg_input )
+        ########################################################################
       end
 
-###############################################################################
-        # seg_length_input = SKUI::Textbox.new( @@segment_length )
-        # seg_length_input.name = :segment_length
-        # seg_length_input.position(255, 90)
-        # seg_length_input.width = 50
-        # seg_length_input.height = 20
-        # seg_length_input.on( :textchange ) {|control|
-        #   @@segment_length = control.value
-        # }
-        # group3.add_control(seg_length_input)
-
-        # lbl_seg_input = SKUI::Label.new('Segment Length:', seg_length_input )
-        # lbl_seg_input.position(160, 92)
-        # group3.add_control( lbl_seg_input )
-
-        ########################################################################
-        ########################################################################
       def initiate_dialog
         btn_ok = SKUI::Button.new( 'OK' ) { |control|
           @@beam_data = find_beam(@@height_class, @@beam_name)
@@ -553,7 +553,7 @@ module EA_Extensions623
             shearpl_thickness: @@shearpl_thickness,
             roll_type:         @@roll_type,
             radius_offset:     @@radius_offset,
-            # segment_length:    @@segment_length
+            segment_length:    @@segment_length
           }
           Sketchup.active_model.select_tool EASteelTools::RolledSteel.new(data)
           control.window.close

@@ -74,7 +74,7 @@ module EA_Extensions623
     }
     @@EA_tools_menu.add_item cmd2
 
-    @@EA_tools_menu.add_item( 'Check for updates' ) { EASteelTools::ToolUpdater.update_tool }
+    # @@EA_tools_menu.add_item( 'Check for updates' ) { EASteelTools::ToolUpdater.update_tool }
 
     toolbar.show
 
@@ -101,7 +101,7 @@ module EA_Extensions623
 
     # UI.add_context_menu_handler do |menu|
     #   menu.add_item("addObserverToPlate") { Sketchup.active_model.selection[0].add_observer(MyPlateObserver.new(Sketchup.active_model.selection[0]))}
-    #   menu.add_separator
+    #   # menu.add_separator
     # end
 
   end
