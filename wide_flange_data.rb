@@ -1248,7 +1248,7 @@ module EA_Extensions623
         rescue Exception => e
           puts e.message
           puts e.backtrace.inspect
-          UI.messagebox("Sorry, There was a problem aligning the beam to your specified location")
+          UI.messagebox("There was a problem aligning the beam to your specified location")
         end
       end
 

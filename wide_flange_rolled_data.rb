@@ -543,7 +543,7 @@ module EA_Extensions623
         rescue Exception => e
           puts e.message
           puts e.backtrace.inspect
-          UI.messagebox("There was a problem inserting the 9/16\" flage holes into the beam")
+          UI.messagebox("There was a problem inserting the 9/16\" flange holes into the beam")
         end
       end
 
@@ -939,7 +939,7 @@ module EA_Extensions623
           new_radius = radius+@@radius_offset+offset
 
           if new_radius < @h*10
-            UI.messagebox('WARNING: the radius you are attempting may not be achiveable by current camber rolling methods')
+            UI.messagebox('WARNING: the radius you are attempting may not be achievable by current camber rolling methods')
           end
         end
 
