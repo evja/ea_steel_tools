@@ -25,8 +25,9 @@ module EA_Extensions623
           @@stiff_thickness   = '1/4'          #String '1/4' or '3/8' or '1/2'
           @@shearpl_thickness = '3/8'          #String '3/8' or '1/2' or '3/4'
           @@force_studs       = false          #Boolean
-          @@state = 1
-          @@flange_type = '' #Beam or Column Options
+          @@state             = 1
+          @@flange_type       = '' #Beam or Column Options
+          @@start_tolerance   = 1.5 #height that the wide flange column is offset from the ground
         end
 
         options = {
@@ -110,15 +111,12 @@ module EA_Extensions623
         flange_type_label.position(270,59)
         group.add_control( flange_type_label )
 
-        @flange_types = ["Beam", "Column"]
+        @flange_types = [FLANGE_TYPE_BM, FLANGE_TYPE_COL]
         flange_type_select = SKUI::Listbox.new(@flange_types)
         flange_type_select.position(310, 55)
         flange_type_select.width = 68
         @@flange_type.empty? ? @@flange_type = (flange_type_select.value = @flange_types.first) : (flange_type_select.value = @@flange_type)
 
-        flange_type_select.on(:change) {|control|
-          @@flange_type = control.value
-        }
         group.add_control(flange_type_select)
 
         ##################################################################################
@@ -166,6 +164,34 @@ module EA_Extensions623
         }
         group2.add_control ( bottom_select )
 
+
+        flange_type_select.on(:change) {|control|
+          # p control.value
+          @@flange_type = control.value
+          mid_select.visible = control.value == FLANGE_TYPE_BM
+          top_select.visible = control.value == FLANGE_TYPE_BM
+          bottom_select.checked = true if control.value == FLANGE_TYPE_COL
+          mid_select.checked = !bottom_select.checked?
+          top_select.checked = !bottom_select.checked?
+          if control.value == FLANGE_TYPE_COL
+            @@placement = 'BOTTOM'
+          end
+          # p @@placement
+        }
+        # start_tol = SKUI::Textbox.new (@@start_tolerance.to_f)
+        # start_tol.name = :start_tolerance
+        # start_tol.position(80,100)
+        # start_tol.width = 50
+        # start_tol.height = 20
+        # start_tol.on( :textchange ) { |control|
+        #   @@start_tolerance = control.value.to_s.to_r.to_f
+        # }
+        # group2.add_control start_tol
+
+        # end_tol_label = SKUI::Label.new('B - Tolerance', start_tol)
+        # # end_tol_label.position(5, 100)
+        # group2.add_control(end_tol_label)
+        # end_tol_label.visible = @@flange_type == FLANGE_TYPE_COL
         #################################################################################
         #################################################################################
 
@@ -228,6 +254,7 @@ module EA_Extensions623
         chk_cut_holes = SKUI::Checkbox.new( 'Cut?' )
         chk_cut_holes.position( 310, 20 )
         group3.add_control( chk_cut_holes )
+        chk_cut_holes.checked = @@cuts_holes
         chk_cut_holes.visible = @@has_holes
         chk_cut_holes.on (:change ) { |control|
           @@cuts_holes = control.checked?
