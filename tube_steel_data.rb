@@ -424,6 +424,7 @@ module EA_Extensions623
         reference_cross = @hss_inner_group.entities.add_group
         cl1 = reference_cross.entities.add_line(pts[0], pts[2])
         cl2 = reference_cross.entities.add_line(pts[1], pts[3])
+        # cl1.split 0.5
         set_layer(reference_cross, CENTERS_LAYER)
 
         reference_cross2 = reference_cross.copy
@@ -432,6 +433,8 @@ module EA_Extensions623
         v = X_AXIS.clone if !@is_column
         v.length = seperation_dist.length
         @hss_name_group.entities.transform_entities(v, reference_cross2)
+        reference_cross.explode
+        reference_cross2.explode
       end
 
       def add_beam_up_arrow(vec, length)

@@ -22,6 +22,7 @@ module EA_Extensions623
       end
 
       def get_width(plate)
+        Sketchup.active_model.start_operation("make fake plate", true)
         temp_group = plate.parent.entities.add_group(temp_plate = plate.copy)
         temp_plate.make_unique
         temp_plate.explode
@@ -37,8 +38,9 @@ module EA_Extensions623
         end
         width = lengths.max_by{|k,v| v}
         temp_group.erase!
-        p width[0]
+        # p width[0]
         return width[0]
+        Sketchup.active_model.commit_operation
       end
 
 
