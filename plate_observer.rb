@@ -10,15 +10,15 @@ module EA_Extensions623
 
       def onChangeEntity(entity)
         # puts "Entity Changed: #{entity}"
-        color_by_thickness(entity, get_width(entity))
+        # color_by_thickness(entity, get_width(entity))
       end
 
       def onOpen(instance)
-        puts "onOpen: #{instance}"
+        # puts "onOpen: #{instance}"
       end
 
       def onClose(instance)
-        puts "onClose: #{instance}"
+        # puts "onClose: #{instance}"
       end
 
       def get_width(plate)
@@ -37,8 +37,8 @@ module EA_Extensions623
         end
         width = lengths.max_by{|k,v| v}
         temp_group.erase!
-        p width[0].round(2)
-        return width[0].round(2)
+        p width[0]
+        return width[0]
       end
 
 

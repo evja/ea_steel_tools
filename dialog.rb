@@ -251,8 +251,6 @@ module EA_Extensions623
         sel_24.visible = @@has_holes
         group3.add_control(sel_24)
 
-        p @@cuts_holes
-
         chk_cut_holes = SKUI::Checkbox.new( 'Cut?' )
         chk_cut_holes.position( 310, 20 )
         group3.add_control( chk_cut_holes )

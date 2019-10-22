@@ -1074,6 +1074,7 @@ module EA_Extensions623
             @inner_group.entities.transform_entities mvdwn, @studs
             @outer_group.entities.transform_entities mvdwn, @sh_plates
             @outer_group.entities.transform_entities mvdwn, @stiff_plates
+            @outer_group.entities.transform_entities mvdwn, @centergroup
           end
         else # Roll Type is Hard
           @z_vec.reverse! if !flipped

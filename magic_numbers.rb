@@ -63,7 +63,7 @@ module EA_Extensions623
     UP_DRCTN           = "Label_  UP.skp"
     UP_DRCTN_MD        = "Label_  _Upm.skp"
     UP_DRCTN_SM        = "Label_  _up.skp"
-    HLF_INCH_STD       = "Studs_ 2 x½_.skp"
+    HLF_INCH_STD       = "Studs_ 2 x 1_2.skp"
     STEEL_FONT         = "1CamBam_Stick_7"
     NORTH_LABEL        = "Label_ N.skp"
     NORTHWEST_LABEL    = "Label_ NW.skp"
@@ -98,7 +98,7 @@ module EA_Extensions623
     #Sets the minimum beam length before the web holes do not stagger(Actual minimum is < 8)
     MINIMUM_BEAM_LENGTH = 16
     # This sets the stiffener location from each end of the beam
-    STIFF_LOCATION = 2
+    STIFF_LOCATION = 0.5
     #Distance from the end of the beam the 13/14" holes are placed
     BIG_HOLES_LOCATION = 4
     # Minimum distance from the inside of the flanges to the center of 13/16" holes can be

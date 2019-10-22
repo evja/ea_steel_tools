@@ -1062,8 +1062,8 @@ module EA_Extensions623
           stiffener = @definition_list.load file_path_stiffener
 
           #sets a scale object to be called on the stiffeners based on the scale
-          resize1 = Geom::Transformation.scaling [x-0.0625,y,z], scale, 1, 1
-          resize2 = Geom::Transformation.scaling [length-x-0.0625,y,z], scale, 1, 1
+          resize1 = Geom::Transformation.scaling [x,y,z], scale, 1, 1
+          resize2 = Geom::Transformation.scaling [length-x,y,z], scale, 1, 1
 
           #add 4 instances of the stiffener plate
           if not column
@@ -1080,6 +1080,7 @@ module EA_Extensions623
           stiff_rot_second = Geom::Transformation.rotation [length-x,-y,z], [0,0,1], 180.degrees
           @outer_group.entities.transform_entities stiff_rot_second , stiffener4
 
+
           # add the plates to the array for grouping
           all_stiffplates.push stiffener3, stiffener4
 
@@ -1094,6 +1095,7 @@ module EA_Extensions623
           all_stiffplates.each {|plate| color_by_thickness(plate, @@stiff_thickness.to_r.to_f); classify_as_plate(plate); lock_scale_toX(plate) }
           #returns the all plates array
           return all_stiffplates
+
         rescue Exception => e
           puts e.message
           puts e.backtrace.inspect

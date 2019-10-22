@@ -2,7 +2,7 @@ module EA_Extensions623
   module EASteelTools
 
   # @since 1.0.0
-  VERSION_NUM = '3.6.0'.freeze
+  VERSION_NUM = '3.6.1'.freeze
 
   end
 end
