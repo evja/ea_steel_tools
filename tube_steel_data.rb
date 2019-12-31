@@ -181,17 +181,17 @@ module EA_Extensions623
           if @tw > 0.375
             pts = [
               pt1 = [0,0,0],
-              pt2 = [@w - (MINIMUM_WELD_OVERHANG*2), 0,0],
-              pt3 = [@w - (MINIMUM_WELD_OVERHANG*2), @h - (MINIMUM_WELD_OVERHANG*2), 0],
-              pt4 = [0, @h - (MINIMUM_WELD_OVERHANG*2), 0]
+              pt2 = [@h - (MINIMUM_WELD_OVERHANG*2), 0,0],
+              pt3 = [@h - (MINIMUM_WELD_OVERHANG*2), @w - (MINIMUM_WELD_OVERHANG*2), 0],
+              pt4 = [0, @w - (MINIMUM_WELD_OVERHANG*2), 0]
             ]
             set_dist = MINIMUM_WELD_OVERHANG
           else
             pts = [
               pt1 = [0,0,0],
-              pt2 = [@w - @tw,0,0],
-              pt3 = [@w - @tw,@h - @tw,0],
-              pt4 = [0,@h - @tw,0]
+              pt2 = [@h - @tw,0,0],
+              pt3 = [@h - @tw,@w - @tw,0],
+              pt4 = [0,@w - @tw,0]
             ]
             set_dist = @tw/2
           end
@@ -424,6 +424,8 @@ module EA_Extensions623
         reference_cross = @hss_inner_group.entities.add_group
         cl1 = reference_cross.entities.add_line(pts[0], pts[2])
         cl2 = reference_cross.entities.add_line(pts[1], pts[3])
+        cl1.split(0.500)
+        cl2.split(0.500)
         # cl1.split 0.5
         set_layer(reference_cross, CENTERS_LAYER)
 
@@ -706,7 +708,7 @@ module EA_Extensions623
             etch_plate(top_plate, @hss_inner_group)
             add_plate_compass(top_plate, ORIGIN)
           end
-          @definition_list.remove(top_plate_def)
+          @definition_list.remove(top_plate_def) if top_plate_def
           color_by_thickness(top_plate, STANDARD_BASE_PLATE_THICKNESS)
           classify_as_plate(top_plate)
           return top_plate
@@ -927,7 +929,8 @@ module EA_Extensions623
           else
             # p 'grabbed plate from library'
             @base_group = @hss_outer_group.entities.add_group
-            @base_group.name = 'Base Plate'
+            # @base_group.name = 'Base Plate' (Updated to code below for naming the group)
+            @base_group.name = "#{@w.to_i}'' #{type}"
 
             @base_plate = @definition_list.load file_path1
 
@@ -979,7 +982,7 @@ module EA_Extensions623
           comp_def = @definition_list.add "#{@tube_name}"
           comp_def.description = "#{@tube_name} label"
           ents = comp_def.entities
-          _3d_text = ents.add_3d_text("#{@tube_name}", TextAlignCenter, "1CamBam_Stick_7", false, false, LABEL_HEIGHT, 3.0, 0.0, false, 0.0)
+          _3d_text = ents.add_3d_text("#{@tube_name}", TextAlignCenter, STEEL_FONT, false, false, LABEL_HEIGHT, 3.0, 0.0, false, 0.0)
           # p "loaded CamBam_Stick_7: #{_3d_text}"
           save_path = Sketchup.find_support_file "Components", ""
           comp_def.save_as(save_path + "/#{@tube_name}.skp")

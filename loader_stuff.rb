@@ -35,7 +35,8 @@ load 'ea_steel_tools/plate_observer.rb'
 
 #Breakout Files
 # load 'ea_steel_tools/breakout_setup.rb'
-# load 'ea_steel_tools/breakout.rb'
+load 'ea_steel_tools/breakout.rb'
+load 'ea_steel_tools/export_plates.rb'
 # load 'ea_steel_tools/breakout_send.rb'
 
 

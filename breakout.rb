@@ -5,14 +5,7 @@
 module EA_Extensions623
   module EASteelTools
     require 'sketchup.rb'
-
-    DICTIONARY_NAME       = "3DS Steel"
-    SCHEMA_KEY            = "SchemaType"
-    SCHEMA_VALUE          = ":Plate"
-
-    DONE_COLOR = '1 Done'
-    PLATE_COLOR = 'Black'
-
+    require 'benchmark'
 
     class Breakout
       include BreakoutSetup
@@ -102,11 +95,6 @@ module EA_Extensions623
         @@environment_set = true
       end
 
-      def user_check(entities)
-        #This code will color all the classified plates black and siuspend the operation and allow the user to visually
-        #check that all the plates are accounted for and hit ENTER if to continue or ESC if they need to do some modeling.
-      end
-
       def color_steel_member(member)
         if @materials[DONE_COLOR]
           member.material = @materials[DONE_COLOR]
@@ -123,7 +111,7 @@ module EA_Extensions623
               if not e.definition.attribute_dictionaries[DICTIONARY_NAME] == nil
                 if e.definition.attribute_dictionaries[DICTIONARY_NAME].values.include?(SCHEMA_VALUE)
                   # p 'deep inside scraping'
-                  a = {object: e, orig_color: e.material, vol: e.volume}
+                  a = {object: e, orig_color: e.material, vol: e.volume, xscale: e.definition.local_transformation.xscale, yscale: e.definition.local_transformation.yscale, zscale: e.definition.local_transformation.zscale}
                   @plates.push a
                 end
               end
@@ -166,10 +154,8 @@ module EA_Extensions623
         @individual_plates = []
         plates.each do |plate|
           plate[:object].material = plate[:orig_color]
-
           @individual_plates.push plate[:object]
         end
-        # p @individual_plates
         @state = 1 if @state == 0
       end
 
@@ -191,8 +177,10 @@ module EA_Extensions623
          restore_material(@plates)
          Sketchup.status_text = "Breaking out the paltes"
          sort_plates(split_plates)
-         plates = name_plates()
+         @named_plate_definitions = name_plates()
+         # @model.commit_operation #DANGER
          spread_plates
+         # @model.start_operation('test', true) #DANGER
          set_envoronment if @@environment_set == false
          color_steel_member(@steel_member)
          @plate_group.layer = @model.layers["Breakout_Plates"]
@@ -202,7 +190,7 @@ module EA_Extensions623
          @steel_member.visible = false
          hide_parts(@steel_member, @pages[1], 16)
          update_scene(@pages[1])
-         @model.commit_operation
+         @model.commit_operation # DANGER
       end
 
       def onKeyDown(key, repeat, flags, view)
@@ -252,10 +240,9 @@ module EA_Extensions623
         @individual_plates.each do |plate|
           @unique_plates.push plate.definition.instances
         end
-        p @unique_plates.count
         @unique_plates.uniq! if @individual_plates.count > 0
-        p @unique_plates.count
         @unique_plates.compact! if @unique_plates.compact != nil
+
         return @unique_plates
       end
 
@@ -277,7 +264,6 @@ module EA_Extensions623
 
       def sort_plates2(plates)
         plates each do |pl|
-          p pl
           bnds = pl.bounds.diagonal.to_f.round(4)
 
           #(idea) create a hash of objects and thier diagonal and compact it.
@@ -307,7 +293,6 @@ module EA_Extensions623
             counter = 1
             uniqueholder = []
             plates_hash.each do |k,v|
-              p counter
               phc = plates_hash.clone.each do |k1, v1|
                 if k != k1
                   if (k.equals?(k1)) && (v != v1)
@@ -318,9 +303,6 @@ module EA_Extensions623
               end
               counter += 1
             end
-            p uniqueholder
-
-
 
             instance_materials = []
             test_bucket = []
@@ -328,10 +310,8 @@ module EA_Extensions623
               instance_materials.push plate.material
               test_bucket.push item = {color: plate.material.name, object: plate, index: i}
             end
-            # p test_bucket
             if instance_materials.uniq.count == 2
               instance_materials.uniq!
-              # p instance_materials
 
               a = []
               b = []
@@ -399,24 +379,8 @@ module EA_Extensions623
           end
           plt.name = @letters[i]
         end
-
         return test_b
       end
-
-      # def label_plates(plates)
-      #   labels = []
-      #   mod_title = @model.title
-      #   plates.each_with_index do |pl, i|
-      #     # plde = pl.entities
-      #     # pl_ent_grou = plde.add_group(plde)
-      #     plname = pl.name
-      #     var = mod_title + '-' + plname
-      #     text = pl.entities.add_3d_text(var, TextAlignLeft, '1CamBam_Stick_7', false, false, 0.5, 0.0, 0.1, false, 0.0)
-      #     # text_group =
-      #     align = Geom::Transformation.axes(pl.bounds.max, X_AXIS, Z_AXIS, Y_AXIS )
-      #     # text.move! align
-      #   end #Not currently being used
-      # end
 
       def label_plate(plate, group)
         labels = []
@@ -426,20 +390,20 @@ module EA_Extensions623
 
         plname = plate.definition.name
         var = mod_title + '-' + plname
-        text = container.entities.add_3d_text(var, TextAlignLeft, '1CamBam_Stick_7', false, false, 0.675, 0.0, -0.01, false, 0.0)
+        text = container.entities.add_3d_text(var, TextAlignLeft, STEEL_FONT, false, false, 0.675, 0.0, -0.00, false, 0.0)
 
-        align = Geom::Transformation.axes([plate.bounds.center[0], (plate.bounds.center[1] - (plate.bounds.height / 2)), plate.bounds.center[2]], X_AXIS, Z_AXIS, Y_AXIS )
+        align = Geom::Transformation.axes([plate.bounds.center[0], plate.bounds.center[1], 0], X_AXIS, Y_AXIS, Z_AXIS )
         vr = X_AXIS.reverse
         vr.length = (container.bounds.width/2)
         shift = Geom::Transformation.translation(vr)
-        container.move! align
+        # container.move! align
+        @entities.transform_entities align, container
         @entities.transform_entities shift, container
         return container
       end
 
       def sort_plates_for_naming(plates_array)
         begin
-
           thck1 = [] #H 1/4" Thickness
           thck2 = [] #G 5/16" Thickness
           thck3 = [] #F 3/8" Thickness
@@ -492,15 +456,18 @@ module EA_Extensions623
         entity.definition.entities
         faces = entity.definition.entities.select {|e| e.typename == 'Face'}
         largest_face = [0, nil]
-        faces.each do |face|
-          if face.area >= largest_face[0]
-            largest_face[0] = face.area
-            largest_face[1] = face
-          else
-            next
-          end
-        end
-        return largest_face[1]
+
+        sorted_faces = Hash[*faces.collect{|f| [f,f.area]}.flatten].sort_by{|k,v|v}
+        largest_face = sorted_faces[-1]
+        # faces.each do |face|
+        #   if face.area >= largest_face[0]
+        #     largest_face[0] = face.area
+        #     largest_face[1] = face
+        #   else
+        #     next
+        #   end
+        # end
+        return largest_face[0]
       end
 
       def sort_plates_for_spreading(plates)
@@ -519,30 +486,48 @@ module EA_Extensions623
         return sorted
       end
 
-      def spread_plates
+      def get_plate_thickness_verified(plate)
+        #go through each plate and check that it's color is the same as the scale
+        ########################  DEVELOPMENT START  ######################################
+        thickness = 0
+        color = plate.material.name
+        #########################  DEVELOPMENT END   ######################################
+      end
 
+      def spread_plates
         alph = ("A".."Z").to_a
         plates2 = @d_list.map{|pl| pl if alph.include? pl.name}.compact!
         plates = sort_plates_for_spreading(plates2)
 
         next_distance = 0
         last_plate_width = 0
-        dist = 0
+        dist = 1
 
         label_locs = []
         @plate_group = @entities.add_group
         # @plate_group.instance.name = 'Plates'
         plates.compact!
-
-        # p plates
-
         plates.each do |pl|
-          pl.entities.each {|f| f.material = pl.instances.first.material}
+          # @model.start_operation("spread a plate", true)
 
-          insertion_pt = [dist, -24, 0]
+          insertion_pt = [dist, 3, 0]
           pl_cpy = @plate_group.entities.add_instance pl, insertion_pt
+          pl_cpy.material = pl.instances.first.material
+
+          #compare copy to scraped plates
+          copy_def = pl_cpy.definition
+          @named_plate_definitions.first
+          prop_def = @named_plate_definitions.select {|pd| pd if pd == copy_def}
+          p x = prop_def[0].instances.first.transformation.xscale
+          p y = prop_def[0].instances.first.transformation.yscale
+          p z = prop_def[0].instances.first.transformation.zscale
+
+          trans = Geom::Transformation.scaling(x,y,z) #Test this after the brute one dont work
+
+          pl_cpy_trans = pl_cpy.transform! trans
 
           pl_cpy.name = "x"+((pl_cpy.definition.count_instances) - 1).to_s
+          # pl_cpy.name = "#{@steel_member.name}-#{pl.material.to_r.to_f}-#{((pl_cpy.definition.count_instances) - 1)}"
 
           face = get_largest_face(pl_cpy)
           if face == nil
@@ -551,27 +536,44 @@ module EA_Extensions623
           else
             pl_norm = face.normal
           end
+          #########################################################################
 
-          if pl_norm.parallel? Z_AXIS
-            rotation = pl_norm.angle_between Y_AXIS
-            pl_cpy.transform! (Geom::Transformation.rotation insertion_pt, [0,1,0], rotation)
+          # pl_cpy = pl_cpy.make_unique
+
+          #########################################################################
+          if not pl_norm.parallel? Z_AXIS
+            if pl_norm.parallel? X_AXIS
+              rotation1 = pl_norm.angle_between Y_AXIS
+              rotation2 = pl_norm.angle_between Z_AXIS
+              pl_cpy.transform! (Geom::Transformation.rotation insertion_pt, [0,0,1], rotation1)
+              pl_cpy.transform! (Geom::Transformation.rotation insertion_pt, [1,0,0], rotation2)
+            end
+            if pl_norm.parallel? Y_AXIS
+              rotation2 = pl_norm.angle_between Z_AXIS
+              pl_cpy.transform! (Geom::Transformation.rotation insertion_pt, [1,0,0], rotation2)
+            end
           end
 
-          pl_norm = face.normal
-          rotation = pl_norm.angle_between Y_AXIS
-          pl_cpy.transform! (Geom::Transformation.rotation insertion_pt, [0,0,1], (rotation * -1))
+          ##align long edge with Y_AXIS
+          if pl_cpy.bounds.width > pl_cpy.bounds.height
+            pl_cpy.transform! Geom::Transformation.rotation(insertion_pt, [0,0,1], 90.degrees)
+          end
+
+          pl_orig = pl_cpy.transformation.origin
+          pl_corner = pl_cpy.bounds.min
+          pos_vec = pl_orig - pl_corner
+          pos_entities = Geom::Transformation.translation(pos_vec)
+
+          pl_cpy.definition.entities.transform_entities pos_entities, pl_cpy
 
           pb = pl_cpy.bounds
           w = pb.width
           h = pb.height
           d = pb.depth
-          plc = pb.min
+          plc = pb.max
 
-          if plc[2] < 0
-            # p 'Below'
+          if plc[2] > 0
             vec = Geom::Vector3d.new(0,0,(plc[2]*1))
-            # p vec
-            # p vec.length
             pl_cpy.transform! (Geom::Transformation.translation(vec.reverse))
           end
 
@@ -588,8 +590,7 @@ module EA_Extensions623
 
 
           last_plate_width += (w + 3)
-          # dist += (w + 3)
-
+          # @model.commit_operation
         end
       end
 

@@ -1,4 +1,4 @@
-module SKUI
+  module SKUI
 
   require File.join( PATH, 'control.rb' )
 

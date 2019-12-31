@@ -68,13 +68,13 @@ module EA_Extensions623
         @img_file3 = File.join( @img_path, 'hss_rec_section_rotated.png' )
 
         # ss is short for Stud Select and the xy is to be able to adjust the group together
-        ss_x = 15
+        ss_x = 50
         ss_y = 0
 
         options = {
           :title           => "Tube Steel #{VERSION_NUM}",
           :preferences_key => 'TS',
-          :width           => 416,
+          :width           => 500,
           :height          => 475,
           :resizable       => false
         }
@@ -114,20 +114,23 @@ module EA_Extensions623
         @@hss_type.empty? ? @@hss_type = (hss_type_select.value = @hss_types.first) : (hss_type_select.value = @@hss_type)
         @group1.add_control(hss_type_select)
 
-
-        baseselect = SKUI::Listbox.new(BASETYPES)
-        baseselect.position(80,30)
-        baseselect.width = 50
-        baseselect.visible = @@hss_type == 'Column'
-        @@basetype.empty? ? @@basetype = (baseselect.value = BASETYPES.first) : baseselect.value = @@basetype
-        baseselect.on(:change) { |control, value|
+        if @@width_class == '6'
+          @baseselect = SKUI::Listbox.new(BASETYPESSIX)
+        else
+          @baseselect = SKUI::Listbox.new(BASETYPES)
+        end
+        @baseselect.position(100,30)
+        @baseselect.width = 50
+        @baseselect.visible = @@hss_type == 'Column'
+        @@basetype.empty? ? @@basetype = (@baseselect.value = BASETYPES.first) : @baseselect.value = @@basetype
+        @baseselect.on(:change) { |control, value|
           @@basetype = control.value
         }
 
-        @group2.add_control(baseselect)
+        @group2.add_control(@baseselect)
 
-        base_s_label = SKUI::Label.new('Base Plate', baseselect)
-        base_s_label.position(8, 33)
+        base_s_label = SKUI::Label.new('Base Plate', @baseselect)
+        base_s_label.position(5, 33)
         base_s_label.visible = (@@hss_type == 'Column')
         @group2.add_control(base_s_label)
 
@@ -160,9 +163,9 @@ module EA_Extensions623
 
         start_tol = SKUI::Textbox.new (@@start_tolerance.to_f)
         start_tol.name = :start_tolerance
-        start_tol.position(80,100)
+        start_tol.position(100,100)
         start_tol.width = 50
-        start_tol.height = 20
+        # start_tol.height = 20
         start_tol.on( :textchange ) { |control|
           @@start_tolerance = control.value.to_s.to_r.to_f
         }
@@ -171,9 +174,9 @@ module EA_Extensions623
 
         end_tol = SKUI::Textbox.new (@@end_tolerance.to_f)
         end_tol.name = :start_tolerance
-        end_tol.position(80,75)
+        end_tol.position(100,75)
         end_tol.width = 50
-        end_tol.height = 20
+        # end_tol.height = 20
         end_tol.on( :textchange ) { |control|
           @@end_tolerance = control.value.to_s.to_r.to_f
         }
@@ -184,13 +187,13 @@ module EA_Extensions623
         @group2.add_control(st_tol_label)
 
         end_tol_label = SKUI::Label.new('B - Tolerance', end_tol)
-        end_tol_label.position(5, 100)
+        end_tol_label.position(5, 103)
         @group2.add_control(end_tol_label)
 
 
         stud_toggle = SKUI::Checkbox.new("Toggle Studs")
         stud_toggle.font = @label_font
-        stud_toggle.position(310,20)
+        stud_toggle.position(350,20)
         stud_toggle.checked = @@stud_toggle
         @group2.add_control stud_toggle
 
@@ -303,7 +306,7 @@ module EA_Extensions623
           @@hss_type == 'Column' ? when_column = true : when_column = false
           @@hss_type == 'Beam' ? when_beam = true : when_beam = false
 
-          baseselect.visible = when_column
+          @baseselect.visible = when_column
           base_s_label.visible = when_column
           north_stud_selct.visible = when_column
           south_stud_selct.visible = when_column
@@ -346,9 +349,8 @@ module EA_Extensions623
 
 
         stud_spacing_control = SKUI::Textbox.new(@@studspacing.to_s.to_r.to_f)
-        stud_spacing_control.position(80,140)
+        stud_spacing_control.position(100,140)
         stud_spacing_control.width = 50
-        stud_spacing_control.height = 20
         stud_spacing_control.on(:textchange) {|control|
           @@studspacing = control.value.to_s.to_r.to_f
         }
@@ -413,6 +415,13 @@ module EA_Extensions623
           width_size_dropdown.position( 113, 25 )
           width_size_dropdown.width = 55
           @group1.add_control( width_size_dropdown )
+          if @@width_class.to_f >= 6
+            @baseselect.clear
+            @baseselect.add_item(BASETYPESSIX)
+          else
+            @baseselect.clear
+            @baseselect.add_item(BASETYPES)
+          end
 
           if @@width_class.to_f == @@height_class.to_f #is square tube
             @sq_image.visible = true
@@ -555,6 +564,7 @@ module EA_Extensions623
           Sketchup.send_action "selectSelectionTool:"
         }
         @btn_close.position( -5, -5 )
+        @btn_close.font = SKUI::Font.new( 'Comic Sans MS', 14, true )
         window.add_control( @btn_close )
 
         window.default_button = btn_ok
@@ -625,10 +635,9 @@ module EA_Extensions623
         window.add_control( @group1 )
 
         @group2 = SKUI::Groupbox.new( 'HSS Options' )
-        @group2.position( 20, 95 )
+        @group2.position( 5, 95 )
         @group2.right = 20
-        @group2.width = 360
-        @group2.height = 200
+        @group2.height = 225
         window.add_control( @group2 )
       end
 

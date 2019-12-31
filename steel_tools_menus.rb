@@ -12,6 +12,7 @@ module EA_Extensions623
     require FNAME+'/'+'wide_flange_data.rb'
     require FNAME+'/'+'wide_flange_rolled_data.rb'
     require FNAME+'/'+'tube_steel_data.rb'
+    require FNAME+'/'+'export_plates.rb'
     require FNAME+'/'+'breakout_setup.rb'
     require FNAME+'/'+'breakout.rb'
     require FNAME+'/'+'breakout_send.rb'
@@ -81,13 +82,17 @@ module EA_Extensions623
 
     UI.add_context_menu_handler do |menu|
       menu.add_separator
-      menu.add_item("Send to Breakout") { EASteelTools::SendToBreakout.new }
+      menu.add_item("--Send to Breakout") { EASteelTools::SendToBreakout.new }
     end
 
     UI.add_context_menu_handler do |menu|
-      menu.add_item("Breakout") {Sketchup.active_model.select_tool EASteelTools::Breakout.new }
-      menu.add_separator
+      menu.add_item("--Breakout") {Sketchup.active_model.select_tool EASteelTools::Breakout.new }
     end
+
+    # UI.add_context_menu_handler do |menu|
+    #   menu.add_item("--Export Plates to CAD") {EASteelTools::ExportPlates.qualify_plates}
+    #   menu.add_separator
+    # end
 
     cmd4 = UI::Command.new("DirtyLayerCleanup") {
       Sketchup.active_model.select_tool EASteelTools::LayerHelper.new

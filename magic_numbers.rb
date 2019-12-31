@@ -17,6 +17,23 @@ module EA_Extensions623
     GC_ONPLANE    = "Yellow"
     GC_OUTOFPLANE = "Gray"
 
+    DICTIONARY_NAME       = "3DS Steel"
+    SCHEMA_KEY            = "SchemaType"
+    SCHEMA_VALUE          = ":Plate"
+
+    PLATE_ATTRIBUTE_CNC = "CNC_DATA"
+    Q_LABEL = "QUANTITY"
+    PN_LABEL = "PART_NAME"
+    M_LABEL = "MATERIAL"
+    TH_LABEL = "THICKNESS"
+
+    DONE_COLOR = '1 Done'
+    PLATE_COLOR = 'Black'
+
+    #########################
+    ##    Dictionaries     ##
+    #########################
+
 
     #########################
     ##       LAYERS        ##
@@ -54,6 +71,14 @@ module EA_Extensions623
     HOLES_LAYER = STANDARD_LAYERS.grep(/Holes/)[0]
     CENTERS_LAYER = STANDARD_LAYERS.grep(/Centers/)[0]
 
+    BREAKOUT_LAYERS = [
+      "CENTERS",
+      "HOLES",
+      "SCRIBES",
+      "LABELS",
+      "INFO"
+    ]
+
     #########################
     ## COMPONENT CONSTANTS ##
     #########################
@@ -64,7 +89,8 @@ module EA_Extensions623
     UP_DRCTN_MD        = "Label_  _Upm.skp"
     UP_DRCTN_SM        = "Label_  _up.skp"
     HLF_INCH_STD       = "Studs_ 2 x 1_2.skp"
-    STEEL_FONT         = "1CamBam_Stick_7"
+    STEEL_FONT         = "3DSCAM"
+    # STEEL_FONT         = "1CamBam_Stick_7"
     NORTH_LABEL        = "Label_ N.skp"
     NORTHWEST_LABEL    = "Label_ NW.skp"
     NORTHEAST_LABEL    = "Label_ NE.skp"
@@ -129,7 +155,8 @@ module EA_Extensions623
     HOLE_OFFSET = 1.5
     BASEPLATE_RADIUS = 0.5
     RADIUS_SEGMENT = 6
-    STANDARD_TOP_PLATE_SIZE = 5
+    # STANDARD_TOP_PLATE_SIZE = 5 #changed this from 5 12-30-2019 not sure if there are undesired issues or why i had ot on 5
+    STANDARD_TOP_PLATE_SIZE = 4
     MINIMUM_STUD_DIST_FROM_HSS_ENDS = 7.25
     HSS_BEAM_CAP_THICK = 0 # needs to be whatever the standard cap plates are
     BOTTOM_PLATE_CORNER_RADIUS = 0.5
@@ -140,6 +167,7 @@ module EA_Extensions623
     HSSBLANKCAP = "PL_ Blank Cap.skp"
 
     BASETYPES = ["SQ","OC","IL","IC","EX","DR","DL","DI","Blank"]
+    BASETYPESSIX = ["SQ","C","IL","Blank"]
 
 
     # Normal steel colors for 3DS conventions and procedures
