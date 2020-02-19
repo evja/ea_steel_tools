@@ -87,6 +87,8 @@ module EA_Extensions623
     CENTERS_LAYER = STANDARD_LAYERS.grep(/Centers/)[0]
     SCRIBES_LAYER = STANDARD_LAYERS.grep(/Scribes/)[0]
     INFO_LAYER = STANDARD_LAYERS.grep(/Info/)[0]
+    LABELS_LAYER = STANDARD_LAYERS.grep(/Labels/)[0]
+
 
     #########################
     ## COMPONENT CONSTANTS ##

@@ -847,7 +847,7 @@ module EA_Extensions623
             comp_def = @definition_list.add "#{@@beam_name}"
             comp_def.description = "The #{@@beam_name} label"
             ents = comp_def.entities
-            _3d_text = ents.add_3d_text("#{@@beam_name}", TextAlignCenter, STEEL_FONT, false, false, 3.0, 3.0, 0.0, false, 0.0)
+            _3d_text = ents.add_3d_text(@@beam_name, TextAlignCenter, STEEL_FONT, false, false, 3.0, 0.0, 0.0, false, 0.0)
             p _3d_text
             save_path = Sketchup.find_support_file "Components", ""
             comp_def.save_as(save_path + "/#{@@beam_name}.skp")
@@ -977,7 +977,7 @@ module EA_Extensions623
             comp_def = @definition_list.add "#{@@beam_name}"
             comp_def.description = "The #{@@beam_name} label"
             ents = comp_def.entities
-            _3d_text = ents.add_3d_text("#{@@beam_name}", TextAlignCenter, STEEL_FONT, false, false, 3.0, 3.0, 0.0, false, 0.0)
+            _3d_text = ents.add_3d_text("#{@@beam_name}", TextAlignCenter, STEEL_FONT, false, false, 3.0, 0.0, 0.0, false, 0.0)
             save_path = Sketchup.find_support_file "Components", ""
             comp_def.save_as(save_path + "/#{@@beam_name}.skp")
           end
@@ -1321,7 +1321,7 @@ module EA_Extensions623
             thirteen_sixteenths_holes = add_13_16_holes(length) unless @hc < 6 && @@has_holes
           end
 
-          all_labels.each {|label| label.layer = @labels_layer}
+          all_labels.each {|label| set_layer(label, LABELS_LAYER)}
 
           #add holes to the beam
           add_9_16_flange_holes(length) if @@has_holes
@@ -1356,7 +1356,7 @@ module EA_Extensions623
           end
 
           if not @all_studs.empty?
-            @all_studs.each {|stud| stud.layer = STEEL_LAYER }
+            @all_studs.each {|stud| stud.layer = STUD_LAYER }
             @all_studs.each {|stud| color_by_thickness(stud, 0.5)}
           end
 

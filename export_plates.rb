@@ -16,7 +16,6 @@ module EA_Extensions623
           set_scene_for_dxf
         @model.commit_operation
         @layers = @model.layers
-        @layers["Layer0"].color = Sketchup::Color.new(255,255,255)
         if @layers[" (S) Holes/Studs"]
           @layers[" (S) Holes/Studs"].name = HOLES_LAYER
         end
@@ -29,6 +28,10 @@ module EA_Extensions623
         else
           false
         end
+      end
+
+      def color_layers
+        @layers["Layer0"].color = Sketchup::Color.new(255,255,255)
       end
 
       def recursive_explosion(ent)

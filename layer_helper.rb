@@ -2,12 +2,13 @@ module EA_Extensions623
   module EASteelTools
 
     class LayerHelper
+      include Control
       def initialize
         model = Sketchup.active_model
         sel = model.selection
         layers = model.layers.sort
 
-        if sel.count > 2
+        if sel.count > 5
           UI.messagebox('CAUTION: Running this cleanup on a large number of parts risks re-layering parts you may not intend to set to a new layer. Use on a manageable amount of parts at a time.')
         end
 
@@ -36,25 +37,30 @@ module EA_Extensions623
 
         choice = UI.inputbox(prompts, default, list, title)
 
-        model.start_operation("Layer Helper", true)
+        # model.start_operation("Layer Helper", true)
         if choice
-          parts_to_layer = []
+          parts_to_layer = 0
           locked_items = 0
 
-          sel.each do |part|
-            if part.typename != 'Group' && part.typename != 'ComponentInstance'
-              sel.remove part
+
+          sel.each_with_index do |part, i|
+            if part.locked?
+              a = part.make_unique
+              locked_items += 1
+              next
+            elsif part.typename != 'Group' && part.typename != 'ComponentInstance'
               next
             else
-              part.definition.entities.each do |ent|
+              part.make_unique if part.typename == 'Group'
+              part.entities.each do |ent|
                 if ent.typename != 'Group' && ent.typename != 'ComponentInstance'
                   next
+                elsif !ent.locked?
+                  set_layer(ent, choice[0])
+                  parts_to_layer += 1
                 elsif ent.locked?
-                  p "removed locked part #{ent}"
                   locked_items += 1
                   next
-                else
-                  parts_to_layer.push ent if ent.layer.name != choice[0]
                 end
               end
             end
@@ -63,8 +69,8 @@ module EA_Extensions623
           sel.clear
 
           # parts_to_layer.each {|p| sel.add p }
-          parts_to_layer.each {|p| p.layer = choice[0] if p.layer != choice[0]}
-          UI.messagebox "#{parts_to_layer.count} parts were added to layer #{choice[0]}\n#{locked_items} parts were locked and ignored"
+          # parts_to_layer.each {|p| p.layer = choice[0] if p.layer != choice[0]}
+          UI.messagebox "#{parts_to_layer} parts were added to layer #{choice[0]}\n#{locked_items} parts were locked and ignored"
         end
 
         model.commit_operation
