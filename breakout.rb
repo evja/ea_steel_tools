@@ -112,8 +112,8 @@ module EA_Extensions623
           part.definition.entities.each do |e|
             if defined? e.definition
               if not e.definition.attribute_dictionaries == nil
-                if not e.definition.attribute_dictionaries[DICTIONARY_NAME] == nil
-                  if e.definition.attribute_dictionaries[DICTIONARY_NAME].values.include?(SCHEMA_VALUE)
+                if not e.definition.attribute_dictionaries[PLATE_DICTIONARY] == nil
+                  if e.definition.attribute_dictionaries[PLATE_DICTIONARY].values.include?(SCHEMA_VALUE)
                     # p 'deep inside scraping'
                     a = {object: e, orig_color: e.material, vol: e.volume, xscale: e.definition.local_transformation.xscale, yscale: e.definition.local_transformation.yscale, zscale: e.definition.local_transformation.zscale}
                     @plates.push a
@@ -374,6 +374,7 @@ module EA_Extensions623
 
         test_b = []
         plates.each do |plt|
+          add_plate_attributes(plt)
           test_b.push plt.definition
         end
         test_b.uniq!
@@ -384,10 +385,21 @@ module EA_Extensions623
           if @d_list[@letters[i]]
             @d_list[@letters[i]].name = "Temp"
           end
-          add_plate_attributes(plt)
           plt.name = @letters[i]
         end
         return test_b
+      end
+
+      def add_plate_attributes(classified_plate)
+        if classified_plate.definition.attribute_dictionary(PLATE_DICTIONARY).values.include? SCHEMA_VALUE
+          PLATE_DICTIONARIES.each_with_index do |d, i|
+            classified_plate.definition.set_attribute(PLATE_DICTIONARY, d, 0)
+            # classified_plate.attribute_dictionary(PLATE_DICTIONARY)[d] = i
+          end
+        else
+          UI.messagebox("The item you are attempting this on is not a classified plate.")
+          return nil
+        end
       end
 
       def label_plate(plate, group)
@@ -461,7 +473,7 @@ module EA_Extensions623
             # thickness = "UNKNOWN"
             thck8.push plate
           end
-          # p plate.attribute_dictionary[DICTIONARY_NAME]["thick"] = thickness
+          # p plate.attribute_dictionary[PLATE_DICTIONARY]["thick"] = thickness
         end
 
         sorted = [thck1, thck2, thck3, thck4, thck5, thck6, thck7, thck8].flatten
@@ -472,16 +484,6 @@ module EA_Extensions623
         # Sorth the paltes by thickness first (thinnest to thickest) then do a sub sort of the quantity (highest to lowest) then put volume (biggest to smallest)
       end
 
-      def add_plate_attributes(classified_plate)
-        if classified_plate.attribute_dictionary(DICTIONARY_NAME).values.include? SCHEMA_VALUE
-          PLATE_DICTIONARIES.each_with_index do |d, i|
-            classified_plate.attribute_dictionary(DICTIONARY_NAME)[d] = i
-          end
-        else
-          UI.messagebox("The item you are attempting this on is not a classified plate.")
-          return nil
-        end
-      end
 
       def get_largest_face(entity)
         entity.definition.entities
@@ -559,7 +561,18 @@ module EA_Extensions623
 
           pl_cpy_trans = pl_cpy.transform! trans
 
-          pl_cpy.name = "x"+((pl_cpy.definition.count_instances) - 1).to_s
+          plate_count = ((pl_cpy.definition.count_instances) - 1)
+
+
+          # Setting the QTY attribute
+          p pl_cpy.definition.attribute_dictionary(PLATE_DICTIONARY)[Q_LABEL] = plate_count
+          p pl_cpy.definition.attribute_dictionary(PLATE_DICTIONARY)[Q_LABEL]
+
+
+
+
+
+          pl_cpy.name = "x"+ plate_count.to_s
           # pl_cpy.name = "#{@steel_member.name}-#{pl.material.to_r.to_f}-#{((pl_cpy.definition.count_instances) - 1)}"
 
           face = get_largest_face(pl_cpy)

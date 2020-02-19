@@ -19,6 +19,7 @@ module EA_Extensions623
         if @layers[" (S) Holes/Studs"]
           @layers[" (S) Holes/Studs"].name = HOLES_LAYER
         end
+        color_layers
       end
 
       def self.qualify_for_dxf
@@ -32,6 +33,8 @@ module EA_Extensions623
 
       def color_layers
         @layers["Layer0"].color = Sketchup::Color.new(255,255,255)
+        @layers[INFO_LAYER].color = Sketchup::Color.new(255,255,0)
+        @layers[SCRIBES_LAYER].color = Sketchup::Color.new(0,0,255)
       end
 
       def recursive_explosion(ent)
@@ -54,10 +57,13 @@ module EA_Extensions623
           @sel.add plt
           position = plt.bounds.center
           position[2] = 0
-          @ents.add_cpoint position
+
+          plate_count = plt.definition.attribute_dictionary(PLATE_DICTIONARY)[Q_LABEL]
           pname = "#{@model.title} - #{plt.definition.name}"
           thickness = plt.material.name
-          label = @ents.add_text("[#{pname}]-[#{thickness}]-[#{plt.name}]", position)
+          material = 0
+          label = @ents.add_text("#{Q_LABEL}=#{plate_count}\n#{PN_LABEL}=#{pname}\n#{M_LABEL}=#{material}\n#{TH_LABEL}=#{thickness}", position)
+          # label = @ents.add_text("[#{pname}]-[#{thickness}]-[#{plt.name}]", position)
           label.layer = @model.layers.add(INFO_LAYER)
         end
       end
@@ -65,7 +71,8 @@ module EA_Extensions623
       def prep_plates_for_export(group)
         @plate_g_cpy = group.copy.make_unique
         @plate_g_cpy.name = "DXF Set"
-        @plate_g_cpy.layer = BREAKOUT_LAYERS[2]
+        set_layer(@plate_g_cpy, BREAKOUT_LAYERS.grep(/DXF/)[0])
+        # @plate_g_cpy.layer = BREAKOUT_LAYERS[2]
         mv = Geom::Transformation.translation([0,30,0])
         @ents.transform_entities mv, @plate_g_cpy.entities.to_a
         # @plate_g_cpy.transform! mv

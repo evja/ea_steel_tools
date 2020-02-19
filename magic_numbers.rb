@@ -18,7 +18,7 @@ module EA_Extensions623
     GC_ONPLANE    = "Yellow"
     GC_OUTOFPLANE = "Gray"
 
-    DICTIONARY_NAME       = "3DS Steel"
+    PLATE_DICTIONARY       = "3DS Steel"
     SCHEMA_KEY            = "SchemaType"
     SCHEMA_VALUE          = ":Plate"
 
@@ -35,9 +35,10 @@ module EA_Extensions623
     ##    Dictionaries     ##
     #########################
     PLATE_DICTIONARIES = [
-      "thick",
-      "name",
-      "qty",
+      Q_LABEL,
+      PN_LABEL,
+      M_LABEL,
+      TH_LABEL
     ]
 
     #########################
@@ -79,7 +80,6 @@ module EA_Extensions623
     ]
 
     BREAKOUT_LAYERS = ["Breakout_Part","Breakout_Plates", "DXF"]
-
 
     STEEL_LAYER = STANDARD_LAYERS.grep(/Steel/)[0]
     STUD_LAYER = STANDARD_LAYERS.grep(/Stud/)[0]

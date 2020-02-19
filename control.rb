@@ -25,7 +25,7 @@ module EA_Extensions623
       end
 
       def classify_as_plate(plate)
-        plate.definition.add_classification(DICTIONARY_NAME, SCHEMA_VALUE)
+        plate.definition.add_classification(PLATE_DICTIONARY, SCHEMA_VALUE)
         set_layer(plate, STEEL_LAYER)
         # add_observer_to_plate(plate)
         return plate

@@ -88,7 +88,7 @@ module EA_Extensions623
 
     UI.add_context_menu_handler do |menu|
       if EASteelTools::ExportPlates.qualify_for_dxf
-        menu.add_item("--Export Plates to CAD") {EASteelTools::ExportPlates.new}
+        menu.add_item("--Prepare DXF") {EASteelTools::ExportPlates.new}
       end
     end
 

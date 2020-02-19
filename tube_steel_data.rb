@@ -262,7 +262,9 @@ module EA_Extensions623
 
         @hss_inner_group = @hss_name_group.entities.add_group
         @hss_inner_group.name = HSSINGROUPNAME
-        @hss_inner_group.definition.behavior.no_scale_mask = 123
+        @hss_inner_group.definition.behavior.no_scale_mask = 123 if @is_column
+        @hss_inner_group.definition.behavior.no_scale_mask = 126 if not @is_column
+
       end
 
       def clear_groups
@@ -733,7 +735,7 @@ module EA_Extensions623
           ents = plate.definition.entities
           etch_group = ents.add_group
           etch_group.name = 'etch'
-          etch_group.layer = SCRIBES_LAYER
+          set_layer(etch_group, SCRIBES_LAYER)
           ege = etch_group.entities
           temp_etch_group = ege.add_group
 

@@ -37,7 +37,7 @@ module EA_Extensions623
 
         choice = UI.inputbox(prompts, default, list, title)
 
-        # model.start_operation("Layer Helper", true)
+        model.start_operation("Layer Helper", true)
         if choice
           parts_to_layer = 0
           locked_items = 0
@@ -67,9 +67,6 @@ module EA_Extensions623
           end
 
           sel.clear
-
-          # parts_to_layer.each {|p| sel.add p }
-          # parts_to_layer.each {|p| p.layer = choice[0] if p.layer != choice[0]}
           UI.messagebox "#{parts_to_layer} parts were added to layer #{choice[0]}\n#{locked_items} parts were locked and ignored"
         end
 

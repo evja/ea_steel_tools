@@ -98,7 +98,7 @@ module EA_Extensions623
         else
           @baseselect = SKUI::Listbox.new(BASETYPES)
         end
-        @baseselect.position(100,30)
+        @baseselect.position(110,30)
         @baseselect.width = 50
         @baseselect.visible = @@hss_type == 'Column'
         @@basetype.empty? ? @@basetype = (@baseselect.value = BASETYPES.first) : @baseselect.value = @@basetype
@@ -114,13 +114,13 @@ module EA_Extensions623
         @group2.add_control(base_s_label)
 
 
-        hss_beam_cap_label = SKUI::Label.new("End Cap Thick")
+        hss_beam_cap_label = SKUI::Label.new("Cap Thickness")
         hss_beam_cap_label.position(5,43)
         hss_beam_cap_label.visible = (@@hss_type == 'Beam')
         @group2.add_control(hss_beam_cap_label)
 
         cap_select = SKUI::Textbox.new(@@cap_thickness)
-        cap_select.position(85,40)
+        cap_select.position(110,40)
         cap_select.width = 50
         cap_select.visible = @@hss_type == 'Beam'
         cap_select.on( :textchange ) {|control|
@@ -142,7 +142,7 @@ module EA_Extensions623
 
         start_tol = SKUI::Textbox.new (@@start_tolerance.to_f)
         start_tol.name = :start_tolerance
-        start_tol.position(100,100)
+        start_tol.position(110,100)
         start_tol.width = 50
         # start_tol.height = 20
         start_tol.on( :textchange ) { |control|
@@ -153,7 +153,7 @@ module EA_Extensions623
 
         end_tol = SKUI::Textbox.new (@@end_tolerance.to_f)
         end_tol.name = :start_tolerance
-        end_tol.position(100,75)
+        end_tol.position(110,75)
         end_tol.width = 50
         # end_tol.height = 20
         end_tol.on( :textchange ) { |control|
@@ -328,7 +328,7 @@ module EA_Extensions623
 
 
         stud_spacing_control = SKUI::Textbox.new(@@studspacing.to_s.to_r.to_f)
-        stud_spacing_control.position(100,140)
+        stud_spacing_control.position(110,140)
         stud_spacing_control.width = 50
         stud_spacing_control.on(:textchange) {|control|
           @@studspacing = control.value.to_s.to_r.to_f
