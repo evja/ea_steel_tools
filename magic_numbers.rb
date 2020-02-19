@@ -4,11 +4,12 @@ module EA_Extensions623
     ## MAIN CONSTANTS ##
     ####################
     ROOT_FILE_PATH = "ea_steel_tools"
+    STEEL_EXTENSION = Sketchup.extensions[UNAME]
+    STEEL_EXTENSION.version = '3.6.3'.freeze
+
 
     #Setc the north direction as the green axis
     NORTH = Y_AXIS
-    CLSSFY_PLT = "Plate"
-    CLSSFR_LIB = "3DS Steel"
 
     #Ghost Colors
     GC_XAXIS      = "Red"
@@ -33,7 +34,11 @@ module EA_Extensions623
     #########################
     ##    Dictionaries     ##
     #########################
-
+    PLATE_DICTIONARIES = [
+      "thick",
+      "name",
+      "qty",
+    ]
 
     #########################
     ##       LAYERS        ##
@@ -46,6 +51,9 @@ module EA_Extensions623
       " (A) 3 Level (Roof)",
       " (A)  ALL Floor Plans",
       " (S)  ALL Steel",
+      " (A) Arch. Model",
+      " (A) Stairs Control",
+      " (A) Compass",
       " (S) 1 Beams",
       " (S) 2 Beams",
       " (S) 3 Beams",
@@ -54,30 +62,31 @@ module EA_Extensions623
       " (S) 2 Columns",
       " (S) Bolts",
       " (S) Bolt Heads",
-      " (S) Centers",
+        #LAYER 0 NEEDS TO BE WHITE
+      " (S) Centers", #PINK
+      " (S) Scribes", #ORANGE
+      " (S) Holes", #PURPLE
+      " (S) Labels", #BLUE
+      " (S) Info", #BROWN
+
+      # " (S) Holes/Studs",
       " (C) Conc. Per Plan",
       " (C) Conc. As-Built",
       " (C) Foundation",
-      " (A) Arch. Model",
-      " (A) Stairs Control",
       " (F) General Framing",
       " (F) Joists",
-      " (F) Critical Framing",
-      " (S) Holes/Studs",
-      " (A) Compass"
+      " (F) Critical Framing"
     ]
+
+    BREAKOUT_LAYERS = ["Breakout_Part","Breakout_Plates", "DXF"]
+
+
     STEEL_LAYER = STANDARD_LAYERS.grep(/Steel/)[0]
     STUD_LAYER = STANDARD_LAYERS.grep(/Stud/)[0]
     HOLES_LAYER = STANDARD_LAYERS.grep(/Holes/)[0]
     CENTERS_LAYER = STANDARD_LAYERS.grep(/Centers/)[0]
-
-    BREAKOUT_LAYERS = [
-      "CENTERS",
-      "HOLES",
-      "SCRIBES",
-      "LABELS",
-      "INFO"
-    ]
+    SCRIBES_LAYER = STANDARD_LAYERS.grep(/Scribes/)[0]
+    INFO_LAYER = STANDARD_LAYERS.grep(/Info/)[0]
 
     #########################
     ## COMPONENT CONSTANTS ##
@@ -161,13 +170,14 @@ module EA_Extensions623
     HSS_BEAM_CAP_THICK = 0 # needs to be whatever the standard cap plates are
     BOTTOM_PLATE_CORNER_RADIUS = 0.5
     STANDARD_BASE_PLATE_THICKNESS = 0.75
+    ONE_INCH_BASEPLATE = 1.0
     ETCH_LINE = 0.25
     HSSOUTGROUPNAME = "HSS Member"
     HSSINGROUPNAME = "Difference"
     HSSBLANKCAP = "PL_ Blank Cap.skp"
 
     BASETYPES = ["SQ","OC","IL","IC","EX","DR","DL","DI","Blank"]
-    BASETYPESSIX = ["SQ","C","IL","Blank"]
+    BASETYPESSIX = ["Blank","SQ","C","IL"]
 
 
     # Normal steel colors for 3DS conventions and procedures

@@ -733,6 +733,7 @@ module EA_Extensions623
           ents = plate.definition.entities
           etch_group = ents.add_group
           etch_group.name = 'etch'
+          etch_group.layer = SCRIBES_LAYER
           ege = etch_group.entities
           temp_etch_group = ege.add_group
 
@@ -893,28 +894,32 @@ module EA_Extensions623
       def insert_base_plates(type, center)
         begin
           # UI.messagebox("@h is #{@h}, @w is #{@w}")
-          h = [@h,@w].sort
-          case type
-          when 'SQ'
-            base_type = "PL_ #{h[-1].to_i}_ SQ"
-          when 'OC'
-            base_type = "PL_ #{h[-1].to_i}_ OC"
-          when 'IL'
-            base_type = "PL_ #{h[-1].to_i}_ IL"
-          when 'IC'
-            base_type = "PL_ #{h[-1].to_i}_ IC"
-          when 'EX'
-            base_type = "PL_ #{h[-1].to_i}_ EX"
-          when 'DR'
-            base_type = "PL_ #{h[-1].to_i}_ DR"
-          when 'DL'
-            base_type = "PL_ #{h[-1].to_i}_ DL"
-          when 'DI'
-            base_type = "PL_ #{h[-1].to_i}_ DI"
+          if @h >= 4 && @h <= 6
+            h = [@h,@w].sort
+            case type
+            when 'SQ'
+              base_type = "PL_ #{h[-1].to_i}_ SQ"
+            when 'OC'
+              base_type = "PL_ #{h[-1].to_i}_ OC"
+            when 'IL'
+              base_type = "PL_ #{h[-1].to_i}_ IL"
+            when 'IC'
+              base_type = "PL_ #{h[-1].to_i}_ IC"
+            when 'EX'
+              base_type = "PL_ #{h[-1].to_i}_ EX"
+            when 'DR'
+              base_type = "PL_ #{h[-1].to_i}_ DR"
+            when 'DL'
+              base_type = "PL_ #{h[-1].to_i}_ DL"
+            when 'DI'
+              base_type = "PL_ #{h[-1].to_i}_ DI"
+            else
+              # p 'selected blank'
+              plate = draw_parametric_plate(sq_plate(@w, @h))
+              # etch_plate(plate, @hss_inner_group)
+            end
           else
-            # p 'selected blank'
             plate = draw_parametric_plate(sq_plate(@w, @h))
-            # etch_plate(plate, @hss_inner_group)
           end
           # p "base type after is #{base_type}"
 

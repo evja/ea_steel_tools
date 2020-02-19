@@ -25,7 +25,7 @@ module EA_Extensions623
       end
 
       def classify_as_plate(plate)
-        plate.definition.add_classification(CLSSFR_LIB, CLSSFY_PLT)
+        plate.definition.add_classification(DICTIONARY_NAME, SCHEMA_VALUE)
         set_layer(plate, STEEL_LAYER)
         # add_observer_to_plate(plate)
         return plate
@@ -37,6 +37,15 @@ module EA_Extensions623
 
       def lock_scale_toX(plate)
         plate.definition.behavior.no_scale_mask=(126)
+      end
+
+      def add_message(message)
+        pop = UI::Notification.new(STEEL_EXTENSION, message)
+        title = "LOOK OUT!"
+        pop.on_accept("Got It") do |pop, title|
+          p 'got it'
+        end
+        pop.show
       end
 
       # def lock_scale_toY(plate)

@@ -350,7 +350,7 @@ module EA_Extensions623
           face = beam_ents.add_face segs
 
           if @is_column
-            length = length - STANDARD_BASE_PLATE_THICKNESS
+            length = length - ONE_INCH_BASEPLATE
           end
 
           face.pushpull length
@@ -571,7 +571,7 @@ module EA_Extensions623
           @outer_group.entities.transform_entities(center, @baseplate_group)
           align = Geom::Transformation.rotation(Geom::Point3d.new(0, 0, @h/2), Y_AXIS, 90.degrees)
           @outer_group.entities.transform_entities(align, @baseplate_group)
-          vector = Geom::Vector3d.new(STANDARD_BASE_PLATE_THICKNESS, 0, 0)
+          vector = Geom::Vector3d.new(ONE_INCH_BASEPLATE, 0, 0)
           sld = Geom::Transformation.translation(vector)
           @outer_group.entities.transform_entities(sld, @baseplate_group)
 
@@ -612,11 +612,11 @@ module EA_Extensions623
             end
           end
 
-          face.pushpull STANDARD_BASE_PLATE_THICKNESS
+          face.pushpull ONE_INCH_BASEPLATE
 
           @baseplate_group.entities.each do |e|
             if e.class == Sketchup::Edge
-              if e.length == 0.75
+              if e.length == ONE_INCH_BASEPLATE
                 e.soft = true
                 e.smooth = true
               else
@@ -627,7 +627,7 @@ module EA_Extensions623
             end
           end
 
-          color_by_thickness(@baseplate_group, 0.875)
+          color_by_thickness(@baseplate_group, ONE_INCH_BASEPLATE)
 
           bh_file = Sketchup.find_support_file("#{COMPONENT_PATH}/#{THRTN_SXTNTHS_HOLE}", "Plugins")
           bh_def = @definition_list.load bh_file
@@ -641,7 +641,7 @@ module EA_Extensions623
           v2.length = (@h/2)+(STANDARD_BASE_MARGIN.to_f/2)
           tr1 = Geom::Transformation.translation(v1)
           tr2 = Geom::Transformation.translation(v2)
-          scl_hole = Geom::Transformation.scaling(ORIGIN, 1,1,STANDARD_BASE_PLATE_THICKNESS/2)
+          scl_hole = Geom::Transformation.scaling(ORIGIN, 1,1,ONE_INCH_BASEPLATE/2)
           @baseplate_group.entities.transform_entities scl_hole, big_hole
 
           @baseplate_group.entities.transform_entities tr1, big_hole
@@ -1414,7 +1414,7 @@ module EA_Extensions623
             setbak2  = Geom::Transformation.rotation(ORIGIN, Z_AXIS, 90.degrees)
             @entities.transform_entities((setbak*setbak2), @outer_group)
 
-            vector = Geom::Vector3d.new(0, 0, STANDARD_BASE_PLATE_THICKNESS)
+            vector = Geom::Vector3d.new(0, 0, ONE_INCH_BASEPLATE)
             sld = Geom::Transformation.translation(vector)
             @entities.transform_entities(sld, @inner_group)
 

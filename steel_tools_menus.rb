@@ -12,18 +12,15 @@ module EA_Extensions623
     require FNAME+'/'+'wide_flange_data.rb'
     require FNAME+'/'+'wide_flange_rolled_data.rb'
     require FNAME+'/'+'tube_steel_data.rb'
-    require FNAME+'/'+'export_plates.rb'
     require FNAME+'/'+'breakout_setup.rb'
     require FNAME+'/'+'breakout.rb'
     require FNAME+'/'+'breakout_send.rb'
     require FNAME+'/'+'load_schemas.rb'
     require FNAME+'/'+'magic_numbers.rb'
     require FNAME+'/'+'update.rb'
-    require FNAME+'/'+'version.rb'
     require FNAME+'/'+'layer_helper.rb'
     require FNAME+'/'+'plate_observer.rb'
-    require FNAME+'/'+'seed_data.rb'
-    require FNAME+'/'+'testing_ground.rb'
+    require FNAME+'/'+'export_plates.rb'
     # require FNAME+'/'+'test.rb'
 
   if !file_loaded?('ea_steel_tools_menu_loader')
@@ -89,10 +86,11 @@ module EA_Extensions623
       menu.add_item("--Breakout") {Sketchup.active_model.select_tool EASteelTools::Breakout.new }
     end
 
-    # UI.add_context_menu_handler do |menu|
-    #   menu.add_item("--Export Plates to CAD") {EASteelTools::ExportPlates.qualify_plates}
-    #   menu.add_separator
-    # end
+    UI.add_context_menu_handler do |menu|
+      if EASteelTools::ExportPlates.qualify_for_dxf
+        menu.add_item("--Export Plates to CAD") {EASteelTools::ExportPlates.new}
+      end
+    end
 
     cmd4 = UI::Command.new("DirtyLayerCleanup") {
       Sketchup.active_model.select_tool EASteelTools::LayerHelper.new

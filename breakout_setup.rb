@@ -19,7 +19,8 @@ module EA_Extensions623
       end
 
       def self.set_scenes(model)
-        scenes = ["Part", "Plates"]
+        Sketchup.active_model.start_operation("Scene Set", true, true, true)
+        scenes = ["Part", "Plates", "DXF"]
         @pages = model.pages
         scenes.each {|scene| @pages.add scene}
         view = model.active_view
@@ -32,7 +33,7 @@ module EA_Extensions623
         std_cam = Sketchup::Camera.new eye1, target1, Z_AXIS
         view.camera = std_cam
 
-        @pages.each {|pg| pg.transition_time = 0.5}
+        @pages.each {|page| page.transition_time = 0.0; page.update(1)} #CHANGE FOR THE SCENE TRANSITION TIME
         view.zoom_extents
         pg.update(1)
 
@@ -47,27 +48,30 @@ module EA_Extensions623
         pg2.use_camera = true
         view.zoom_extents
         pg2.update(1)
-
+        Sketchup.active_model.commit_operation
         return @pages
       end
 
       def self.set_layers(model)
         layers = model.layers
-        if layers[' Bolts'] != nil
-          bolt_layer = layers[' Bolts']
-          bolt_layer.visible = false
+        bolt_layers = layers.collect{|l| l.name}.grep(/Bolt/)
+        if bolt_layers.any?
+          bolt_layers.each {|lr| layers[lr].visible = false}
           @pages[0].update(32)
           @pages[1].update(32)
         end
-        @plate_layer = layers.add 'Breakout_Plates'
-        @part_layer = layers.add 'Breakout_Part'
-      end
 
-      def set_up_scene(page)
-      end
+        # layers.each do |lyr|
+        #   case lyr
+        #   when
 
-      def self.set_cameras(model)
+        #   end
+        # end
 
+
+        @plate_layer = layers.add(BREAKOUT_LAYERS.grep(/Plates/)[0])
+        @part_layer = layers.add(BREAKOUT_LAYERS.grep(/Part/)[0])
+        @dxf_layer = layers.add(BREAKOUT_LAYERS.grep(/DXF/)[0])
       end
 
       def self.set_materials(model)

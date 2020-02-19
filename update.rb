@@ -3,11 +3,11 @@ module EA_Extensions623
   require 'sketchup.rb'
     module ToolUpdater
       ### CONSTANTS ### ------------------------------------------------------------
-      PLATFORM_IS_OSX     = (Object::RUBY_PLATFORM =~ /darwin/i) ? true : false
-      PLATFORM_IS_WINDOWS = !PLATFORM_IS_OSX
+      # PLATFORM_IS_OSX     = (Object::RUBY_PLATFORM =~ /darwin/i) ? true : false
+      # PLATFORM_IS_WINDOWS = !PLATFORM_IS_OSX
       def self.update_tool( rbz = true )
         extension = ( rbz ) ? '*.rbz' : '*.zip'
-        file = UI.openpanel( "Look for version greater than #{VERSION_NUM}", nil, extension )
+        file = UI.openpanel( "Look for version greater than #{STEEL_EXTENSION.version}", nil, extension )
         return if file.nil?
         begin
           Sketchup.install_from_archive( file )

@@ -39,6 +39,7 @@ module EA_Extensions623
         model.start_operation("Layer Helper", true)
         if choice
           parts_to_layer = []
+          locked_items = 0
 
           sel.each do |part|
             if part.typename != 'Group' && part.typename != 'ComponentInstance'
@@ -47,6 +48,10 @@ module EA_Extensions623
             else
               part.definition.entities.each do |ent|
                 if ent.typename != 'Group' && ent.typename != 'ComponentInstance'
+                  next
+                elsif ent.locked?
+                  p "removed locked part #{ent}"
+                  locked_items += 1
                   next
                 else
                   parts_to_layer.push ent if ent.layer.name != choice[0]
@@ -59,7 +64,7 @@ module EA_Extensions623
 
           # parts_to_layer.each {|p| sel.add p }
           parts_to_layer.each {|p| p.layer = choice[0] if p.layer != choice[0]}
-          UI.messagebox "#{parts_to_layer.count} parts were added to layer #{choice[0]}"
+          UI.messagebox "#{parts_to_layer.count} parts were added to layer #{choice[0]}\n#{locked_items} parts were locked and ignored"
         end
 
         model.commit_operation

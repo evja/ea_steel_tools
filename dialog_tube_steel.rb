@@ -40,27 +40,6 @@ module EA_Extensions623
           @@hss_has_cap            = true
         end
 
-        ####################################################
-        #     TEST SPACE
-        ####################################################
-
-
-        ####################################################
-        ####################################################
-
-
-
-
-        ######################################################################
-        # WORKING BELOW
-        ######################################################################
-
-
-        ######################################################################
-        # WORKING ABOVE
-        ######################################################################
-
-
         @label_font = SKUI::Font.new( 'Comic Sans MS', 8, true )
         @img_path = File.join( SKUI::PATH, '..', 'icons' )
         @img_file1 = File.join( @img_path, 'hss_section.png' )
@@ -72,7 +51,7 @@ module EA_Extensions623
         ss_y = 0
 
         options = {
-          :title           => "Tube Steel #{VERSION_NUM}",
+          :title           => "Tube Steel #{STEEL_EXTENSION.version}",
           :preferences_key => 'TS',
           :width           => 500,
           :height          => 475,
@@ -398,14 +377,13 @@ module EA_Extensions623
         if @@wall_thickness.empty?
           @@wall_thickness = (wall_thickness_dropdown.items.include?('1/4"') ? '1/4"' : wall_thickness_dropdown.items.first)
         end
+
         wall_thickness_dropdown.value = @@wall_thickness
         wall_thickness_dropdown.position( 190, 25 )
         wall_thickness_dropdown.width = 50
         wall_thickness_dropdown.on(:change) { |control, value|
           @@wall_thickness = control.value
         }
-
-        # p @@wall_thickness
 
         height_class_dropdown.on( :change ) { |control, value|
           @@height_class = control.value

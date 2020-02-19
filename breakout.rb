@@ -9,10 +9,11 @@ module EA_Extensions623
 
     class Breakout
       include BreakoutSetup
+      include Control
 
-      def initialize
+      def activate
 
-        # p 'hello'
+        Sketchup.active_model.start_operation("set environment and run checks", true, true)
         @model = Sketchup.active_model
         unless qualify_model(@model)
           result = UI.messagebox("You are trying to breakout a part with an unconventional name: #{@model.title}, do you wish to continue? If you do continue you risk the tool not behaving properly", MB_YESNO)
@@ -21,7 +22,6 @@ module EA_Extensions623
             return
           end
         end
-        @model.start_operation("Breakout", true)
         @@environment_set = false if not defined? @@environment_set
         @pages = @model.pages
         # @users_template = Sketchup.template
@@ -47,7 +47,7 @@ module EA_Extensions623
             position_member(@steel_member)
             set_envoronment if @@environment_set == false
             color_steel_member(@steel_member)
-            @steel_member.layer = @model.layers["Breakout_Part"]
+            set_layer(@steel_member, BREAKOUT_LAYERS[0])
             hide_parts(@steel_member, @pages[1], 16)
             update_scene(@pages[1])
             reset
@@ -85,6 +85,7 @@ module EA_Extensions623
       def reset
         Sketchup.send_action "selectSelectionTool:"
         @plates = [] if @state == 2
+        @model.commit_operation
       end
 
       def set_envoronment
@@ -100,23 +101,31 @@ module EA_Extensions623
           member.material = @materials[DONE_COLOR]
         else
           UI.messagebox("Paint the steel part the done color")
+          # message = UI::Notification.new(STEEL_EXTENSION, "Paint the steel part the done color")
+          # message.show
         end
       end
 
       def scrape(part) #part is the assumed steel part (beam or column with all respective sub components)
         # p 'scraping'
-        part.definition.entities.each do |e|
-          if defined? e.definition
-            if not e.definition.attribute_dictionaries == nil
-              if not e.definition.attribute_dictionaries[DICTIONARY_NAME] == nil
-                if e.definition.attribute_dictionaries[DICTIONARY_NAME].values.include?(SCHEMA_VALUE)
-                  # p 'deep inside scraping'
-                  a = {object: e, orig_color: e.material, vol: e.volume, xscale: e.definition.local_transformation.xscale, yscale: e.definition.local_transformation.yscale, zscale: e.definition.local_transformation.zscale}
-                  @plates.push a
+        begin
+          part.definition.entities.each do |e|
+            if defined? e.definition
+              if not e.definition.attribute_dictionaries == nil
+                if not e.definition.attribute_dictionaries[DICTIONARY_NAME] == nil
+                  if e.definition.attribute_dictionaries[DICTIONARY_NAME].values.include?(SCHEMA_VALUE)
+                    # p 'deep inside scraping'
+                    a = {object: e, orig_color: e.material, vol: e.volume, xscale: e.definition.local_transformation.xscale, yscale: e.definition.local_transformation.yscale, zscale: e.definition.local_transformation.zscale}
+                    @plates.push a
+                  end
                 end
               end
             end
           end
+        rescue Exception => e
+          puts e.message
+          puts e.backtrace.inspect
+          UI.messagebox("There was a problem scraqping the plates")
         end
       end
 
@@ -173,31 +182,29 @@ module EA_Extensions623
       end
 
       def move_stuff
-         position_member(@steel_member)
-         restore_material(@plates)
          Sketchup.status_text = "Breaking out the paltes"
+         position_member(@steel_member)
          sort_plates(split_plates)
          @named_plate_definitions = name_plates()
-         # @model.commit_operation #DANGER
-         spread_plates
-         # @model.start_operation('test', true) #DANGER
+         flat_plates = spread_plates
          set_envoronment if @@environment_set == false
          color_steel_member(@steel_member)
-         @plate_group.layer = @model.layers["Breakout_Plates"]
-         @steel_member.layer = @model.layers["Breakout_Part"]
+         set_layer(@plate_group, BREAKOUT_LAYERS[1])
+         set_layer(@steel_member, BREAKOUT_LAYERS[0])
          @plate_group.visible = false
          hide_parts(@plate_group, @pages.first, 16)
          @steel_member.visible = false
          hide_parts(@steel_member, @pages[1], 16)
+         hide_parts(@steel_member, @pages[2], 16)
          update_scene(@pages[1])
-         @model.commit_operation # DANGER
       end
 
       def onKeyDown(key, repeat, flags, view)
         if @state == 0 && key == VK_RIGHT
+          restore_material(@plates)
+          @model.start_operation("Breakout", true)
           @state = 1
           move_stuff
-          # label_plates(plates)
           reset
         elsif @state == 0 && key == VK_LEFT
           restore_material(@plates)
@@ -211,7 +218,7 @@ module EA_Extensions623
       def update_scene(page)
         @pages.selected_page = page
         vw = @model.active_view
-        lyr = @model.layers["Breakout_Part"]
+        lyr = @model.layers[BREAKOUT_LAYERS[0]]
         page.set_visibility(lyr, false)
         vw.zoom_extents
         page.update(32)
@@ -377,6 +384,7 @@ module EA_Extensions623
           if @d_list[@letters[i]]
             @d_list[@letters[i]].name = "Temp"
           end
+          add_plate_attributes(plt)
           plt.name = @letters[i]
         end
         return test_b
@@ -402,6 +410,7 @@ module EA_Extensions623
         return container
       end
 
+
       def sort_plates_for_naming(plates_array)
         begin
           thck1 = [] #H 1/4" Thickness
@@ -414,34 +423,45 @@ module EA_Extensions623
           thck8 = [] #special Thickness
 
         plates_array.each_with_index do |plate|
+          # thickness = get_plate_thickness_verified(plate)
           case plate.material.name
           when /¼"/
             # p plate.material.name
+            # thickness = 1/4.to_f
             thck1.push plate
           when /5_16"/
             # p plate.material.name
+            # thickness = 5/16.to_f
             thck2.push plate
           when /⅜"/
             # p plate.material.name
+            # thickness = 3/8.to_f
             thck3.push plate
           when /½"/
             # p plate.material.name
+            # thickness = 1/2.to_f
             thck4.push plate
           when /⅝"/
             # p plate.material.name
+            # thickness = 5/8.to_f
             thck5.push plate
           when /¾"/
             # p plate.material.name
+            # thickness = 3/4.to_f
             thck6.push plate
           when /Special Thick/
             # p plate.material.name
+            # thickness = "UNKNOWN"
             thck7.push plate
           when /⅞"/
+            # thickness = 7/8.to_f
             thck7.push plate
           else
             # p plate.material.name
+            # thickness = "UNKNOWN"
             thck8.push plate
           end
+          # p plate.attribute_dictionary[DICTIONARY_NAME]["thick"] = thickness
         end
 
         sorted = [thck1, thck2, thck3, thck4, thck5, thck6, thck7, thck8].flatten
@@ -450,6 +470,17 @@ module EA_Extensions623
           UI.messagebox('There was a problem sorting the plates by thickness, possibly a name change for the color thicknesses. this code uses the letters A(Charcoal) B(special thickness) C(3/4") ect')
         end
         # Sorth the paltes by thickness first (thinnest to thickest) then do a sub sort of the quantity (highest to lowest) then put volume (biggest to smallest)
+      end
+
+      def add_plate_attributes(classified_plate)
+        if classified_plate.attribute_dictionary(DICTIONARY_NAME).values.include? SCHEMA_VALUE
+          PLATE_DICTIONARIES.each_with_index do |d, i|
+            classified_plate.attribute_dictionary(DICTIONARY_NAME)[d] = i
+          end
+        else
+          UI.messagebox("The item you are attempting this on is not a classified plate.")
+          return nil
+        end
       end
 
       def get_largest_face(entity)
@@ -495,6 +526,7 @@ module EA_Extensions623
       end
 
       def spread_plates
+        copies = []
         alph = ("A".."Z").to_a
         plates2 = @d_list.map{|pl| pl if alph.include? pl.name}.compact!
         plates = sort_plates_for_spreading(plates2)
@@ -512,15 +544,16 @@ module EA_Extensions623
 
           insertion_pt = [dist, 3, 0]
           pl_cpy = @plate_group.entities.add_instance pl, insertion_pt
+          copies.push pl_cpy
           pl_cpy.material = pl.instances.first.material
 
           #compare copy to scraped plates
           copy_def = pl_cpy.definition
           @named_plate_definitions.first
           prop_def = @named_plate_definitions.select {|pd| pd if pd == copy_def}
-          p x = prop_def[0].instances.first.transformation.xscale
-          p y = prop_def[0].instances.first.transformation.yscale
-          p z = prop_def[0].instances.first.transformation.zscale
+          x = prop_def[0].instances.first.transformation.xscale
+          y = prop_def[0].instances.first.transformation.yscale
+          z = prop_def[0].instances.first.transformation.zscale
 
           trans = Geom::Transformation.scaling(x,y,z) #Test this after the brute one dont work
 
@@ -584,14 +617,15 @@ module EA_Extensions623
 
           pl_cpy.transform! (Geom::Transformation.translation([last_plate_width,0,0]))
           pl_label = label_plate(pl_cpy, @plate_group)
+          set_layer(pl_label, SCRIBES_LAYER)
 
           label_locs.push pl_cpy.bounds.center
           pull_out_dist = pl_cpy.bounds.height
 
 
           last_plate_width += (w + 3)
-          # @model.commit_operation
         end
+        return copies
       end
 
       def deactivate(view)
