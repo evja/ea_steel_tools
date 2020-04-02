@@ -99,6 +99,9 @@ module EA_Extensions623
       def color_steel_member(member)
         if @materials[DONE_COLOR]
           member.material = @materials[DONE_COLOR]
+        elsif @materials.add STEEL_COLORS[:grey][:name]
+          part_color = @materials[DONE_COLOR].color = STEEL_COLORS[:grey][:rgba]
+          member.material = @materials[DONE_COLOR]
         else
           UI.messagebox("Paint the steel part the done color")
           # message = UI::Notification.new(STEEL_EXTENSION, "Paint the steel part the done color")
@@ -269,22 +272,6 @@ module EA_Extensions623
       #   end
       # end
 
-      def sort_plates2(plates)
-        plates each do |pl|
-          bnds = pl.bounds.diagonal.to_f.round(4)
-
-          #(idea) create a hash of objects and thier diagonal and compact it.
-          #check definition instances against each other for diagonal
-
-          #make differences unique and update the definition
-
-          #check that the now true thickness matches the material thickness
-
-          #give warnings when some of these occur.
-        end
-
-      end
-
       def sort_plates(plates)
         plates_hash = {}
         plates.each do |pl|
@@ -359,6 +346,7 @@ module EA_Extensions623
         #Assign each unique component a letter A-Z in it's definition
         plates2 = @unique_plates.flatten!
         plates2.uniq!
+
         plates = sort_plates_for_naming(plates2.uniq)
 
         # This code finds the direction labels in the component definition list and renames them so the letters of the alphabet are available for plates
@@ -405,20 +393,23 @@ module EA_Extensions623
       def label_plate(plate, group)
         labels = []
         mod_title = @model.title
-
+        plate_dict = plate.definition.attribute_dictionary(PLATE_DICTIONARY)
         container = group.entities.add_group
 
         plname = plate.definition.name
-        var = mod_title + '-' + plname
+        var = "#{mod_title}-#{to_eighths(plate_dict[TH_LABEL])}:#{plate_dict[Q_LABEL]}#{plate.definition.name}"
+        plate.definition.attribute_dictionary(PLATE_DICTIONARY)[PN_LABEL] = var
         text = container.entities.add_3d_text(var, TextAlignLeft, STEEL_FONT, false, false, 0.675, 0.0, -0.00, false, 0.0)
 
         align = Geom::Transformation.axes([plate.bounds.center[0], plate.bounds.center[1], 0], X_AXIS, Y_AXIS, Z_AXIS )
         vr = X_AXIS.reverse
-        vr.length = (container.bounds.width/2)
+        vr.length = (container.bounds.width/3)
         shift = Geom::Transformation.translation(vr)
+        rot = Geom::Transformation.rotation(plate.bounds.center, Z_AXIS, 90.degrees)
         # container.move! align
         @entities.transform_entities align, container
         @entities.transform_entities shift, container
+        @entities.transform_entities rot, container
         return container
       end
 
@@ -435,44 +426,35 @@ module EA_Extensions623
           thck8 = [] #special Thickness
 
         plates_array.each_with_index do |plate|
-          # thickness = get_plate_thickness_verified(plate)
           case plate.material.name
           when /¼"/
             # p plate.material.name
-            # thickness = 1/4.to_f
             thck1.push plate
           when /5_16"/
             # p plate.material.name
-            # thickness = 5/16.to_f
             thck2.push plate
           when /⅜"/
             # p plate.material.name
-            # thickness = 3/8.to_f
             thck3.push plate
           when /½"/
             # p plate.material.name
-            # thickness = 1/2.to_f
             thck4.push plate
           when /⅝"/
             # p plate.material.name
-            # thickness = 5/8.to_f
             thck5.push plate
           when /¾"/
             # p plate.material.name
-            # thickness = 3/4.to_f
             thck6.push plate
           when /Special Thick/
             # p plate.material.name
-            # thickness = "UNKNOWN"
             thck7.push plate
           when /⅞"/
-            # thickness = 7/8.to_f
             thck7.push plate
           else
             # p plate.material.name
-            # thickness = "UNKNOWN"
             thck8.push plate
           end
+          # p thickness
           # p plate.attribute_dictionary[PLATE_DICTIONARY]["thick"] = thickness
         end
 
@@ -490,7 +472,8 @@ module EA_Extensions623
         faces = entity.definition.entities.select {|e| e.typename == 'Face'}
         largest_face = [0, nil]
 
-        sorted_faces = Hash[*faces.collect{|f| [f,f.area]}.flatten].sort_by{|k,v|v}
+        sorted_faces = Hash[*faces.collect{|f| [f,f.area.round(3)]}.flatten].sort_by{|k,v|v}
+
         largest_face = sorted_faces[-1]
         # faces.each do |face|
         #   if face.area >= largest_face[0]
@@ -519,12 +502,105 @@ module EA_Extensions623
         return sorted
       end
 
-      def get_plate_thickness_verified(plate)
-        #go through each plate and check that it's color is the same as the scale
-        ########################  DEVELOPMENT START  ######################################
-        thickness = 0
-        color = plate.material.name
-        #########################  DEVELOPMENT END   ######################################
+      def get_plate_thickness_verified(mock_plate)
+        thckchk1 = nil
+        thckchk2 = nil
+        thckchk3 = nil
+
+        #gets thickness check 1
+        thickness = nil
+        case mock_plate.material.name
+        when /¾/
+          thckchk1 = 0.750
+        when /⅝/
+          thckchk1 = 0.675
+        when /½/
+          thckchk1 = 0.500
+        when /⅜/
+          thckchk1 = 0.375
+        when /5\/16/
+          thckchk1 = 0.3125
+        when /¼/
+          thckchk1 = 0.250
+        when /Special/
+          thckchk1 = 0
+        else
+          thckchk1 = nil
+        end
+
+        es = []
+        fc = []
+        edges = extract_entities(mock_plate.definition, es, "Edge")
+        faces = extract_entities(mock_plate.definition, fc, "Face")
+
+        thckchk2 = get_most_common_edge(edges)
+
+        sorted_faces = Hash[*faces.collect{|f| [f,f.area.round(3)]}.flatten].sort_by{|k,v|v}
+        biggies = sorted_faces.last(2)
+
+        plane = biggies[0][0].plane
+        point = biggies[1][0].vertices[0].position
+        dist = point.distance_to_plane(plane).round(3)
+        thckchk3 = dist
+        if thckchk1 == thckchk2 && thckchk2 == thckchk3
+          p "Black Swan"
+        end
+        # p '-----------------'
+        # p thckchk1
+        # p thckchk2
+        # p thckchk3
+        # p '-----------------'
+        # add method to blen and check all 3 thickness checks
+        return thckchk3
+      end
+
+      def get_most_common_edge(edges)
+        lengths = Hash.new(0)
+        # p edges
+        edges.each do |e|
+          lengths[e.length.round(3)] += 1
+        end
+        a = lengths.sort_by {|k,v| -v}
+        return a.first[0]
+      end
+
+      def extract_entities(entity, container, name)
+        entity.entities.each do |ent|
+          if (ent.is_a? Sketchup::Group) || (ent.is_a? Sketchup::ComponentInstance)
+            extract_entities(ent.definition, container, name)
+          elsif ent.typename == name
+            container.push ent
+          end
+        end
+
+        return container
+      end
+
+      def to_eighths(num)
+
+        case num.to_r.denominator.round(2)
+        when 1
+          number = (num.to_f * 8).to_i
+        when 2
+          number = (num.to_f * 8).to_i
+        when 4
+          number = (num.to_f * 8).to_i
+        when 8
+          number = (num.to_f * 8).to_i
+        when 16
+          number = "2+"
+        else
+          p "in the else"
+          p num
+          p 5/16.to_f
+          p 5/16.to_f.round(2)
+          if num == 5/16.to_f.round(3)
+            number = "2+"
+          else
+            number = num
+          end
+        end
+        return number
       end
 
       def spread_plates
@@ -542,16 +618,15 @@ module EA_Extensions623
         # @plate_group.instance.name = 'Plates'
         plates.compact!
         plates.each do |pl|
-          # @model.start_operation("spread a plate", true)
-
-          insertion_pt = [dist, 3, 0]
+          @model.start_operation("spread a plate", true)
+          diag_length = pl.bounds.diagonal
+          insertion_pt = [dist, -diag_length, 0]
           pl_cpy = @plate_group.entities.add_instance pl, insertion_pt
           copies.push pl_cpy
           pl_cpy.material = pl.instances.first.material
 
           #compare copy to scraped plates
           copy_def = pl_cpy.definition
-          @named_plate_definitions.first
           prop_def = @named_plate_definitions.select {|pd| pd if pd == copy_def}
           x = prop_def[0].instances.first.transformation.xscale
           y = prop_def[0].instances.first.transformation.yscale
@@ -560,17 +635,26 @@ module EA_Extensions623
           trans = Geom::Transformation.scaling(x,y,z) #Test this after the brute one dont work
 
           pl_cpy_trans = pl_cpy.transform! trans
-
           plate_count = ((pl_cpy.definition.count_instances) - 1)
+          ####################################################################
+          ####################################################################
+          temp_group = @entities.add_group()
+          temp_plate = temp_group.entities.add_instance pl, ORIGIN
+          temp_group.material = pl.instances[0].material
+          temp_plate.transform! trans
+          temp_plate.make_unique
+          temp_plate.explode
+          temp_component = temp_group.to_component
+          verified_thickness = get_plate_thickness_verified(temp_component)
+          pl_cpy.definition.attribute_dictionary(PLATE_DICTIONARY)[TH_LABEL] = verified_thickness.to_f
+          pl_cpy.definition.attribute_dictionary(PLATE_DICTIONARY)[M_LABEL] = verified_thickness.to_r.to_s
+
+          ####################################################################
+          ####################################################################
 
 
           # Setting the QTY attribute
-          p pl_cpy.definition.attribute_dictionary(PLATE_DICTIONARY)[Q_LABEL] = plate_count
-          p pl_cpy.definition.attribute_dictionary(PLATE_DICTIONARY)[Q_LABEL]
-
-
-
-
+          pl_cpy.definition.attribute_dictionary(PLATE_DICTIONARY)[Q_LABEL] = plate_count
 
           pl_cpy.name = "x"+ plate_count.to_s
           # pl_cpy.name = "#{@steel_member.name}-#{pl.material.to_r.to_f}-#{((pl_cpy.definition.count_instances) - 1)}"
@@ -582,11 +666,7 @@ module EA_Extensions623
           else
             pl_norm = face.normal
           end
-          #########################################################################
 
-          # pl_cpy = pl_cpy.make_unique
-
-          #########################################################################
           if not pl_norm.parallel? Z_AXIS
             if pl_norm.parallel? X_AXIS
               rotation1 = pl_norm.angle_between Y_AXIS
@@ -630,13 +710,15 @@ module EA_Extensions623
 
           pl_cpy.transform! (Geom::Transformation.translation([last_plate_width,0,0]))
           pl_label = label_plate(pl_cpy, @plate_group)
-          set_layer(pl_label, SCRIBES_LAYER)
+          set_layer(pl_label, LABELS_LAYER)
+          pl_cpy.definition.attribute_dictionary(PLATE_DICTIONARY)[INFO_LABEL_POSITION] = pl_label.bounds.corner(1)
 
           label_locs.push pl_cpy.bounds.center
           pull_out_dist = pl_cpy.bounds.height
 
 
           last_plate_width += (w + 3)
+          temp_component.erase!
         end
         return copies
       end
@@ -657,6 +739,6 @@ module EA_Extensions623
         view.invalidate
       end
 
-  	end
+    end
   end
 end

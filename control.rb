@@ -11,6 +11,20 @@ module EA_Extensions623
         view.lock_inference if view.inference_locked?
       end
 
+      # NOT USED - CONFLICTS WITH EXISTING COLORS
+      def self.install_colors(model)
+        materials = model.materials
+        STEEL_COLORS.each_key do |color|
+          if materials[STEEL_COLORS[color][:name]]
+            p 'color exists'
+            next
+          else
+            new_color = materials.add(STEEL_COLORS[color][:name])
+            new_color.color = Sketchup::Color.new STEEL_COLORS[color][:rgba]
+          end
+        end
+      end
+
       def set_layer(part, layer)
         layers = Sketchup.active_model.layers.collect{|l| l.name}
         # p layer

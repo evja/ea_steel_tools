@@ -39,6 +39,7 @@ module EA_Extensions623
         }
 
         window = SKUI::Window.new( options )
+
         @window1 = window
 
         # These events doesn't trigger correctly when Firebug Lite

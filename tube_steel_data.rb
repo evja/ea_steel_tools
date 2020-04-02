@@ -989,7 +989,7 @@ module EA_Extensions623
           comp_def = @definition_list.add "#{@tube_name}"
           comp_def.description = "#{@tube_name} label"
           ents = comp_def.entities
-          _3d_text = ents.add_3d_text("#{@tube_name}", TextAlignCenter, STEEL_FONT, false, false, LABEL_HEIGHT, 3.0, 0.0, false, 0.0)
+          _3d_text = ents.add_3d_text("#{@tube_name}", TextAlignCenter, STEEL_FONT, false, false, LABEL_HEIGHT, 0.0, 0.0, false, 0.0)
           # p "Loaded STEEL_FONT: #{_3d_text}"
           save_path = Sketchup.find_support_file "Components", ""
           comp_def.save_as(save_path + "/#{@tube_name}.skp")

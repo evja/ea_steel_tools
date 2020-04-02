@@ -5,7 +5,7 @@ module EA_Extensions623
     ####################
     ROOT_FILE_PATH = "ea_steel_tools"
     STEEL_EXTENSION = Sketchup.extensions[UNAME]
-    STEEL_EXTENSION.version = '3.6.3'.freeze
+    STEEL_EXTENSION.version = '3.7.0'.freeze
 
 
     #Setc the north direction as the green axis
@@ -27,6 +27,7 @@ module EA_Extensions623
     PN_LABEL = "PART_NAME"
     M_LABEL = "MATERIAL"
     TH_LABEL = "THICKNESS"
+    INFO_LABEL_POSITION = 0
 
     DONE_COLOR = '1 Done'
     PLATE_COLOR = 'Black'
@@ -38,7 +39,8 @@ module EA_Extensions623
       Q_LABEL,
       PN_LABEL,
       M_LABEL,
-      TH_LABEL
+      TH_LABEL,
+      INFO_LABEL_POSITION
     ]
 
     #########################
@@ -186,12 +188,12 @@ module EA_Extensions623
     STEEL_COLORS = {
        charcoal: {name: ' A Charcoal'     , rgba: [102, 102, 102, 255]},
        red:      {name: ' B Special Thick', rgba: [255, 50, 50, 255]},
-       orange:   {name: ' C ¾" Thick'    , rgba: [255, 135, 50, 255]},
-       yellow:   {name: ' D ⅝" Thick'    , rgba: [255, 255, 50, 255]},
-       green:    {name: ' E ½" Thick'    , rgba: [50, 255, 50, 255]},
-       blue:     {name: ' F ⅜" Thick'    , rgba: [50, 118, 255, 255]},
-       indigo:   {name: ' G 5/16" Thick' , rgba: [118, 50, 255, 255]},
-       purple:   {name: ' H ¼" Thick'    , rgba: [186, 50, 255, 255]},
+       orange:   {name: ' C ¾" Thick'    , rgba: [255, 135, 50, 255], thck: 0.750},
+       yellow:   {name: ' D ⅝" Thick'    , rgba: [255, 255, 50, 255], thck: 0.625},
+       green:    {name: ' E ½" Thick'    , rgba: [50, 255, 50, 255], thck: 0.500},
+       blue:     {name: ' F ⅜" Thick'    , rgba: [50, 118, 255, 255], thck: 0.375},
+       indigo:   {name: ' G 5/16" Thick' , rgba: [118, 50, 255, 255], thck: 0.3125},
+       purple:   {name: ' H ¼" Thick'    , rgba: [186, 50, 255, 255], thck: 0.250},
        grey:     {name: '1 Done'          , rgba: [153, 153, 153, 255]},
        layout:   {name: '2 Layed Out '    , rgba: [255, 127, 127, 255]},
        brokeout: {name: '3 Broken Out'    , rgba: [255, 180, 127, 255]},

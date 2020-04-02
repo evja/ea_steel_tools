@@ -130,7 +130,6 @@ module EA_Extensions623
 
       def add_parent_window(options)
         @window = SKUI::Window.new( options )
-
         # These events doesn't trigger correctly when Firebug Lite
         # is active because it introduces frames that interfere with
         # the focus notifications.

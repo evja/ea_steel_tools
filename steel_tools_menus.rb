@@ -107,6 +107,8 @@ module EA_Extensions623
     #   # menu.add_separator
     # end
 
+    # EASteelTools::Control.install_colors(Sketchup.active_model)
+
   end
 
   file_loaded('ea_steel_tools_menu_loader')

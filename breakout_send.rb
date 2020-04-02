@@ -59,7 +59,7 @@ module EA_Extensions623
           # sel.each_with_index {|member, i| @steel_members.push validate_selection(member)}
         else
           @multiple = false
-          p 'single'
+          # p 'single'
           @steel_members.push sel[0]
           @beam_name = @steel_members[0].name
         end
@@ -110,12 +110,12 @@ module EA_Extensions623
           # end
           # paths.each {|path| UI.openURL(path)}
         else
-          p 'creating a new file'
+          # p 'creating a new file'
           steel_member = @steel_members.first
           temp_group = @model.active_entities.add_group(steel_member)
           defn = temp_group.definition
           if steel_member.class == Sketchup::ComponentInstance
-            p 'component'
+            # p 'component'
             if steel_member.name.empty?
               part_name = steel_member.definition.name
             else
@@ -125,7 +125,7 @@ module EA_Extensions623
             part_name = steel_member.name
           end
           @new_file_path = UI.savepanel("Save the Breakout", @path, "#{part_name}.skp" )
-          p @new_file_path
+          # p @new_file_path
           if !@new_file_path.nil?
             defn.save_as(@new_file_path)
             steel_member.material = @materials["#{BEAM_COLOR}"]
@@ -169,7 +169,7 @@ module EA_Extensions623
           #############################
           # b1 = Dir["**/*Steel*/*Break*"]
           if defined? @@breakout_dir #Check if you have saved the path
-            p 'you have been here before'
+            # p 'you have been here before'
             @path = @@breakout_dir
             # puts 'Preset Path Found'
             return
@@ -201,7 +201,7 @@ module EA_Extensions623
           #     p ' Killed t1'
           #   }
           else
-            p 'setting the server path'
+            # p 'setting the server path'
             @path = @model.path
           end
           # UI.messagebox("Could not find the job folder in 3X Jobs(server), Perhaps it's in the ARCHIVE")
