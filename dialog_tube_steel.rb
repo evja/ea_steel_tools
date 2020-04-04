@@ -89,7 +89,7 @@ module EA_Extensions623
         @hss_types = ["Column", "Beam"]
         hss_type_select = SKUI::Listbox.new(@hss_types)
         hss_type_select.position(300, 25)
-        hss_type_select.width = 68
+        hss_type_select.width = 85
         @@hss_type.empty? ? @@hss_type = (hss_type_select.value = @hss_types.first) : (hss_type_select.value = @@hss_type)
         @group1.add_control(hss_type_select)
 

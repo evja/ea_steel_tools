@@ -46,13 +46,17 @@ module EA_Extensions623
           copy_offset = 30
           mv = Geom::Transformation.translation([0,copy_offset,0])
           @ents.transform_entities mv, @plate_g_cpy.entities.to_a
-          plates = @plate_g_cpy.entities.select{|comp| comp.is_a? Sketchup::ComponentInstance}
+          plates = @plate_g_cpy.entities.select{|comp| comp.is_a? Sketchup::ComponentInstance} # Maybe add another validation that the part is classified "Plate"
 
           plates.each do |group|
             vector = Geom::Vector3d.new(0,0,1)
             dictionary = group.definition.attribute_dictionary(PLATE_DICTIONARY)
 
-            place = Geom::Point3d.new(dictionary[INFO_LABEL_POSITION][0],dictionary[INFO_LABEL_POSITION][1]+copy_offset,dictionary[INFO_LABEL_POSITION][2])
+            #### Need to find the label that is touching the plate at hand
+            label = @plate_g_cpy.entities.select{|grp| (grp.is_a? Sketchup::Group) && (grp.name == group.definition.name)}
+
+            # place = Geom::Point3d.new(dictionary[INFO_LABEL_POSITION][0],dictionary[INFO_LABEL_POSITION][1]+copy_offset,dictionary[INFO_LABEL_POSITION][2])
+            place = label[0].bounds.center
             gd = group.definition
             edges = []
             edges = recursive_explosion(group, true, edges)
@@ -67,6 +71,7 @@ module EA_Extensions623
           labels = @plate_g_cpy.entities.select{|grp| grp.is_a? Sketchup::Group}
           labels.each{|label| label.explode}
           parts = @plate_g_cpy.entities
+          parts.each{|e| e.material = nil}
           clean_faces(parts)
 
           z_vec = Z_AXIS.reverse

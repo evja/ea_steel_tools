@@ -395,6 +395,7 @@ module EA_Extensions623
         mod_title = @model.title
         plate_dict = plate.definition.attribute_dictionary(PLATE_DICTIONARY)
         container = group.entities.add_group
+        container.name = plate.definition.name
 
         plname = plate.definition.name
         var = "#{mod_title}-#{to_eighths(plate_dict[TH_LABEL])}:#{plate_dict[Q_LABEL]}#{plate.definition.name}"
@@ -405,7 +406,7 @@ module EA_Extensions623
         vr = X_AXIS.reverse
         vr.length = (container.bounds.width/3)
         shift = Geom::Transformation.translation(vr)
-        rot = Geom::Transformation.rotation(plate.bounds.center, Z_AXIS, 90.degrees)
+        rot = Geom::Transformation.rotation(plate.bounds.center, Z_AXIS, 270.degrees)
         # container.move! align
         @entities.transform_entities align, container
         @entities.transform_entities shift, container
@@ -680,9 +681,11 @@ module EA_Extensions623
             end
           end
 
+          pl_cpy.transform! Geom::Transformation.rotation(insertion_pt, [0,0,1], 180.degrees)
+
           ##align long edge with Y_AXIS
           if pl_cpy.bounds.width > pl_cpy.bounds.height
-            pl_cpy.transform! Geom::Transformation.rotation(insertion_pt, [0,0,1], 90.degrees)
+            pl_cpy.transform! Geom::Transformation.rotation(insertion_pt, [0,0,1], 270.degrees)
           end
 
           pl_orig = pl_cpy.transformation.origin

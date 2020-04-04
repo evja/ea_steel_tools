@@ -130,8 +130,17 @@ module EA_Extensions623
               @vx = @vy.axes[0] if not_a_zero_vec
               @vz = @vy.axes[1] if not_a_zero_vec
 
-              # @trans = Geom::Transformation.axes pt1, @vx, @vy, @vz
-              # @trans2 = Geom::Transformation.axes pt2, @vx, @vy, @vz
+              if @is_column
+                @trans = Geom::Transformation.axes pt1, @vx, @vy, @vz.reverse
+                @trans2 = Geom::Transformation.axes pt2, @vx, @vy, @vz.reverse
+              else
+
+                @trans = Geom::Transformation.axes pt1, @vx.reverse, @vy, @vz
+                @trans2 = Geom::Transformation.axes pt2, @vx.reverse, @vy, @vz
+              end
+
+              # @trans = Geom::Transformation.axes pt1, @vx, @vy, @vz.reverse
+              # @trans2 = Geom::Transformation.axes pt2, @vx, @vy, @vz.reverse
 
               # Create the member in Sketchup
               self.create_geometry(pt1, pt2, view)
@@ -520,9 +529,13 @@ module EA_Extensions623
           vec2 = Geom::Vector3d.new(6,0,0)
           slide_to_start = Geom::Transformation.translation(vec2)
 
-          rot = Geom::Transformation.rotation(@center_of_column, X_AXIS, 270.degrees)
+          # rot = Geom::Transformation.rotation(@center_of_column, X_AXIS, 90.degrees)
           @hss_name_group.entities.transform_entities rot, start_dir_beam2
           @hss_name_group.entities.transform_entities rot, end_dir_beam2
+
+          rota = Geom::Transformation.rotation(@center_of_column, Z_AXIS, 180.degrees)
+          @hss_name_group.entities.transform_entities rota, start_dir_beam2
+          @hss_name_group.entities.transform_entities rota, end_dir_beam2
 
           vec_slide2 = Geom::Vector3d.new(0,@w/2,0)
           slide1 = Geom::Transformation.translation(vec_slide2)
@@ -1354,7 +1367,6 @@ module EA_Extensions623
 
       def align_tube(vec, group)
         begin
-
           group.transform! @trans #Fixed this so the column is not scaled
           adjustment_vec = vec.clone
           if @is_column
