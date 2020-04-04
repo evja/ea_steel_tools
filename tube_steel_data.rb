@@ -237,7 +237,7 @@ module EA_Extensions623
 
           color_by_thickness(cap, @cap_thickness)
           color_by_thickness(cap2, @cap_thickness)
-          # classify_as_plate(cap2)
+          classify_as_plate(cap2)
         rescue Exception => e
           puts e.message
           puts e.backtrace.inspect
@@ -719,9 +719,11 @@ module EA_Extensions623
             @hss_outer_group.entities.transform_entities slide_tpl_up, top_plate
 
             rot = Geom::Transformation.rotation(top_plate.bounds.center, Y_AXIS, 180.degrees)
+            compass = add_plate_compass(top_plate, ORIGIN)
+            rot2 = Geom::Transformation.scaling(compass.bounds.center, -1.0, 1.0, 1.0)
+            top_plate.entities.transform_entities rot2, compass
             top_plate.transform! rot
             etch_plate(top_plate, @hss_inner_group)
-            add_plate_compass(top_plate, ORIGIN)
           end
           @definition_list.remove(top_plate_def) if top_plate_def
           color_by_thickness(top_plate, STANDARD_BASE_PLATE_THICKNESS)
@@ -739,8 +741,8 @@ module EA_Extensions623
         file_path = Sketchup.find_support_file "#{COMPONENT_PATH}/#{PL_COMPASS}", "Plugins"
         compass_def = @definition_list.load file_path
         compass = compass_group.entities.add_instance compass_def, center
-
         compass.explode
+        return compass_group
       end
 
       def etch_plate(plate, hss)

@@ -180,7 +180,7 @@ module EA_Extensions623
     HSSINGROUPNAME = "Difference"
     HSSBLANKCAP = "PL_ Blank Cap.skp"
 
-    BASETYPES = ["SQ","OC","IL","IC","EX","DR","DL","DI","Blank"]
+    BASETYPES = ["Blank","SQ","OC","IL","IC","EX","DR","DL","DI"]
     BASETYPESSIX = ["Blank","SQ","C","IL"]
 
 

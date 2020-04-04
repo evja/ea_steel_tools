@@ -53,8 +53,8 @@ module EA_Extensions623
         options = {
           :title           => "Tube Steel #{STEEL_EXTENSION.version}",
           :preferences_key => 'TS',
-          :width           => 500,
-          :height          => 475,
+          :width           => 450,
+          :height          => 400,
           :resizable       => false
         }
 
@@ -99,7 +99,7 @@ module EA_Extensions623
           @baseselect = SKUI::Listbox.new(BASETYPES)
         end
         @baseselect.position(110,30)
-        @baseselect.width = 50
+        @baseselect.width = 75
         @baseselect.visible = @@hss_type == 'Column'
         @@basetype.empty? ? @@basetype = (@baseselect.value = BASETYPES.first) : @baseselect.value = @@basetype
         @baseselect.on(:change) { |control, value|
@@ -121,7 +121,7 @@ module EA_Extensions623
 
         cap_select = SKUI::Textbox.new(@@cap_thickness)
         cap_select.position(110,40)
-        cap_select.width = 50
+        cap_select.width = 75
         cap_select.visible = @@hss_type == 'Beam'
         cap_select.on( :textchange ) {|control|
           @@cap_thickness = control.value.to_s.to_r.to_f
@@ -143,7 +143,7 @@ module EA_Extensions623
         start_tol = SKUI::Textbox.new (@@start_tolerance.to_f)
         start_tol.name = :start_tolerance
         start_tol.position(110,100)
-        start_tol.width = 50
+        start_tol.width = 75
         # start_tol.height = 20
         start_tol.on( :textchange ) { |control|
           @@start_tolerance = control.value.to_s.to_r.to_f
@@ -154,7 +154,7 @@ module EA_Extensions623
         end_tol = SKUI::Textbox.new (@@end_tolerance.to_f)
         end_tol.name = :start_tolerance
         end_tol.position(110,75)
-        end_tol.width = 50
+        end_tol.width = 75
         # end_tol.height = 20
         end_tol.on( :textchange ) { |control|
           @@end_tolerance = control.value.to_s.to_r.to_f
@@ -329,7 +329,7 @@ module EA_Extensions623
 
         stud_spacing_control = SKUI::Textbox.new(@@studspacing.to_s.to_r.to_f)
         stud_spacing_control.position(110,140)
-        stud_spacing_control.width = 50
+        stud_spacing_control.width = 75
         stud_spacing_control.on(:textchange) {|control|
           @@studspacing = control.value.to_s.to_r.to_f
         }
@@ -380,7 +380,7 @@ module EA_Extensions623
 
         wall_thickness_dropdown.value = @@wall_thickness
         wall_thickness_dropdown.position( 190, 25 )
-        wall_thickness_dropdown.width = 50
+        wall_thickness_dropdown.width = 60
         wall_thickness_dropdown.on(:change) { |control, value|
           @@wall_thickness = control.value
         }
@@ -426,7 +426,7 @@ module EA_Extensions623
           wall_thickness_dropdown = SKUI::Listbox.new( list3 )
           @@wall_thickness = (wall_thickness_dropdown.value = (wall_thickness_dropdown.items.include?('1/4"') ? '1/4"' : wall_thickness_dropdown.items.first))
           wall_thickness_dropdown.position( 190, 25 )
-          wall_thickness_dropdown.width = 50
+          wall_thickness_dropdown.width = 60
           wall_thickness_dropdown.on(:change) { |control, value|
             @@wall_thickness = control.value
           }
@@ -460,7 +460,7 @@ module EA_Extensions623
             wall_thickness_dropdown = SKUI::Listbox.new( list3 )
             @@wall_thickness = (wall_thickness_dropdown.value = (wall_thickness_dropdown.items.include?('1/4"') ? '1/4"' : wall_thickness_dropdown.items.first))
             wall_thickness_dropdown.position( 190, 25 )
-            wall_thickness_dropdown.width = 50
+            wall_thickness_dropdown.width = 60
             @group1.add_control( wall_thickness_dropdown )
             wall_thickness_dropdown.on(:change) { |control, value|
               @@wall_thickness = control.value
@@ -607,15 +607,17 @@ module EA_Extensions623
       def set_groups(window)
         #Creates the top group box that holds the dropdown lists of the
         @group1 = SKUI::Groupbox.new( 'Select HSS' )
-        @group1.position( 5, 5 )
+        @group1.position( 10, 5 )
         @group1.right = 5
+        @group1.width = 410
         @group1.height = 75
         window.add_control( @group1 )
 
         @group2 = SKUI::Groupbox.new( 'HSS Options' )
-        @group2.position( 5, 95 )
+        @group2.position( 10, 95 )
         @group2.right = 20
-        @group2.height = 225
+        @group2.width = 410
+        @group2.height = 220
         window.add_control( @group2 )
       end
 
