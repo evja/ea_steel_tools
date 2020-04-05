@@ -514,13 +514,13 @@ module EA_Extensions623
         when /¾/
           thckchk1 = 0.750
         when /⅝/
-          thckchk1 = 0.675
+          thckchk1 = 0.625
         when /½/
           thckchk1 = 0.500
         when /⅜/
           thckchk1 = 0.375
         when /5\/16/
-          thckchk1 = 0.3125
+          thckchk1 = 0.312
         when /¼/
           thckchk1 = 0.250
         when /Special/
@@ -534,7 +534,7 @@ module EA_Extensions623
         edges = extract_entities(mock_plate.definition, es, "Edge")
         faces = extract_entities(mock_plate.definition, fc, "Face")
 
-        thckchk2 = get_most_common_edge(edges)
+        thckchk2 = get_most_common_edge(edges)[0][0]
 
         sorted_faces = Hash[*faces.collect{|f| [f,f.area.round(3)]}.flatten].sort_by{|k,v|v}
         biggies = sorted_faces.last(2)
@@ -547,12 +547,50 @@ module EA_Extensions623
           p "Black Swan"
         end
         # p '-----------------'
-        # p thckchk1
-        # p thckchk2
-        # p thckchk3
+        # p thckchk1 #Material Name Thickness Assumption
+        # p thckchk2 #Most common Edge Length Assumption (Least Dependable)
+        # p thckchk3 #Distance from both largest surfaces
         # p '-----------------'
-        # add method to blen and check all 3 thickness checks
-        return thckchk3
+        # add method to blend and check all 3 thickness checks
+
+        ###################################
+        tolerance = 0.00125
+        if thckchk1 > 0
+          if thckchk1 == thckchk3
+            if (thckchk1 == thckchk2) || thckchk3 == (get_most_common_edge(edges)[1][0])
+              #black swan
+              # p '100%'
+              probable_thickness = thckchk1
+            elsif thckchk3 == (get_most_common_edge(edges)[1][0])#second most numerous edge length
+              #black swan again
+              # p '98%'
+              probable_thickness = thckchk1
+            else
+              # p '95%'
+              probable_thickness = thckchk1
+            end
+          elsif (thckchk1 - thckchk3) <= tolerance
+            # p '95%'
+            probable_thickness = thckchk1
+          else
+            # p '80%'
+            probable_thickness = thckchk1
+          end
+        else
+          # p 'special thick case'
+          #round to the nearest 1/8" thickness for thckchk3
+          if (thckchk3 % 0.125) > 0.0
+            probable_thickness = (thckchk3/0.125).round(0)/8
+          else
+            probable_thickness = thckchk3
+          end
+        end
+
+        if probable_thickness == 0.312
+          probable_thickness = 0.3125
+        end
+
+        return probable_thickness
       end
 
       def get_most_common_edge(edges)
@@ -562,7 +600,7 @@ module EA_Extensions623
           lengths[e.length.round(3)] += 1
         end
         a = lengths.sort_by {|k,v| -v}
-        return a.first[0]
+        return a
       end
 
       def extract_entities(entity, container, name)
@@ -591,11 +629,11 @@ module EA_Extensions623
         when 16
           number = "2+"
         else
-          p "in the else"
-          p num
-          p 5/16.to_f
-          p 5/16.to_f.round(2)
-          if num == 5/16.to_f.round(3)
+          # p "in the else"
+          # p num
+          # p 5/16.to_f
+          # p (5/16.to_f).round(2)
+          if num.round(2) == (5/16.to_f).round(2)
             number = "2+"
           else
             number = num

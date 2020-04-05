@@ -212,9 +212,7 @@ module EA_Extensions623
       end
 
       def set_scene_for_dxf
-
         @model.start_operation('set_scens', true, true, true)
-
 
         pages = @model.pages
         @part_page = pages[0]
