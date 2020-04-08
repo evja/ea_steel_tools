@@ -58,9 +58,11 @@ module EA_Extensions623
             # place = Geom::Point3d.new(dictionary[INFO_LABEL_POSITION][0],dictionary[INFO_LABEL_POSITION][1]+copy_offset,dictionary[INFO_LABEL_POSITION][2])
             place = label[0].bounds.center
             gd = group.definition
-            edges = []
-            edges = recursive_explosion(group, true, edges)
-            edges = clean_entities(edges)
+            plate_ents = []
+            plate_ents = recursive_explosion(group, true, plate_ents)
+            plate_ents = clean_entities(plate_ents)
+            check_and_handle_bevels(plate_ents)
+            edges = get_edges(plate_ents)
             vert_edges = fetch_vertical_edges(edges, vector)
 
             @plate_g_cpy.entities.erase_entities(vert_edges.to_a)
@@ -85,6 +87,83 @@ module EA_Extensions623
           puts e.backtrace.inspect
           UI.messagebox("There was a problem preparing the plates for export, you may need to restart or do some manual work")
         end
+      end
+
+      def get_edges(ents)
+        edges = ents.select {|e| e.is_a? Sketchup::Edge}
+        return edges
+      end
+
+      def check_and_handle_bevels(entities)
+        begin
+          faces = entities.select {|e| e.is_a? Sketchup::Face}
+          largest_face = [0, nil]
+          sorted_faces = Hash[*faces.collect{|f| [f,f.area.round(3)]}.flatten].sort_by{|k,v|v}
+          largest_face = sorted_faces[-1]
+          lg_face = largest_face[0]
+          comp_vec = lg_face.normal
+
+          faces.each do |face|
+            if face.deleted?
+              next
+            end
+            vec = face.normal
+            if !(vec.parallel?(comp_vec)) && !(vec.perpendicular?(comp_vec))
+              angle = ((vec.angle_between(comp_vec)).radians).round(0)
+              p "Angle - #{angle}"
+              p "Face Size - #{face.area}"
+              #1-move higher vertices directly over the lower bevel vertices to square off the plate
+              verts = face.vertices
+
+              sorted_verts = Hash[*verts.collect{|v| [v,v.position[2]]}.flatten].sort_by{|k,v|-v}
+              # p sorted_verts
+              sorted_verts.each_with_index do |v, i|
+                p v
+              end
+
+              high_point = sorted_verts[0][0].position
+              low_point = sorted_verts[2][0].position
+
+              high_edge = sorted_verts[0][0].common_edge(sorted_verts[1][0])
+              low_edge = sorted_verts[2][0].common_edge(sorted_verts[3][0])
+
+              #make construction line where bevel goes
+              sp = high_edge.start.position
+              ep = high_edge.end.position
+              v1 = sp - ep
+              v2 = ep - sp
+              lngth = (high_edge.length*0.95)
+              v1.length = lngth
+              v2.length = lngth
+
+              sp1 = ep.clone
+              sp2 = sp.clone
+
+              slide1 = Geom::Transformation.translation(v1)
+              slide2 = Geom::Transformation.translation(v2)
+
+              sp1.transform! slide1
+              sp2.transform! slide2
+
+              p1 = Geom::Point3d.new(high_point[0], high_point[1], 0)
+              p2 = Geom::Point3d.new(low_point[0], low_point[1], 0)
+
+              vec = p2 - p1
+              move = Geom::Transformation.translation(vec)
+
+              @plate_g_cpy.entities.transform_entities(move, high_edge)
+
+              bevel_line = @plate_g_cpy.entities.add_line(sp1, sp2)
+              bevel_line.layer = SCRIBES_LAYER
+
+            end
+          end
+        rescue Exception => e
+          puts e.message
+          puts e.backtrace.inspect
+          UI.messagebox("There was a problem handling a beveled plate, it may need to be manualy fixed before exporting")
+        end
+
       end
 
       def clean_entities(entities)
@@ -119,7 +198,7 @@ module EA_Extensions623
           parts.each do |e|
             if (e.is_a? Sketchup::Group) || (e.is_a? Sketchup::ComponentInstance)
              recursive_explosion(e, true, container)
-            elsif e.is_a? Sketchup::Edge
+            else
               container.push e
             end
           end
@@ -128,7 +207,7 @@ module EA_Extensions623
           parts.each do |e|
             if (e.is_a? Sketchup::Group) || (e.is_a? Sketchup::ComponentInstance)
              recursive_explosion(e, true, container)
-            elsif e.is_a? Sketchup::Edge
+            else
               container.push e
             end
           end
@@ -194,10 +273,21 @@ module EA_Extensions623
         end
       end
 
+      # def move_v_to_plane(plane, verts, vector)
+      #   verts.each do |v|
+      #   distance = (v.position).distance_to_plane(plane)
+      #     if distance > 0
+      #       vec = (v.position) - ((v.position).project_to_plane(plane))
+      #       mv = Geom::Transformation.translation(vec)
+      #       @ents.transform_entities(mv, v)
+      #     end
+      #   end
+      # end
+
       def move_v_to_plane(plane, verts, vector)
         verts.each do |v|
           vpz = v.position[2].to_f
-          if vpz > 0.0
+          if vpz > 0
             vec = vector.clone
             vec.length = vpz
 
