@@ -71,6 +71,8 @@ module EA_Extensions623
         @y_green = @model.axes.axes[1]
         @z_blue = @model.axes.axes[2]
 
+        @all_studs = []
+
         if @@flange_type == FLANGE_TYPE_COL
           @is_column = true
         else
@@ -487,7 +489,6 @@ module EA_Extensions623
 
 
           #initialize some variables
-          @all_studs = []
           count = 0
 
           #Setst the scale depth for the web and the flange

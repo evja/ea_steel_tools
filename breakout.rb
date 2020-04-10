@@ -199,7 +199,16 @@ module EA_Extensions623
          @steel_member.visible = false
          hide_parts(@steel_member, @pages[1], 16)
          hide_parts(@steel_member, @pages[2], 16)
+         hide_parts(@plate_group, @pages[2], 16)
          update_scene(@pages[1])
+      end
+
+      def hide_parts(part, page, code)
+        pg = @pages.selected_page
+        @pages.selected_page = page
+        part.visible = false
+        page.update(code)
+        @pages.selected_page = pg
       end
 
       def onKeyDown(key, repeat, flags, view)
@@ -230,13 +239,6 @@ module EA_Extensions623
         page.set_visibility(lyr, true)
       end
 
-      def hide_parts(part, page, code)
-        pg = @pages.selected_page
-        @pages.selected_page = page
-        part.visible = false
-        page.update(code)
-        @pages.selected_page = pg
-      end
 
       def show_parts(part, page, code)
         pg = @pages.selected_page
@@ -469,8 +471,10 @@ module EA_Extensions623
 
 
       def get_largest_face(entity)
-        entity.definition.entities
-        faces = entity.definition.entities.select {|e| e.typename == 'Face'}
+        plate_entities = entity.definition.entities
+
+
+        faces = plate_entities.select {|e| e.typename == 'Face'}
         largest_face = [0, nil]
 
         sorted_faces = Hash[*faces.collect{|f| [f,f.area.round(3)]}.flatten].sort_by{|k,v|v}
@@ -642,7 +646,35 @@ module EA_Extensions623
         return number
       end
 
+      def explode_to_plate_standards(entity_list)
+        entity_list.each do |e|
+          #check if entity is a group if it is then explode it
+          if (e.is_a? Sketchup::Group) || (e.is_a? Sketchup::ComponentInstance)
+            e.locked = false if e.locked?
+            parts = e.explode
+            explode_to_plate_standards(parts)
+          else
+            next
+          end
+        end
+      end
+
+      ###################DELETE ME#################
+      # model = Sketchup.active_model
+      # ents = model.entities
+      # file = Sketchup.find_support_files('skp', 'Plugins/ea_steel_tools/Beam Components')
+      # dl = model.definitions
+      # insert_point = ORIGIN.clone
+
+      # file.each do |f|
+      #   f2 = dl.load f
+      #   ent = ents.add_instance f2, insert_point
+      #   insert_point[0] += (ent.bounds.width + 3)
+      # end
+      ###################DELETE ME#################
+
       def spread_plates
+        begin
         copies = []
         alph = ("A".."Z").to_a
         plates2 = @d_list.map{|pl| pl if alph.include? pl.name}.compact!
@@ -682,7 +714,8 @@ module EA_Extensions623
           temp_group.material = pl.instances[0].material
           temp_plate.transform! trans
           temp_plate.make_unique
-          temp_plate.explode
+          # p temp_plate
+          temp_plate.explode #may need to do some special exploding on column plates
           temp_component = temp_group.to_component
           verified_thickness = get_plate_thickness_verified(temp_component)
           pl_cpy.definition.attribute_dictionary(PLATE_DICTIONARY)[TH_LABEL] = verified_thickness.to_f
@@ -698,12 +731,13 @@ module EA_Extensions623
           pl_cpy.name = "x"+ plate_count.to_s
           # pl_cpy.name = "#{@steel_member.name}-#{pl.material.to_r.to_f}-#{((pl_cpy.definition.count_instances) - 1)}"
 
-          face = get_largest_face(pl_cpy)
-          if face == nil
+          explode_to_plate_standards(pl_cpy.definition.entities)
+
+          if face = get_largest_face(pl_cpy)
+            pl_norm = face.normal
+          else
             p 'found nil'
             next
-          else
-            pl_norm = face.normal
           end
 
           if not pl_norm.parallel? Z_AXIS
@@ -762,6 +796,11 @@ module EA_Extensions623
           temp_component.erase!
         end
         return copies
+        rescue Exception => e
+          puts e.message
+          puts e.backtrace.inspect
+          UI.messagebox("There was a problem gathering and spreading the plates")
+        end
       end
 
       def deactivate(view)

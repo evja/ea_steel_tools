@@ -20,6 +20,7 @@ module EA_Extensions623
     require FNAME+'/'+'update.rb'
     require FNAME+'/'+'layer_helper.rb'
     require FNAME+'/'+'plate_observer.rb'
+    require FNAME+'/'+'export_preperation.rb'
     require FNAME+'/'+'export_plates.rb'
     # require FNAME+'/'+'test.rb'
 
@@ -87,8 +88,14 @@ module EA_Extensions623
     end
 
     UI.add_context_menu_handler do |menu|
-      if EASteelTools::ExportPlates.qualify_for_dxf
-        menu.add_item("--Prepare DXF") {EASteelTools::ExportPlates.new}
+      if EASteelTools::ExportPrep.qualify_for_dxfprep
+        menu.add_item("--Prepare DXF") {EASteelTools::ExportPrep.new}
+      end
+    end
+
+    UI.add_context_menu_handler do |menu|
+      if EASteelTools::ExportPlates.qualify_for_dxfexport
+        menu.add_item("--Export to DXF") {EASteelTools::ExportPlates.new}
       end
     end
 

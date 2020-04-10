@@ -45,6 +45,41 @@ compiled by Thomas Liebich tl@aec3.de
 	<xs:complexType name="WideFlangeBeam">
 		<xs:complexContent>
 			<xs:attribute name="Name" use="optional"/>
+			<xs:attribute name="Length" use="optional"/>
+			<xs:attribute name="Weight" use="optional"/>
+			<xs:attribute name="Description" use="optional"/>
+			<xs:attribute name="ObjectType" use="optional"/>
+			<xs:attribute name="Tag" use="optional"/>
+			<xs:attribute name="PredefinedType" use="optional"/>
+		</xs:complexContent>
+	</xs:complexType>
+
+	<xs:element name="WideFlangeColumn" type="3DS:WideFlangeColumn" nillable="true"/>
+	<xs:complexType name="WideFlangeColumn">
+		<xs:complexContent>
+			<xs:attribute name="Name" use="optional"/>
+			<xs:attribute name="Description" use="optional"/>
+			<xs:attribute name="ObjectType" use="optional"/>
+			<xs:attribute name="Tag" use="optional"/>
+			<xs:attribute name="PredefinedType" use="optional"/>
+		</xs:complexContent>
+	</xs:complexType>
+
+	<xs:element name="HSSColumn" type="3DS:WideFlangeColumn" nillable="true"/>
+	<xs:complexType name="WideFlangeColumn">
+		<xs:complexContent>
+			<xs:attribute name="Name" use="optional"/>
+			<xs:attribute name="Description" use="optional"/>
+			<xs:attribute name="ObjectType" use="optional"/>
+			<xs:attribute name="Tag" use="optional"/>
+			<xs:attribute name="PredefinedType" use="optional"/>
+		</xs:complexContent>
+	</xs:complexType>
+
+	<xs:element name="HSSBeam" type="3DS:WideFlangeColumn" nillable="true"/>
+	<xs:complexType name="WideFlangeColumn">
+		<xs:complexContent>
+			<xs:attribute name="Name" use="optional"/>
 			<xs:attribute name="Description" use="optional"/>
 			<xs:attribute name="ObjectType" use="optional"/>
 			<xs:attribute name="Tag" use="optional"/>
