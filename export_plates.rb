@@ -14,8 +14,6 @@ module EA_Extensions623
         @sel = @model.selection
         @pages = @model.pages
 
-        @@export_path = @model.path
-
         @model.start_operation('make wireframe', true, true, true)
         #set view
         set_view_for_export
@@ -49,7 +47,6 @@ module EA_Extensions623
         @pages[2].update(16)
         #explode group
 
-        @model.commit_operation
 
         @pages.selected_page = @pages[0]
         @pages[0].set_visibility(@layers[BREAKOUT_LAYERS[1]],false)
@@ -59,7 +56,9 @@ module EA_Extensions623
         @pages[1].set_visibility(@layers[BREAKOUT_LAYERS[0]],false)
         @pages[1].set_visibility(@layers[BREAKOUT_LAYERS[2]],false)
         @pages[1].update(48)
+        @pages.selected_page = @pages[-1]
 
+        @model.commit_operation
         Sketchup.send_action "selectSelectionTool:"
       end
 
@@ -109,7 +108,7 @@ module EA_Extensions623
           :faces_flag => false,
           :construction_geometry => true,
           :dimensions => true,
-          :text => true,
+          :text => false,
           :edges => true
         }
 
@@ -118,14 +117,11 @@ module EA_Extensions623
         ms = mp.split("\\")
         ms.pop
         file_path = File.join(ms)
-        p file_path
-        @@export_path = UI.savepanel("Export #{title} to DXF", file_path, title )
-        p @@export_path
-        if @@export_path
-          status = @model.export("#{@@export_path}.dxf", dxf_options, :show_summary => false)
+        @export_path = UI.savepanel("Export #{title} to DXF", file_path, title )
+        if @export_path
+          status = @model.export("#{@export_path}.dxf", false)
         end
         # status = UI.savepanel("Save the Breakout", file_path, ".dxf;.dwg" )
-        p status
       rescue
         UI.messagebox("There was a problem exporting the plates, you may need to export manually")
       end

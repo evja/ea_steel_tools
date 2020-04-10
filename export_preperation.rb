@@ -11,6 +11,11 @@ module EA_Extensions623
         @model = Sketchup.active_model
         @ents = @model.entities
         @sel = @model.selection
+        @layers = @model.layers
+        if @layers[" (S) Holes/Studs"]
+          @layers[" (S) Holes/Studs"].name = HOLES_LAYER
+        end
+        color_layers
 
         @model.start_operation('make wireframe', true, true, true)
         prep_plates_for_export(@sel[0])
@@ -343,12 +348,6 @@ module EA_Extensions623
         @dxf_page.use_style= dxf_style.name
         @dxf_page.update(3)
         pages.selected_page = @dxf_page
-
-        @layers = @model.layers
-        if @layers[" (S) Holes/Studs"]
-          @layers[" (S) Holes/Studs"].name = HOLES_LAYER
-        end
-        color_layers
 
         # @plate_g_cpy.explode
         message = "Wireframe is colored by layer, check for propper layer before exporting"
