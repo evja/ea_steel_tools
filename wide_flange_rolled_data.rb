@@ -730,8 +730,8 @@ module EA_Extensions623
             comp_def.description = "The #{@@beam_name} label"
             ents = comp_def.entities
             _3d_text = ents.add_3d_text("#{@@beam_name}", TextAlignCenter, STEEL_FONT, false, false, 3.0, 0.0, 0.0, false, 0.0)
-            save_path = Sketchup.find_support_file "Components", ""
-            comp_def.save_as(save_path + "/#{@@beam_name}.skp")
+            # save_path = Sketchup.find_support_file "Components", ""
+            # comp_def.save_as(save_path + "/#{@@beam_name}.skp")
           end
 
           if arc.radius > 216

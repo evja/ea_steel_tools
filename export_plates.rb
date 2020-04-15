@@ -13,21 +13,41 @@ module EA_Extensions623
         @ents = @model.entities
         @sel = @model.selection
         @pages = @model.pages
+        @dl = @model.definitions
 
         @model.start_operation('make wireframe', true, true, true)
         #set view
         set_view_for_export
-        saved_group = @sel[0].copy
-        saved_group.name = "DXF Set"
-        saved_group.visible = false
-        set_layer(saved_group, BREAKOUT_LAYERS.grep(/DXF/)[0])
-        @pages[2].update(16)
+        beam = @ents.select{|part| part.layer.name == BREAKOUT_LAYERS[0]}
+        plates = @ents.select{|part| part.layer.name == BREAKOUT_LAYERS[1]}
+        dxf_original_set = @ents.select{|part| part.layer.name == BREAKOUT_LAYERS[2]}
+        export_group = @sel[0].copy
+        protected_geom = @ents.add_group(beam, plates, dxf_original_set)
+        protected_comp = protected_geom.to_component
+        pcd = protected_comp.definition
+        pct = protected_comp.transformation.clone
 
-        parts = @sel[0].explode
+        ######### RUNS THE SAVE COMPONENT IN DEFINITION LIST ######
+        # @dl.purge_unused
+        # protected_comp.erase!
+
+
+        ######### RUNS THE SAVE COMPONENT IN TEMP FOLDER ######
+        a = __FILE__
+        b = a.split("/")
+        b.pop
+        b.pop
+        c = File.join(b,TEMP_FOLDER,"saved_parts.skp")
+        saved_temp_path = pcd.save_as(c)
+        protected_comp.erase!
+        @dl.purge_unused
+
+
+        @model.materials.purge_unused
+        @model.layers.purge_unused
+
+        parts = export_group.explode
         begin_export
-        # parts.reject!{|ds| ds if ds.deleted?}
-        # grp = @ents.add_group(parts)
-        # grp.erase!
 
         parts.each do |pt|
           if not pt.deleted?
@@ -42,11 +62,17 @@ module EA_Extensions623
             next
           end
         end
-        saved_group.visible = true
-        saved_group.layer = BREAKOUT_LAYERS[-1]
-        @pages[2].update(16)
-        #explode group
 
+        ######### RUNS THE SAVE COMPONENT IN DEFINITION LIST ######
+        # ex = @ents.add_instance(pcd, pct)
+
+
+        ######### RUNS THE SAVE COMPONENT IN TEMP FOLDER ######
+        expath = @dl.load(c)
+        ex = @ents.add_instance(expath, pct)
+        File.rename(c, "Delete Me.skp")
+
+        ex.explode
 
         @pages.selected_page = @pages[0]
         @pages[0].set_visibility(@layers[BREAKOUT_LAYERS[1]],false)
@@ -57,6 +83,9 @@ module EA_Extensions623
         @pages[1].set_visibility(@layers[BREAKOUT_LAYERS[2]],false)
         @pages[1].update(48)
         @pages.selected_page = @pages[-1]
+        @pages[-1].set_visibility(@layers[BREAKOUT_LAYERS[0]],false)
+        @pages[-1].set_visibility(@layers[BREAKOUT_LAYERS[1]],false)
+        @pages[-1].update(48)
 
         @model.commit_operation
         Sketchup.send_action "selectSelectionTool:"
